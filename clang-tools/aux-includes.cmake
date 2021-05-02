@@ -65,6 +65,7 @@ string(REPLACE "\t" ";" unseen_includes "${unseen_includes}")
 list(FILTER unseen_includes EXCLUDE REGEX "^ *$")
 list(TRANSFORM unseen_includes STRIP)
 
+message("QQQ\n${dependencies}\nPPP")
 message("AAA ${unseen_includes}")
 if(unseen_includes)
     list(LENGTH unseen_includes count)
