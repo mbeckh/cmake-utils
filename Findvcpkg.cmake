@@ -47,11 +47,11 @@ endif()
 
 if(DEFINED vcpkg_ROOT)
     # Use system vcpkg
-    find_program(vcpkg_EXE PATHS "${vcpkg_ROOT}" NO_DEFAULT_PATH)
+    find_program(vcpkg_EXE vcpkg PATHS "${vcpkg_ROOT}" NO_DEFAULT_PATH)
     if(vcpkg_EXE)
         z_vcpkg_get_version()
     endif()
-    find_package_handle_standard_args(vcpkg REQUIRED_VARS vcpkg_EXE VERSION_VAR vcpkg_REVISION)
+    find_package_handle_standard_args(vcpkg REQUIRED_VARS vcpkg_ROOT vcpkg_EXE VERSION_VAR vcpkg_REVISION)
 else()
     set(vcpkg_ROOT "${BUILD_ROOT}/vcpkg")
     if(EXISTS "${vcpkg_ROOT}/.git/HEAD")
