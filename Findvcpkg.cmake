@@ -22,8 +22,12 @@ if(NOT BUILD_ROOT)
 	endif()
 endif()
 
-if(NOT DEFINED VCPKG_ROOT)
-    set(VCPKG_ROOT "${BUILD_ROOT}/vcpkg" CACHE PATH "Root directory for vcpkg program and packages")
+if(NOT VCPKG_ROOT)
+    if(DEFINED ENV{VCPKG_ROOT})
+        set(VCPKG_ROOT "$ENV{VCPKG_ROOT}" CACHE PATH "Root directory for vcpkg program and packages")
+    else()
+        set(VCPKG_ROOT "${BUILD_ROOT}/vcpkg" CACHE PATH "Root directory for vcpkg program and packages")
+    endif()
 endif()
 
 #
