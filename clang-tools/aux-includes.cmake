@@ -25,6 +25,8 @@ if(result)
     message(FATAL_ERROR "Error ${result}:\n${error}")
 endif()
 
+message("${dependencies}")
+
 clang_tools_regex_escape_replacement(SOURCE_DIR OUT replacement)
 # remove comments
 string(REGEX REPLACE "(^|\n)CMakeFiles/[^/\n]+/([^:\n]*)\\.[^.:\n]*: #[^\n]*" "${replacement}/\\2:\t" dependencies "${dependencies}")
