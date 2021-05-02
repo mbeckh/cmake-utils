@@ -23,11 +23,15 @@ jobs:
       run: cmake -E make_directory ${{github.workspace}}/build/project/${{ matrix.configuration }}
 
     - name: Configure
+      shell: cmd
       working-directory: ${{github.workspace}}/build/project/${{ matrix.configuration }}
       run: |
-        "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat" && cmake -DCMAKE_BUILD_TYPE=${{ matrix.configuration }} -DBUILD_ROOT=${{github.workspace}}/build -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/toolchain.cmake -G Ninja ${{github.workspace}}/test
+        call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+        cmake -DCMAKE_BUILD_TYPE=${{ matrix.configuration }} -DBUILD_ROOT=${{github.workspace}}/build -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/toolchain.cmake -G Ninja ${{github.workspace}}/test
 
     - name: Test
+      shell: cmd
       working-directory: ${{github.workspace}}/build/project/${{ matrix.configuration }}
       run: |
-        "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat" && ctest -C ${{ matrix.configuration }}
+        call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+        ctest -C ${{ matrix.configuration }}
