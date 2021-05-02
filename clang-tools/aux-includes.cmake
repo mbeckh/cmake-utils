@@ -40,6 +40,35 @@ string(REGEX REPLACE "[ \t][ \t]+" "\t" dependencies "${dependencies}")
 string(REPLACE ";" "\\;" dependencies "${dependencies}")
 # split into list, one item per source file
 string(REPLACE "\n" ";" dependencies "${dependencies}")
+# remove empty entries
+list(FILTER dependencies EXCLUDE REGEX "^ *$")
+
+# Make all paths absolute
+unset(result)
+foreach(entry IN LISTS dependencies)
+    string(REGEX MATCH "^([^\t\n]+):\t" source "${entry}")
+    if(NOT source)
+        message(FATAL_ERROR "Error matching source: ${entry}")
+    endif()
+    cmake_path(ABSOLUTE_PATH CMAKE_MATCH_1 NORMALIZE OUTPUT_VARIABLE source)
+    string(REPLACE ";" "\\;" source "${source}")
+    set(line "${source}:")
+
+    string(REGEX MATCHALL "\t[^\t\n]+([\t\n]|$)" includes "${entry}")
+    foreach(include IN LISTS includes)
+        string(REGEX MATCH "^\t([^\t\n]+)([\t\n]|$)" match "${include}")
+        if(NOT match)
+            message(FATAL_ERROR "Error matching include: ${include}")
+        endif()
+        cmake_path(ABSOLUTE_PATH CMAKE_MATCH_1 NORMALIZE OUTPUT_VARIABLE include)
+        string(REPLACE ";" "\\;" include "${include}")
+        list(APPEND line "${include}")
+    endforeach()
+    list(JOIN line "\t" line)
+    list(APPEND result "${line}")
+endforeach()
+set(dependencies "${result}")
+
 
 # Get a list of all includes from dep file
 foreach(source IN LISTS SOURCES)
@@ -47,9 +76,9 @@ foreach(source IN LISTS SOURCES)
 
 	# Filter by source file
 	clang_tools_regex_escape_pattern(source OUT pattern)
-    list(FILTER entries INCLUDE REGEX "^${pattern}:\t")
+    list(FILTER entries INCLUDE REGEX "^${pattern}:(\t|$)")
 	# Get headers only
-    list(TRANSFORM entries REPLACE "^${pattern}:\t" "")
+    list(TRANSFORM entries REPLACE "^${pattern}:(\t|$)" "")
 
 	# Add tab-separated list of includes
     if(entries)
@@ -62,21 +91,7 @@ list(JOIN unseen_includes "\t" unseen_includes)
 
 # Convert to list
 string(REPLACE "\t" ";" unseen_includes "${unseen_includes}")
-list(FILTER unseen_includes EXCLUDE REGEX "^ *$")
 list(TRANSFORM unseen_includes STRIP)
-
-message("QQQ\n${dependencies}\nPPP")
-message("AAA ${unseen_includes}")
-if(unseen_includes)
-    list(LENGTH unseen_includes count)
-    foreach(index RANGE 1 ${count})
-        list(POP_FRONT unseen_includes include)
-        cmake_path(ABSOLUTE_PATH include NORMALIZE)
-        string(REPLACE ";" "\\;" include "${include}")
-        list(APPEND unseen_includes "${include}")
-    endforeach()
-endif()
-message("BBB ${unseen_includes}")
 
 # Remove known includes
 list(REMOVE_ITEM unseen_includes ${INCLUDES})
@@ -92,7 +107,7 @@ foreach(include IN LISTS AUX_INCLUDES)
 
 	clang_tools_regex_escape_pattern(include OUT pattern)
     list(FILTER candidates INCLUDE REGEX "\t+${pattern}(\t|$)")
-    list(TRANSFORM candidates REPLACE "^([^\t]+):\t.*" "\\1")
+    list(TRANSFORM candidates REPLACE "^([^\t]+):(\t.*|$)" "\\1")
 	list(SORT candidates CASE INSENSITIVE)
 
     unset(file)
