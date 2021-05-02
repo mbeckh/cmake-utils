@@ -19,6 +19,7 @@ if(NOT ClangTools_FOUND)
 endif()
 include_guard(GLOBAL)
 
+
 #
 # Helpers
 #
@@ -103,8 +104,6 @@ function(z_clang_tools_deferred tool #[[ [ NAME <name> ] TARGETS <target> ... [ 
 
     # Create compile_commands.json for clang from MSVC version.
     if(NOT TARGET "clang-tools-compile_commands")
-        set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL "" FORCE)
-
         message(STATUS "Creating target: clang-tools-compile_commands")
         add_custom_target(clang-tools-compile_commands
                           DEPENDS "${CMAKE_BINARY_DIR}/.clang-tools/compile_commands.json"
@@ -137,6 +136,9 @@ function(z_clang_tools_deferred tool #[[ [ NAME <name> ] TARGETS <target> ... [ 
                 continue()
             endif()
         endif()
+        # Request generation of compile_commands.json
+        set_target_properties("${target}" PROPERTIES EXPORT_COMPILE_COMMANDS YES)
+
         get_target_property(source_dir "${target}" SOURCE_DIR)
         get_target_property(binary_dir "${target}" BINARY_DIR)
         get_target_property(target_sources "${target}" SOURCES)
