@@ -26,8 +26,9 @@ jobs:
       shell: cmd
       working-directory: ${{github.workspace}}/../build/project/${{ matrix.configuration }}
       run: |
+        nuget sources add -source "https://nuget.pkg.github.com/mbeckh/index.json" -storepasswordincleartext -name "GitHub" -username "mbeckh" -password "${{ secrets.GITHUB_TOKEN }}"
         call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-        cmake -DCMAKE_BUILD_TYPE=${{ matrix.configuration }} -DBUILD_ROOT=${{ github.workspace }}/../build -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/toolchain.cmake -Dvcpkg_ROOT=%VCPKG_INSTALLATION_ROOT% -G Ninja ${{ github.workspace }}/test
+        cmake -DCMAKE_BUILD_TYPE=${{ matrix.configuration }} -DBUILD_ROOT=${{ github.workspace }}/../build -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/toolchain.cmake -Dvcpkg_ROOT=%VCPKG_INSTALLATION_ROOT% -DVCPKG_BINARY_SOURCES=clear;nuget,GitHub,readwrite -G Ninja ${{ github.workspace }}/test
 
     - name: Test
       shell: cmd
