@@ -122,7 +122,7 @@ function(z_vcpkg_set_install_options)
         endif()
     endwhile()
 
-    set(VCPKG_INSTALL_OPTIONS "--x-buildtrees-root=${project_root}/vcpkg-buildtrees;--x-packages-root=${project_root}vcpkg-packages" CACHE STRING "Additional options for vcpkg")
+    set(VCPKG_INSTALL_OPTIONS "--x-buildtrees-root=${project_root}/vcpkg-buildtrees;--x-packages-root=${project_root}/vcpkg-packages" CACHE STRING "Additional options for vcpkg")
 endfunction()
 z_vcpkg_set_install_options()
 
