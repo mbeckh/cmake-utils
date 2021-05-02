@@ -59,23 +59,38 @@ enable_testing()
 
 string(REPLACE ";" "\\;" include "$ENV{INCLUDE}")
 
+#
+# Clean
+#
+add_test(NAME cmake-utils.common.clean
+         COMMAND "${CMAKE_COMMAND}" --build . --target clean)
+set_tests_properties(cmake-utils.common.clean PROPERTIES
+                     ENVIRONMENT "INCLUDE=${include}"
+                     FIXTURES_SETUP clean)
 
 #
 # Build
 #
-add_test(NAME cmake-utils.common.build
-         COMMAND "${CMAKE_COMMAND}" --build . --target clang-tidy --target iwyu --target pch --clean-first)
-set_tests_properties(cmake-utils.common.build PROPERTIES
-                     ENVIRONMENT "INCLUDE=${include}"
-                     FIXTURES_SETUP build)
+foreach(target clang-tidy iwyu pch)
+    add_test(NAME cmake-utils.common.build-${target}
+             COMMAND "${CMAKE_COMMAND}" --build . --target ${target})
+
+    set_tests_properties(cmake-utils.common.build-${target} PROPERTIES
+                         ENVIRONMENT "INCLUDE=${include}"
+                         DEPENDS cmake-utils.common.clean
+                         FIXTURES_SETUP build-${target}
+                         FIXTURES_REQUIRED clean
+                         RESOURCE_LOCK build)
+endforeach()
+
 
 unset(no_link_tests)
 foreach(target ok tidy_error include_error subdirectory subproject)
     add_test(NAME cmake-utils.common.no-link-${target}
              COMMAND "${CMAKE_COMMAND}" -E md5sum "$<TARGET_FILE:${target}>")
     set_tests_properties(cmake-utils.common.no-link-${target} PROPERTIES
-                         FIXTURES_REQUIRED build
-                         DEPENDS cmake-utils.common.build
+                         FIXTURES_REQUIRED build-${target}
+                         DEPENDS cmake-utils.common.build-${target}
                          WILL_FAIL YES)
     list(APPEND no_link_tests cmake-utils.common.no-link-${target})
 endforeach()
@@ -107,8 +122,8 @@ add_test(NAME cmake-utils.clang-tidy.logs
                  "${CMAKE_BINARY_DIR}/clang-tidy-subproject.log")
 
 set_tests_properties(cmake-utils.clang-tidy.logs PROPERTIES
-                     FIXTURES_REQUIRED build
-                     DEPENDS cmake-utils.common.build)
+                     FIXTURES_REQUIRED build-clang-tidy
+                     DEPENDS cmake-utils.common.build-clang-tidy)
 
 
 add_test(NAME cmake-utils.clang-tidy.ok
@@ -116,8 +131,8 @@ add_test(NAME cmake-utils.clang-tidy.ok
 
 set_tests_properties(cmake-utils.clang-tidy.ok PROPERTIES
                      ENVIRONMENT "INCLUDE=${include}"
-                     FIXTURES_REQUIRED build
-                     DEPENDS cmake-utils.common.build
+                     FIXTURES_REQUIRED build-clang-tidy
+                     DEPENDS cmake-utils.common.build-clang-tidy
                      PASS_REGULAR_EXPRESSION [[
 ^\[1/1\] clang-tidy \(ok\)
 clang-tidy: ok
@@ -128,8 +143,8 @@ add_test(NAME cmake-utils.clang-tidy.tidy_error
          COMMAND "${CMAKE_COMMAND}" --build . --target clang-tidy-tidy_error)
 set_tests_properties(cmake-utils.clang-tidy.tidy_error PROPERTIES
                      ENVIRONMENT "INCLUDE=${include}"
-                     FIXTURES_REQUIRED build
-                     DEPENDS cmake-utils.common.build
+                     FIXTURES_REQUIRED build-clang-tidy
+                     DEPENDS cmake-utils.common.build-clang-tidy
                      PASS_REGULAR_EXPRESSION [[
 ^\[1/1\] clang-tidy \(tidy_error\)
 clang-tidy: tidy_error
@@ -153,8 +168,8 @@ add_test(NAME cmake-utils.clang-tidy.include_error
 
 set_tests_properties(cmake-utils.clang-tidy.include_error PROPERTIES
                      ENVIRONMENT "INCLUDE=${include}"
-                     FIXTURES_REQUIRED build
-                     DEPENDS cmake-utils.common.build
+                     FIXTURES_REQUIRED build-clang-tidy
+                     DEPENDS cmake-utils.common.build-clang-tidy
                      PASS_REGULAR_EXPRESSION [[
 ^\[1/1\] clang-tidy \(include_error\)
 clang-tidy: include_error
@@ -166,8 +181,8 @@ add_test(NAME cmake-utils.clang-tidy.subdirectory
 
 set_tests_properties(cmake-utils.clang-tidy.subdirectory PROPERTIES
                      ENVIRONMENT "INCLUDE=${include}"
-                     FIXTURES_REQUIRED build
-                     DEPENDS cmake-utils.common.build
+                     FIXTURES_REQUIRED build-clang-tidy
+                     DEPENDS cmake-utils.common.build-clang-tidy
                      PASS_REGULAR_EXPRESSION [[
 ^\[1/1\] clang-tidy \(subdirectory\)
 clang-tidy: subdirectory
@@ -179,8 +194,8 @@ add_test(NAME cmake-utils.clang-tidy.subproject
 
 set_tests_properties(cmake-utils.clang-tidy.subproject PROPERTIES
                      ENVIRONMENT "INCLUDE=${include}"
-                     FIXTURES_REQUIRED build
-                     DEPENDS cmake-utils.common.build
+                     FIXTURES_REQUIRED build-clang-tidy
+                     DEPENDS cmake-utils.common.build-clang-tidy
                      PASS_REGULAR_EXPRESSION [[
 ^\[1/1\] clang-tidy \(subproject\)
 clang-tidy: subproject
@@ -200,16 +215,16 @@ add_test(NAME cmake-utils.iwyu.logs
                  "${CMAKE_BINARY_DIR}/iwyu-subproject.log")
 
 set_tests_properties(cmake-utils.iwyu.logs PROPERTIES
-                     FIXTURES_REQUIRED build
-                     DEPENDS cmake-utils.common.build)
+                     FIXTURES_REQUIRED build-iwyu
+                     DEPENDS cmake-utils.common.build-iwyu)
 
 
 add_test(NAME cmake-utils.iwyu.ok
          COMMAND "${CMAKE_COMMAND}" --build . --target iwyu-ok)
 set_tests_properties(cmake-utils.iwyu.ok PROPERTIES
                      ENVIRONMENT "INCLUDE=${include}"
-                     FIXTURES_REQUIRED build
-                     DEPENDS cmake-utils.common.build
+                     FIXTURES_REQUIRED build-iwyu
+                     DEPENDS cmake-utils.common.build-iwyu
                      PASS_REGULAR_EXPRESSION [[
 ^\[1/1\] include-what-you-use \(ok\)
 include-what-you-use: ok
@@ -230,8 +245,8 @@ add_test(NAME cmake-utils.iwyu.tidy_error
          COMMAND "${CMAKE_COMMAND}" --build . --target iwyu-tidy_error)
 set_tests_properties(cmake-utils.iwyu.tidy_error PROPERTIES
                      ENVIRONMENT "INCLUDE=${include}"
-                     FIXTURES_REQUIRED build
-                     DEPENDS cmake-utils.common.build
+                     FIXTURES_REQUIRED build-iwyu
+                     DEPENDS cmake-utils.common.build-iwyu
                      PASS_REGULAR_EXPRESSION [[
 ^\[1/1\] include-what-you-use \(tidy_error\)
 include-what-you-use: tidy_error
@@ -253,8 +268,8 @@ add_test(NAME cmake-utils.iwyu.include_error
          COMMAND "${CMAKE_COMMAND}" --build . --target iwyu-include_error)
 set_tests_properties(cmake-utils.iwyu.include_error PROPERTIES
                      ENVIRONMENT "INCLUDE=${include}"
-                     FIXTURES_REQUIRED build
-                     DEPENDS cmake-utils.common.build
+                     FIXTURES_REQUIRED build-iwyu
+                     DEPENDS cmake-utils.common.build-iwyu
                      PASS_REGULAR_EXPRESSION [[
 ^\[1/1\] include-what-you-use \(include_error\)
 include-what-you-use: include_error
@@ -275,8 +290,8 @@ add_test(NAME cmake-utils.iwyu.subdirectory
          COMMAND "${CMAKE_COMMAND}" --build . --target iwyu-subdirectory)
 set_tests_properties(cmake-utils.iwyu.subdirectory PROPERTIES
                      ENVIRONMENT "INCLUDE=${include}"
-                     FIXTURES_REQUIRED build
-                     DEPENDS cmake-utils.common.build
+                     FIXTURES_REQUIRED build-iwyu
+                     DEPENDS cmake-utils.common.build-iwyu
                      PASS_REGULAR_EXPRESSION [[
 ^\[1/1\] include-what-you-use \(subdirectory\)
 include-what-you-use: subdirectory
@@ -289,8 +304,8 @@ add_test(NAME cmake-utils.iwyu.subproject
          COMMAND "${CMAKE_COMMAND}" --build . --target iwyu-subproject)
 set_tests_properties(cmake-utils.iwyu.subproject PROPERTIES
                      ENVIRONMENT "INCLUDE=${include}"
-                     FIXTURES_REQUIRED build
-                     DEPENDS cmake-utils.common.build
+                     FIXTURES_REQUIRED build-iwyu
+                     DEPENDS cmake-utils.common.build-iwyu
                      PASS_REGULAR_EXPRESSION [[
 ^\[1/1\] include-what-you-use \(subproject\)
 include-what-you-use: subproject
@@ -311,8 +326,8 @@ add_test(NAME cmake-utils.pch.logs
                  "${CMAKE_BINARY_DIR}/pch-include_error.log")
 
 set_tests_properties(cmake-utils.pch.logs PROPERTIES
-                     FIXTURES_REQUIRED build
-                     DEPENDS cmake-utils.common.build)
+                     FIXTURES_REQUIRED build-pch
+                     DEPENDS cmake-utils.common.build-pch)
 
 
 foreach(target subdirectory subproject)
@@ -320,8 +335,8 @@ foreach(target subdirectory subproject)
              COMMAND "${CMAKE_COMMAND}" -E cat "${CMAKE_BINARY_DIR}/pch-${target}.log")
 
     set_tests_properties(cmake-utils.pch.no-log-${target} PROPERTIES
-                         FIXTURES_REQUIRED build
-                         DEPENDS cmake-utils.common.build
+                         FIXTURES_REQUIRED build-pch
+                         DEPENDS cmake-utils.common.build-pch
                          WILL_FAIL YES)
 endforeach()
 
@@ -330,8 +345,8 @@ add_test(NAME cmake-utils.pch.ok
          COMMAND "${CMAKE_COMMAND}" --build . --target pch-ok)
 set_tests_properties(cmake-utils.pch.ok PROPERTIES
                      ENVIRONMENT "INCLUDE=${include}"
-                     FIXTURES_REQUIRED build
-                     DEPENDS cmake-utils.common.build
+                     FIXTURES_REQUIRED build-pch
+                     DEPENDS cmake-utils.common.build-pch
                      PASS_REGULAR_EXPRESSION [[
 ^\[1/1\] pch \(ok\)
 pch: ok
@@ -344,8 +359,8 @@ add_test(NAME cmake-utils.pch.tidy_error
          COMMAND "${CMAKE_COMMAND}" --build . --target pch-tidy_error)
 set_tests_properties(cmake-utils.pch.tidy_error PROPERTIES
                      ENVIRONMENT "INCLUDE=${include}"
-                     FIXTURES_REQUIRED build
-                     DEPENDS cmake-utils.common.build
+                     FIXTURES_REQUIRED build-pch
+                     DEPENDS cmake-utils.common.build-pch
                      PASS_REGULAR_EXPRESSION [[
 ^\[1/1\] pch \(tidy_error\)
 pch: tidy_error
@@ -358,8 +373,8 @@ add_test(NAME cmake-utils.pch.include_error
          COMMAND "${CMAKE_COMMAND}" --build . --target pch-include_error)
 set_tests_properties(cmake-utils.pch.include_error PROPERTIES
                      ENVIRONMENT "INCLUDE=${include}"
-                     FIXTURES_REQUIRED build
-                     DEPENDS cmake-utils.common.build
+                     FIXTURES_REQUIRED build-pch
+                     DEPENDS cmake-utils.common.build-pch
                      PASS_REGULAR_EXPRESSION [[
 ^\[1/1\] pch \(include_error\)
 pch: include_error
