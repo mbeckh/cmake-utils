@@ -25,8 +25,6 @@ if(result)
     message(FATAL_ERROR "Error ${result}:\n${error}")
 endif()
 
-message("${dependencies}")
-
 clang_tools_regex_escape_replacement(SOURCE_DIR OUT replacement)
 # remove comments
 string(REGEX REPLACE "(^|\n)CMakeFiles/[^/\n]+/([^:\n]*)\\.[^.:\n]*: #[^\n]*" "${replacement}/\\2:\t" dependencies "${dependencies}")
@@ -66,6 +64,16 @@ list(JOIN unseen_includes "\t" unseen_includes)
 string(REPLACE "\t" ";" unseen_includes "${unseen_includes}")
 list(FILTER unseen_includes EXCLUDE REGEX "^ *$")
 list(TRANSFORM unseen_includes STRIP)
+
+if(unseen_includes)
+    list(LENGTH unseen_includes count)
+    foreach(index RANGE 1 ${count})
+        list(POP_FRONT unseen_includes include)
+        cmake_path(ABSOLUTE_PATH include BASE_DIRECTORY "${SOURCE_DIR}" NORMALIZE)
+        string(REPLACE ";" "\\;" include "${include}")
+        list(APPEND unseen_includes "${include}")
+    endforeach()
+endif()
 
 # Remove known includes
 list(REMOVE_ITEM unseen_includes ${INCLUDES})
