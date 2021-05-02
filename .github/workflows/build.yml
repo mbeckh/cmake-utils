@@ -26,6 +26,7 @@ jobs:
       shell: cmd
       working-directory: ${{github.workspace}}/../build/project/${{ matrix.configuration }}
       run: |
+        set
         call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
         cmake -DCMAKE_BUILD_TYPE=${{ matrix.configuration }} -DBUILD_ROOT=${{ github.workspace }}/../build -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/toolchain.cmake -DVCPKG_ROOT=${{ env.VCPKG_INSTALLATION_ROOT }} -G Ninja ${{ github.workspace }}/test
 
