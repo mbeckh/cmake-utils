@@ -76,6 +76,7 @@ foreach(target clang-tidy iwyu pch)
              COMMAND "${CMAKE_COMMAND}" --build . --target ${target})
 
     set_tests_properties(cmake-utils.common.build-${target} PROPERTIES
+                         DISABLED "$<AND:$<STREQUAL:${target},iwyu>,$<NOT:$<TARGET_EXISTS:${target}>>>"
                          ENVIRONMENT "INCLUDE=${include}"
                          DEPENDS cmake-utils.common.clean
                          FIXTURES_SETUP build-${target}
@@ -207,14 +208,15 @@ $]])
 #
 
 add_test(NAME cmake-utils.iwyu.logs
-         COMMAND "${CMAKE_COMMAND}" -E cat
-                 "${CMAKE_BINARY_DIR}/iwyu-ok.log"
-                 "${CMAKE_BINARY_DIR}/iwyu-tidy_error.log"
-                 "${CMAKE_BINARY_DIR}/iwyu-include_error.log"
-                 "${CMAKE_BINARY_DIR}/iwyu-subdirectory.log"
-                 "${CMAKE_BINARY_DIR}/iwyu-subproject.log")
+            COMMAND "${CMAKE_COMMAND}" -E cat
+                    "${CMAKE_BINARY_DIR}/iwyu-ok.log"
+                    "${CMAKE_BINARY_DIR}/iwyu-tidy_error.log"
+                    "${CMAKE_BINARY_DIR}/iwyu-include_error.log"
+                    "${CMAKE_BINARY_DIR}/iwyu-subdirectory.log"
+                    "${CMAKE_BINARY_DIR}/iwyu-subproject.log")
 
 set_tests_properties(cmake-utils.iwyu.logs PROPERTIES
+                     DISABLED "$<NOT:$<TARGET_EXISTS:iwyu>>"
                      FIXTURES_REQUIRED build-iwyu
                      DEPENDS cmake-utils.common.build-iwyu)
 
@@ -222,6 +224,7 @@ set_tests_properties(cmake-utils.iwyu.logs PROPERTIES
 add_test(NAME cmake-utils.iwyu.ok
          COMMAND "${CMAKE_COMMAND}" --build . --target iwyu-ok)
 set_tests_properties(cmake-utils.iwyu.ok PROPERTIES
+                     DISABLED "$<NOT:$<TARGET_EXISTS:iwyu>>"
                      ENVIRONMENT "INCLUDE=${include}"
                      FIXTURES_REQUIRED build-iwyu
                      DEPENDS cmake-utils.common.build-iwyu
@@ -244,6 +247,7 @@ $]])
 add_test(NAME cmake-utils.iwyu.tidy_error
          COMMAND "${CMAKE_COMMAND}" --build . --target iwyu-tidy_error)
 set_tests_properties(cmake-utils.iwyu.tidy_error PROPERTIES
+                     DISABLED "$<NOT:$<TARGET_EXISTS:iwyu>>"
                      ENVIRONMENT "INCLUDE=${include}"
                      FIXTURES_REQUIRED build-iwyu
                      DEPENDS cmake-utils.common.build-iwyu
@@ -267,6 +271,7 @@ $]])
 add_test(NAME cmake-utils.iwyu.include_error
          COMMAND "${CMAKE_COMMAND}" --build . --target iwyu-include_error)
 set_tests_properties(cmake-utils.iwyu.include_error PROPERTIES
+                     DISABLED "$<NOT:$<TARGET_EXISTS:iwyu>>"
                      ENVIRONMENT "INCLUDE=${include}"
                      FIXTURES_REQUIRED build-iwyu
                      DEPENDS cmake-utils.common.build-iwyu
@@ -289,6 +294,7 @@ $]])
 add_test(NAME cmake-utils.iwyu.subdirectory
          COMMAND "${CMAKE_COMMAND}" --build . --target iwyu-subdirectory)
 set_tests_properties(cmake-utils.iwyu.subdirectory PROPERTIES
+                     DISABLED "$<NOT:$<TARGET_EXISTS:iwyu>>"
                      ENVIRONMENT "INCLUDE=${include}"
                      FIXTURES_REQUIRED build-iwyu
                      DEPENDS cmake-utils.common.build-iwyu
@@ -303,6 +309,7 @@ $]])
 add_test(NAME cmake-utils.iwyu.subproject
          COMMAND "${CMAKE_COMMAND}" --build . --target iwyu-subproject)
 set_tests_properties(cmake-utils.iwyu.subproject PROPERTIES
+                     DISABLED "$<NOT:$<TARGET_EXISTS:iwyu>>"
                      ENVIRONMENT "INCLUDE=${include}"
                      FIXTURES_REQUIRED build-iwyu
                      DEPENDS cmake-utils.common.build-iwyu
