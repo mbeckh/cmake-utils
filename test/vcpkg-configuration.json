@@ -1,0 +1,9 @@
+{
+  "registries": [
+    {
+      "kind": "git",
+      "repository": "https://github.com/mbeckh/vcpkg-registry.git",
+      "packages": [ "detours", "detours-gmock", "gtest" ]
+    }
+  ]
+}

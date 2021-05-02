@@ -1,0 +1,8 @@
+{
+  "name": "cmake-utils-test",
+  "version": "0.0.1",
+  "port-version": 0,
+  "dependencies": [
+		"fmt"
+  ]
+}

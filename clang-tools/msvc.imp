@@ -1,0 +1,137 @@
+[
+  { include: ["<fmt/core.h>", "public", "<fmt/format.h>", "public" ] },
+
+  { include: ["@<gtest/.*>", "private", "<gtest/gtest.h>", "public" ] },
+  { include: ["@<gmock/.*>", "private", "<gmock/gmock.h>", "public" ] },
+
+  { include: ["<corecrt_terminate.h>", "private", "<exception>", "public" ] },
+  { include: ["<corecrt_wstring.h>", "private", "<string>", "public" ] },
+  { include: ["<corecrt_wstring.h>", "private", "<cwchar>", "public" ] },
+  { include: ["<xatomic.h>", "private", "<atomic>", "public" ] },
+  { include: ["<xerrc.h>", "private", "<system_error>", "public" ] },
+  { include: ["<xmemory0>", "private", "<memory>", "public" ] },
+  { include: ["<xstring>", "private", "<string>", "public" ] },
+  
+  { include: ["<combaseapi.h>", "public", "<objbase.h>", "public" ] },
+
+  { include: ["<propidlbase.h>", "private", "<propidl.h>", "public" ] },
+
+  { include: ["<propkeydef.h>", "private", "<propkey.h>", "public" ] },
+  
+  { include: ["<rpcnterr.h>", "private", "<rpc.h>", "public" ] },
+
+  { include: ["<concurrencysal.h>", "private", "<sal.h>", "public" ] },
+  { include: ["<shobjidl_core.h>", "private", "<shobjidl.h>", "public" ] },
+  
+  { include: ["<guiddef.h>", "public", "<windows.h>", "public" ] },
+  { include: ["<sal.h>", "public", "<windows.h>", "public" ] },
+  { include: ["<processthreadsapi.h>", "public", "<windows.h>", "public" ] },
+
+  { include: ["<basetsd.h>", "private", "<windows.h>", "public" ] },
+  { include: ["<debugapi.h>", "private", "<windows.h>", "public" ] },
+  { include: ["<errhandlingapi.h>", "private", "<windows.h>", "public" ] },
+  { include: ["<fileapi.h>", "private", "<windows.h>", "public" ] },
+  { include: ["<handleapi.h>", "private", "<windows.h>", "public" ] },
+  { include: ["<intsafe.h>", "private", "<windows.h>", "public" ] },
+  { include: ["<ioapiset.h>", "private", "<windows.h>", "public" ] },
+  { include: ["<libloaderapi.h>", "private", "<windows.h>", "public" ] },
+  { include: ["<minwinbase.h>", "private", "<windows.h>", "public" ] },
+  { include: ["<minwindef.h>", "private", "<windows.h>", "public" ] },
+  { include: ["<processenv.h>", "private", "<windows.h>", "public" ] },
+  { include: ["<securitybaseapi.h>", "private", "<windows.h>", "public" ] },
+  { include: ["<sherrors.h>", "private", "<windows.h>", "public" ] },
+  { include: ["<specstrings.h>", "private", "<windows.h>", "public" ] },
+  { include: ["<stringapiset.h>", "private", "<windows.h>", "public" ] },
+  { include: ["<synchapi.h>", "private", "<windows.h>", "public" ] },
+  { include: ["<sysinfoapi.h>", "private", "<windows.h>", "public" ] },
+  { include: ["<timezoneapi.h>", "private", "<windows.h>", "public" ] },
+  { include: ["<windef.h>", "private", "<windows.h>", "public" ] },
+  { include: ["<winerror.h>", "private", "<windows.h>", "public" ] },
+  { include: ["<winnls.h>", "private", "<windows.h>", "public" ] },
+  { include: ["<winuser.h>", "private", "<windows.h>", "public" ] },
+  { include: ["<wtypesbase.h>", "private", "<windows.h>", "public" ] },
+  
+  { symbol: ["IID", "private", "<combaseapi.h>", "public" ] },
+  { symbol: ["IID_PPV_ARGS", "private", "<combaseapi.h>", "public" ] },
+
+  { symbol: ["IID", "private", "<guiddef.h>", "public" ] },
+
+  { symbol: ["IDispatch", "private", "<oaidl.h>", "public" ] },
+  
+  { symbol: ["IStream", "private", "<objidl.h>", "public" ] },
+  { symbol: ["STATSTG", "private", "<objidl.h>", "public" ] },
+
+  { symbol: ["IClassFactory", "private", "<unknwn.h>", "public" ] },
+  { symbol: ["IID_IClassFactory", "private", "<unknwn.h>", "public" ] },
+  { symbol: ["IID_IUnknown", "private", "<unknwn.h>", "public" ] },
+  { symbol: ["IUnknown", "private", "<unknwn.h>", "public" ] },
+
+  { symbol: ["PROPERTYKEY", "private", "<wtypes.h>", "public" ] },
+
+  { symbol: ["std::copy", "private", "<algorithm>", "public" ] },
+  { symbol: ["std::remove", "private", "<algorithm>", "public" ] },
+  { symbol: ["std::swap", "private", "<algorithm>", "public" ] },
+
+  { symbol: ["round", "private", "<cmath>", "public" ] },
+
+  { symbol: ["size_t", "private", "<cstddef>", "public" ] },
+
+  { symbol: ["uintptr_t", "private", "<cstdint>", "public" ] },
+  { symbol: ["INT_MAX", "private", "<cstdint>", "public" ] },
+
+  { symbol: ["size_t", "private", "<cstdio>", "public" ] },
+  { symbol: ["stderr", "private", "<cstdio>", "public" ] },
+
+  { symbol: ["size_t", "private", "<cstdlib>", "public" ] },
+
+  { symbol: ["std::memcpy", "private", "<cstring>", "public" ] },
+  { symbol: ["memcpy", "private", "<cstring>", "public" ] },
+  { symbol: ["memcmp", "private", "<cstring>", "public" ] },
+  { symbol: ["memset", "private", "<cstring>", "public" ] },
+  { symbol: ["size_t", "private", "<cstring>", "public" ] },
+
+  { symbol: ["size_t", "private", "<ctime>", "public" ] },
+
+  { symbol: ["size_t", "private", "<cwchar>", "public" ] },
+  { symbol: ["wcslen", "private", "<cwchar>", "public" ] },
+
+  { symbol: ["std::exception", "private", "<exception>", "public" ] },
+  { symbol: ["std::terminate", "private", "<exception>", "public" ] },
+
+  { symbol: ["std::hash", "private", "<functional>", "public" ] },
+
+  { symbol: ["std::back_insert_iterator", "private", "<iterator>", "public" ] },
+  { symbol: ["std::distance", "private", "<iterator>", "public" ] },
+  { symbol: ["std::prev", "private", "<iterator>", "public" ] },
+
+  { symbol: ["std::addressof", "private", "<memory>", "public" ] },
+
+  { symbol: ["std::align_val_t", "private", "<new>", "public" ] },
+  { symbol: ["std::bad_alloc", "private", "<new>", "public" ] },
+  { symbol: ["operator delete", "private", "<new>", "public" ] },
+  { symbol: ["operator delete[]", "private", "<new>", "public" ] },
+  { symbol: ["operator new", "private", "<new>", "public" ] },
+  { symbol: ["operator new[]", "private", "<new>", "public" ] },
+
+  { symbol: ["std::ostringstream", "private", "<sstream>", "public" ] },
+
+  { symbol: ["std::basic_string", "private", "<string>", "public" ] },
+  { symbol: ["std::char_traits", "private", "<string>", "public" ] },
+
+  { symbol: ["std::string_view", "private", "<string_view>", "public" ] },
+  { symbol: ["std::_String_view_iterator", "private", "<string_view>", "public" ] },
+  { symbol: ["std::wstring_view", "private", "<string_view>", "public" ] },
+  
+  { symbol: ["std::get", "private", "<tuple>", "public" ] },
+  { symbol: ["std::tuple_element", "private", "<tuple>", "public" ] },
+  { symbol: ["std::tuple_size_v", "private", "<tuple>", "public" ] },
+
+  { symbol: ["std::disjunction", "private", "<type_traits>", "public" ] },
+  { symbol: ["std::enable_if_t", "private", "<type_traits>", "public" ] },
+  { symbol: ["std::is_same", "private", "<type_traits>", "public" ] },
+  { symbol: ["std::remove_cv_t", "private", "<type_traits>", "public" ] },
+
+  { symbol: ["std::forward", "private", "<utility>", "public" ] },
+  { symbol: ["std::move", "private", "<utility>", "public" ] },
+  { symbol: ["std::swap", "private", "<utility>", "public" ] },
+]
