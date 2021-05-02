@@ -65,6 +65,7 @@ string(REPLACE "\t" ";" unseen_includes "${unseen_includes}")
 list(FILTER unseen_includes EXCLUDE REGEX "^ *$")
 list(TRANSFORM unseen_includes STRIP)
 
+message("AAA ${unseen_includes}")
 if(unseen_includes)
     list(LENGTH unseen_includes count)
     foreach(index RANGE 1 ${count})
@@ -74,7 +75,7 @@ if(unseen_includes)
         list(APPEND unseen_includes "${include}")
     endforeach()
 endif()
-message("XXX ${unseen_includes}")
+message("BBB ${unseen_includes}")
 
 # Remove known includes
 list(REMOVE_ITEM unseen_includes ${INCLUDES})
