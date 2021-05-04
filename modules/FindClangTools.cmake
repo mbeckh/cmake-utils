@@ -24,7 +24,7 @@ include_guard(GLOBAL)
 # Helpers
 #
 
-include("${CMAKE_CURRENT_LIST_DIR}/clang-tools/regex.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/Regex.cmake")
 
 #
 # Store a regex pattern for all known C/C++ source extensions in var.
@@ -32,7 +32,7 @@ include("${CMAKE_CURRENT_LIST_DIR}/clang-tools/regex.cmake")
 function(z_clang_tools_source_extensions var)
     set(extensions ${CMAKE_CXX_SOURCE_FILE_EXTENSIONS})
     list(APPEND extensions ${CMAKE_C_SOURCE_FILE_EXTENSIONS})
-    clang_tools_regex_escape_pattern(extensions)
+    regex_escape_pattern(extensions)
     list(JOIN extensions "|" extensions)
 
     set("${var}" "${extensions}" PARENT_SCOPE)
@@ -192,8 +192,8 @@ function(z_clang_tools_deferred tool #[[ [ NAME <name> ] TARGETS <target> ... [ 
                 foreach(source IN LISTS sources)
                     cmake_path(GET source STEM LAST_ONLY base_name)
                     string(REGEX REPLACE "(_(unit|reg)?test)|(-inl)$" "" canonical_base_name "${base_name}")
-                    clang_tools_regex_escape_pattern(base_name)
-                    clang_tools_regex_escape_pattern(canonical_base_name)
+                    regex_escape_pattern(base_name)
+                    regex_escape_pattern(canonical_base_name)
                     list(FILTER aux_includes EXCLUDE REGEX "(^|.+/)(${base_name}|${canonical_base_name})\\.(h|H|hpp|hxx|hh|inl)$")
                 endforeach()
 

@@ -97,7 +97,7 @@ replace_variables(build_root)
 #
 # Get target
 #
-include("${CMAKE_CURRENT_LIST_DIR}/regex.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/../modules/Regex.cmake")
 
 file(READ "${build_root}/compile_commands.json" compile_commands)
 string(JSON count LENGTH "${compile_commands}")
@@ -110,7 +110,7 @@ foreach(index RANGE ${last_file})
 	if(is_equal)
 		string(JSON command GET "${compile_commands}" ${index} "command")
 		cmake_path(NATIVE_PATH file relative_file_path)
-        clang_tools_regex_escape_pattern(relative_file_path)
+        regex_escape_pattern(relative_file_path)
 		string(REGEX MATCH " /FoCMakeFiles\\\\(.+)\\.dir\\\\${relative_file_path}\\.obj " match "${command}")
 		if(match)
 			set(target "${CMAKE_MATCH_1}")

@@ -7,7 +7,7 @@
 #
 # Escape variable's content for use as a regex pattern.
 #
-function(clang_tools_regex_escape_pattern var #[[ OUT <var> ]])
+function(regex_escape_pattern var #[[ OUT <var> ]])
     cmake_parse_arguments(PARSE_ARGV 1 arg "" "OUT" "")
     if(NOT arg_OUT)
         set(arg_OUT "${var}")
@@ -20,7 +20,7 @@ endfunction()
 #
 # Escape variable's content for use as a regex replacement.
 #
-function(clang_tools_regex_escape_replacement var #[[ OUT <var> ]])
+function(regex_escape_replacement var #[[ OUT <var> ]])
     cmake_parse_arguments(PARSE_ARGV 1 arg "" "OUT" "")
     if(NOT arg_OUT)
         set(arg_OUT "${var}")

@@ -55,10 +55,10 @@ include("${CMAKE_CURRENT_LIST_DIR}/settings/common.cmake")
 
 # Default configuration for vcpkg
 set(VCPKG_FEATURE_FLAGS "versions,registries,binarycaching" CACHE PATH "Default features for vcpkg")
-set(VCPKG_TARGET_TRIPLET "x64-windows-common" CACHE STRING "Default configuration for vcpkg")
+set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "Default configuration for vcpkg")
 
 # Hooks to include additional user settings or overrides
-include("${CMAKE_CURRENT_LIST_DIR}/UserSettings.cmake" OPTIONAL)
+include("${CMAKE_CURRENT_LIST_DIR}/../UserSettings.cmake" OPTIONAL)
 include("${CMAKE_SOURCE_DIR}/cmake/UserSettings.cmake" OPTIONAL)
 
 # Fire up vcpkg if required

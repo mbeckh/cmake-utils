@@ -13,7 +13,7 @@
 #
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
-include("${CMAKE_CURRENT_LIST_DIR}/regex.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/../Regex.cmake")
 
 # Read dependencies
 execute_process(COMMAND "${CMAKE_MAKE_PROGRAM}" -t deps
@@ -25,7 +25,7 @@ if(result)
     message(FATAL_ERROR "Error ${result}:\n${error}")
 endif()
 
-clang_tools_regex_escape_replacement(SOURCE_DIR OUT replacement)
+regex_escape_replacement(SOURCE_DIR OUT replacement)
 # remove comments
 string(REGEX REPLACE "(^|\n)CMakeFiles/[^/\n]+/([^:\n]*)\\.[^.:\n]*: #[^\n]*" "${replacement}/\\2:\t" dependencies "${dependencies}")
 # cannot reference optional group in replacement
@@ -75,7 +75,7 @@ foreach(source IN LISTS SOURCES)
     set(entries "${dependencies}")
 
 	# Filter by source file
-	clang_tools_regex_escape_pattern(source OUT pattern)
+	regex_escape_pattern(source OUT pattern)
     list(FILTER entries INCLUDE REGEX "^${pattern}:(\t|$)")
 	# Get headers only
     list(TRANSFORM entries REPLACE "^${pattern}:(\t|$)" "")
@@ -97,7 +97,7 @@ list(TRANSFORM unseen_includes STRIP)
 list(REMOVE_ITEM unseen_includes ${INCLUDES})
 
 # Restrict to unseen_includes in or below source directory
-clang_tools_regex_escape_pattern(SOURCE_DIR OUT pattern)
+regex_escape_pattern(SOURCE_DIR OUT pattern)
 list(FILTER unseen_includes INCLUDE REGEX "^${pattern}/")
 list(REMOVE_DUPLICATES unseen_includes)
 
@@ -105,7 +105,7 @@ list(REMOVE_DUPLICATES unseen_includes)
 foreach(include IN LISTS AUX_INCLUDES)
     set(candidates "${dependencies}")
 
-	clang_tools_regex_escape_pattern(include OUT pattern)
+	regex_escape_pattern(include OUT pattern)
     list(FILTER candidates INCLUDE REGEX "\t+${pattern}(\t|$)")
     list(TRANSFORM candidates REPLACE "^([^\t]+):(\t.*|$)" "\\1")
 	list(SORT candidates CASE INSENSITIVE)
@@ -143,7 +143,7 @@ endif()
 foreach(source output IN ZIP_LISTS SOURCES OUTPUTS)
     set(entries "${mapping}")
 
-	clang_tools_regex_escape_pattern(source OUT pattern)
+	regex_escape_pattern(source OUT pattern)
     list(FILTER entries INCLUDE REGEX "${pattern}\t")
 
     # Get all headers of source

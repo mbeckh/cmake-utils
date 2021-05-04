@@ -15,7 +15,7 @@ Modules for building projects using [CMake](https://cmake.org/).
 
 ## Usage
 -   Set environment CMake variable `BUILD_ROOT` to the path of an output folder. A subfolder will be created therein for every project.
--   Supply the file [`toolchain.cmake`](toolchain.cmake) to CMake using `-DCMAKE_TOOLCHAIN_FILE=&lt;path&gt;`. Everything else will configure itself, e.g. if vcpkg.json is found.
+-   Supply the file [`Toolchain.cmake`](Toolchain.cmake) to CMake using `-DCMAKE_TOOLCHAIN_FILE=<path>/cmake-utils/Toolchain.cmake`. Everything else will configure itself, e.g. if vcpkg.json is found.
 -   Optional user overrides are read from `cmake-utils/UserSettings.cmake` and `${CMAKE_SOURCE_DIR}/cmake/UserSettings.cmake`.
 
 ## System Requirements / Tested with
