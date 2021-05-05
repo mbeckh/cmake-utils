@@ -36,15 +36,14 @@ jobs:
           ${{github.workspace}}/build/${{env.GITHUB_REPOSITORY_NAME}}/vcpkg-packages
         key: vcpkg-${{hashFiles('source/**/vcpkg.json')}}
 
-    - name: Setup MSVC environment
-      uses: ilammy/msvc-dev-cmd@dd5e2fa0a7de1e7929605d9ecc020e749d9856a3
-
     - name: Configure
       shell: cmd
       working-directory: ${{github.workspace}}/build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}
       run: |
+        echo "Running in ${{github.workspace}}/build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}"
         nuget sources add -source "https://nuget.pkg.github.com/${{github.repository_owner}}/index.json" -storepasswordincleartext -name "GitHub" -username "${{github.repository_owner}}" -password "${{secrets.GITHUB_TOKEN}}"
-        cmake -DCMAKE_BUILD_TYPE=${{matrix.configuration}} -DBUILD_ROOT=${{github.workspace}}/build -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/Toolchain.cmake -Dvcpkg_ROOT=%VCPKG_INSTALLATION_ROOT% -DVCPKG_BINARY_SOURCES=clear;nuget,GitHub,readwrite -G Ninja ${{github.workspace}}/source/test
+        echo "Running build"
+        cmake -DCMAKE_BUILD_TYPE=${{matrix.configuration}} -DBUILD_ROOT=${{github.workspace}}/build -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/source/Toolchain.cmake -Dvcpkg_ROOT=%VCPKG_INSTALLATION_ROOT% -DVCPKG_BINARY_SOURCES=clear;nuget,GitHub,readwrite -G Ninja ${{github.workspace}}/source/test
 
     - name: Build
       shell: cmd
