@@ -41,10 +41,11 @@ jobs:
 
     - name: Configure
       shell: cmd
-      working-directory: ${{github.workspace}}/build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}
+      #working-directory: ${{github.workspace}}/build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}
       run: |
         cmake --version
         nuget sources add -source "https://nuget.pkg.github.com/${{github.repository_owner}}/index.json" -storepasswordincleartext -name "GitHub" -username "${{github.repository_owner}}" -password "${{secrets.GITHUB_TOKEN}}"
+        cd ${{github.workspace}}/build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}
         cmake -DCMAKE_BUILD_TYPE=${{matrix.configuration}} -DBUILD_ROOT=${{github.workspace}}/build -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/source/Toolchain.cmake -Dvcpkg_ROOT=%VCPKG_INSTALLATION_ROOT% -DVCPKG_BINARY_SOURCES=clear;nuget,GitHub,readwrite -G Ninja ${{github.workspace}}/source/test -v
 
     - name: Build
