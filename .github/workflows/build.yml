@@ -20,19 +20,67 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Create Build Directory
-      run: cmake -E make_directory ${{github.workspace}}/../build/project/${{ matrix.configuration }}
+      shell: bash
+      run: |
+        GITHUB_REPOSITORY_NAME=${GITHUB_REPOSITORY#*/}
+        echo GITHUB_REPOSITORY_NAME=${GITHUB_REPOSITORY_NAME} >> $GITHUB_ENV
+        cmake -E make_directory ${{github.workspace}}/../build/$GITHUB_REPOSITORY_NAME/${{matrix.configuration}}
+
+    - name: Setup MSVC environment
+      uses: ilammy/msvc-dev-cmd@dd5e2fa0a7de1e7929605d9ecc020e749d9856a3
+
+    - name: Cache vcpkg
+      uses: actions/cache
+      with:
+        path: |
+          ${{github.workspace}}/../build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}/vcpkg_installed
+          ${{github.workspace}}/../build/${{env.GITHUB_REPOSITORY_NAME}}/vcpkg-packages
+        key: vcpkg-${{hashFiles('vcpkg.json')}}
 
     - name: Configure
       shell: cmd
-      working-directory: ${{github.workspace}}/../build/project/${{ matrix.configuration }}
+      working-directory: ${{github.workspace}}/../build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}
       run: |
-        nuget sources add -source "https://nuget.pkg.github.com/mbeckh/index.json" -storepasswordincleartext -name "GitHub" -username "mbeckh" -password "${{ secrets.GITHUB_TOKEN }}"
-        call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-        cmake -DCMAKE_BUILD_TYPE=${{ matrix.configuration }} -DBUILD_ROOT=${{ github.workspace }}/../build -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/Toolchain.cmake -Dvcpkg_ROOT=%VCPKG_INSTALLATION_ROOT% -DVCPKG_BINARY_SOURCES=clear;nuget,GitHub,readwrite -G Ninja ${{ github.workspace }}/test
+        nuget sources add -source "https://nuget.pkg.github.com/${{github.repository_owner}}/index.json" -storepasswordincleartext -name "GitHub" -username "${{github.repository_owner}}" -password "${{secrets.GITHUB_TOKEN}}"
+        cmake -DCMAKE_BUILD_TYPE=${{matrix.configuration}} -DBUILD_ROOT=${{github.workspace}}/../build -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/Toolchain.cmake -Dvcpkg_ROOT=%VCPKG_INSTALLATION_ROOT% -DVCPKG_BINARY_SOURCES=clear;nuget,GitHub,readwrite -G Ninja ${{github.workspace}}/test
+
+    - name: Build
+      shell: cmd
+      working-directory: ${{github.workspace}}/../build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}
+      run: cmake --build .
 
     - name: Test
+      if: matrix.configuration != 'Debug'
       shell: cmd
-      working-directory: ${{github.workspace}}/../build/project/${{ matrix.configuration }}
-      run: |
-        call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-        ctest -C ${{ matrix.configuration }} --output-on-failure
+      working-directory: ${{github.workspace}}/../build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}
+      run: ctest -C ${{matrix.configuration}} --output-on-failure
+
+    - name: Coverage (TODO)
+      if: matrix.configuration == 'Debug'
+      shell: cmd
+      working-directory: ${{github.workspace}}/../build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}
+      run: ctest -C ${{matrix.configuration}} --output-on-failure
+
+    - name: Analyze
+      shell: cmd
+      working-directory: ${{github.workspace}}/../build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}
+      run: cmake --build . --target clang-tidy
+
+    - name: Save logs
+      if: always()
+      uses: actions/upload-artifact@v2
+      with:
+        name: output
+        path: |
+          ${{github.workspace}}/../build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}/*.log
+          !${{github.workspace}}/../build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}/clang-tidy.log
+          ${{github.workspace}}/../build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}/Testing/**/*.log
+          ${{github.workspace}}/../build/${{env.GITHUB_REPOSITORY_NAME}}/vcpkg-buildtrees/*/*.log
+
+    - name: Save analysis
+      if: always()
+      uses: actions/upload-artifact@v2
+      with:
+        name: output
+        path: |
+          ${{github.workspace}}/../build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}/clang-tidy-*.log
