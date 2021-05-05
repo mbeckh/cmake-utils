@@ -41,7 +41,7 @@ jobs:
       uses: ilammy/msvc-dev-cmd@dd5e2fa0a7de1e7929605d9ecc020e749d9856a3
 
     - name: Configure
-      shell: bash
+      #shell: bash
       #Using a variable in working-directory leads to error 'The directory name is invalid.'
       working-directory: ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}
       run: |
