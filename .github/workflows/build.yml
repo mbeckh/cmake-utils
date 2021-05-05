@@ -25,15 +25,15 @@ jobs:
       shell: bash
       run: |
         GITHUB_REPOSITORY_NAME=${GITHUB_REPOSITORY#*/}
-        echo GITHUB_REPOSITORY_NAME=${GITHUB_REPOSITORY_NAME} >> $GITHUB_ENV
+        echo "::set-output name=repository_name::${GITHUB_REPOSITORY_NAME}"
         cmake -E make_directory ${{github.workspace}}/build/$GITHUB_REPOSITORY_NAME/${{matrix.configuration}}
 
     - name: Cache vcpkg
       uses: actions/cache@v2
       with:
         path: |
-          ${{github.workspace}}/build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}/vcpkg_installed
-          ${{github.workspace}}/build/${{env.GITHUB_REPOSITORY_NAME}}/vcpkg-packages
+          ${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/${{matrix.configuration}}/vcpkg_installed
+          ${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/vcpkg-packages
         key: vcpkg-${{hashFiles('source/**/vcpkg.json')}}
 
     - name: Setup MSVC environment
@@ -41,32 +41,31 @@ jobs:
 
     - name: Configure
       shell: cmd
-      #working-directory: ${{github.workspace}}/build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}
+      working-directory: ${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/${{matrix.configuration}}
       run: |
         nuget sources add -source "https://nuget.pkg.github.com/${{github.repository_owner}}/index.json" -storepasswordincleartext -name "GitHub" -username "${{github.repository_owner}}" -password "${{secrets.GITHUB_TOKEN}}"
-        cd ${{github.workspace}}/build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}
         cmake -DCMAKE_BUILD_TYPE=${{matrix.configuration}} -DBUILD_ROOT=${{github.workspace}}/build -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/source/Toolchain.cmake -Dvcpkg_ROOT=%VCPKG_INSTALLATION_ROOT% -DVCPKG_BINARY_SOURCES=clear;nuget,GitHub,readwrite -G Ninja --log-level=DEBUG ${{github.workspace}}/source/test
 
     - name: Build
       shell: cmd
-      working-directory: ${{github.workspace}}/build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}
+      working-directory: ${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/${{matrix.configuration}}
       run: cmake --build .
 
     - name: Test
       if: matrix.configuration != 'Debug'
       shell: cmd
-      working-directory: ${{github.workspace}}/build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}
+      working-directory: ${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/${{matrix.configuration}}
       run: ctest -C ${{matrix.configuration}} --output-on-failure
 
     - name: Coverage (TODO)
       if: matrix.configuration == 'Debug'
       shell: cmd
-      working-directory: ${{github.workspace}}/build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}
+      working-directory: ${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/${{matrix.configuration}}
       run: ctest -C ${{matrix.configuration}} --output-on-failure
 
     - name: Analyze
       shell: cmd
-      working-directory: ${{github.workspace}}/build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}
+      working-directory: ${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/${{matrix.configuration}}
       run: cmake --build . --target clang-tidy
 
     - name: Save logs
@@ -75,10 +74,10 @@ jobs:
       with:
         name: logs
         path: |
-          ${{github.workspace}}/build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}/*.log
-          !${{github.workspace}}/build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}/clang-tidy.log
-          ${{github.workspace}}/build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}/Testing/**/*.log
-          ${{github.workspace}}/build/${{env.GITHUB_REPOSITORY_NAME}}/vcpkg-buildtrees/*/*.log
+          ${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/${{matrix.configuration}}/*.log
+          !${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/${{matrix.configuration}}/clang-tidy.log
+          ${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/${{matrix.configuration}}/Testing/**/*.log
+          ${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/vcpkg-buildtrees/*/*.log
 
     - name: Save analysis
       if: always()
@@ -86,5 +85,6 @@ jobs:
       with:
         name: clang-tidy
         path: |
-          ${{github.workspace}}/build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}/clang-tidy-*.log
-          ${{github.workspace}}/build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}/clang-tidy-*.log
+          ${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/${{matrix.configuration}}/clang-tidy-*.log
+          ${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/${{matrix.configuration}}/clang-tidy-*.log
+          ${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/${{matrix.configuration}}/clang-tidy-*.log
