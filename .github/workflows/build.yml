@@ -22,6 +22,7 @@ jobs:
         path: source
 
     - name: Create Build Directory
+      id: setup
       shell: bash
       run: |
         GITHUB_REPOSITORY_NAME=${GITHUB_REPOSITORY#*/}
