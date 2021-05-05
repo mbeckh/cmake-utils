@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: Build and test
+    name: Build and Test
     runs-on: windows-latest
     strategy:
       matrix:
@@ -21,52 +21,53 @@ jobs:
       with:
         path: source
 
-    - name: Create Build Directory
+    - name: Create Build Directory and Prepare Build
       id: setup
       shell: bash
       run: |
-        GITHUB_REPOSITORY_NAME=${GITHUB_REPOSITORY#*/}
-        echo "::set-output name=repository_name::${GITHUB_REPOSITORY_NAME}"
-        cmake -E make_directory ${{github.workspace}}/build/$GITHUB_REPOSITORY_NAME/${{matrix.configuration}}
+        cmake -E make_directory ${{github.workspace}}/build/${GITHUB_REPOSITORY#*/}/${{matrix.configuration}}
+        echo "::set-output name=repository::${GITHUB_REPOSITORY#*/}"
+        nuget sources add -source "https://nuget.pkg.github.com/${{github.repository_owner}}/index.json" -storepasswordincleartext -name "GitHub" -username "${{github.repository_owner}}" -password "${{secrets.GITHUB_TOKEN}}"
 
     - name: Cache vcpkg
       uses: actions/cache@v2
       with:
         path: |
-          ${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/${{matrix.configuration}}/vcpkg_installed
-          ${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/vcpkg-packages
+          ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}/vcpkg_installed
+          ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/vcpkg-packages
         key: vcpkg-${{hashFiles('source/**/vcpkg.json')}}
 
-    - name: Setup MSVC environment
+    - name: Setup MSVC Environment
       uses: ilammy/msvc-dev-cmd@dd5e2fa0a7de1e7929605d9ecc020e749d9856a3
 
     - name: Configure
-      shell: cmd
-      working-directory: ${{github.workspace}}\build\${{steps.setup.outputs.repository_name}}\${{matrix.configuration}}
+      shell: bash
+      #Using a variable in working-directory leads to error 'The directory name is invalid.'
+      working-directory: ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}
       run: |
-        nuget sources add -source "https://nuget.pkg.github.com/${{github.repository_owner}}/index.json" -storepasswordincleartext -name "GitHub" -username "${{github.repository_owner}}" -password "${{secrets.GITHUB_TOKEN}}"
         cmake -DCMAKE_BUILD_TYPE=${{matrix.configuration}} -DBUILD_ROOT=${{github.workspace}}/build -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/source/Toolchain.cmake -Dvcpkg_ROOT=%VCPKG_INSTALLATION_ROOT% -DVCPKG_BINARY_SOURCES=clear;nuget,GitHub,readwrite -G Ninja --log-level=DEBUG ${{github.workspace}}/source/test
 
     - name: Build
-      shell: cmd
-      working-directory: ${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/${{matrix.configuration}}
-      run: cmake --build .
+      #shell: cmd
+      working-directory: ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}
+      run: |
+        cmake --build .
 
     - name: Test
       if: matrix.configuration != 'Debug'
-      shell: cmd
-      working-directory: ${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/${{matrix.configuration}}
+      #shell: cmd
+      working-directory: ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}
       run: ctest -C ${{matrix.configuration}} --output-on-failure
 
     - name: Coverage (TODO)
       if: matrix.configuration == 'Debug'
-      shell: cmd
-      working-directory: ${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/${{matrix.configuration}}
+      #shell: cmd
+      working-directory: ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}
       run: ctest -C ${{matrix.configuration}} --output-on-failure
 
     - name: Analyze
-      shell: cmd
-      working-directory: ${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/${{matrix.configuration}}
+      #shell: cmd
+      working-directory: ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}
       run: cmake --build . --target clang-tidy
 
     - name: Save logs
@@ -75,10 +76,10 @@ jobs:
       with:
         name: logs
         path: |
-          ${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/${{matrix.configuration}}/*.log
-          !${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/${{matrix.configuration}}/clang-tidy.log
-          ${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/${{matrix.configuration}}/Testing/**/*.log
-          ${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/vcpkg-buildtrees/*/*.log
+          ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}/*.log
+          !${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}/clang-tidy.log
+          ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}/Testing/**/*.log
+          ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/vcpkg-buildtrees/*/*.log
 
     - name: Save analysis
       if: always()
@@ -86,6 +87,6 @@ jobs:
       with:
         name: clang-tidy
         path: |
-          ${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/${{matrix.configuration}}/clang-tidy-*.log
-          ${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/${{matrix.configuration}}/clang-tidy-*.log
-          ${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/${{matrix.configuration}}/clang-tidy-*.log
+          ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}/clang-tidy-*.log
+          ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}/clang-tidy-*.log
+          ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}/clang-tidy-*.log
