@@ -30,7 +30,7 @@ jobs:
       uses: ilammy/msvc-dev-cmd@dd5e2fa0a7de1e7929605d9ecc020e749d9856a3
 
     - name: Cache vcpkg
-      uses: actions/cache
+      uses: actions/cache@v2
       with:
         path: |
           ${{github.workspace}}/../build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}/vcpkg_installed
@@ -70,7 +70,7 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v2
       with:
-        name: output
+        name: logs
         path: |
           ${{github.workspace}}/../build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}/*.log
           !${{github.workspace}}/../build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}/clang-tidy.log
@@ -81,6 +81,6 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v2
       with:
-        name: output
+        name: clang-tidy
         path: |
           ${{github.workspace}}/../build/${{env.GITHUB_REPOSITORY_NAME}}/${{matrix.configuration}}/clang-tidy-*.log
