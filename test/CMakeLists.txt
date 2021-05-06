@@ -18,7 +18,7 @@ set(CMAKE_CXX_EXTENSIONS OFF CACHE BOOL "")
 
 add_compile_definitions(WIN32_LEAN_AND_MEAN=1)
 
-add_library(ok
+add_executable(ok
 	"src/ok_1.cpp"
     "src/ok_2.cpp"
     "include/cmake-utils/ok.h"
@@ -398,3 +398,11 @@ The full include-list for src/include_error_pch\.h:
   #include <cstring>
 ---
 $]])
+
+
+#
+# Run executable
+#
+
+add_test(NAME execute
+         COMMAND ok)

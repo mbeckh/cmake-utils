@@ -57,10 +57,12 @@ function(z_cmake_utils_settings_common)
     add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:$<IF:$<CONFIG:Debug>,/ZI,/Zi>;/FS>")
 
     # Google Test Adapter requires full paths (which prohibits the use of /d1trimfile)
+    # OpenCppCoverage requires untrimmed paths to apply filtering
     add_compile_options("$<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<OR:${gtest_targets}>>:/FC>"
                         # cannot combine into one argument because CMake gets trailing backslash wrong
-                        "$<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<NOT:$<OR:${gtest_targets}>>>:/d1trimfile:$<SHELL_PATH:$<TARGET_PROPERTY:SOURCE_DIR>/>>"
-                        "$<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<NOT:$<OR:${gtest_targets}>>>:/d1trimfile:$<SHELL_PATH:$<TARGET_PROPERTY:BINARY_DIR>/>>")
+                        "$<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<NOT:$<OR:$<CONFIG:Debug>,${gtest_targets}>>>:/d1trimfile:$<SHELL_PATH:$<TARGET_PROPERTY:SOURCE_DIR>/>>"
+                        "$<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<NOT:$<OR:$<CONFIG:Debug>,${gtest_targets}>>>:/d1trimfile:$<SHELL_PATH:$<TARGET_PROPERTY:BINARY_DIR>/>>")
+                        
 
     # Place program database in output folder using the default name, else single file compilation is broken in Visual Studio
     # cf. https://developercommunity.visualstudio.com/t/CMake-single-file-compilation-broken-whe/1394819

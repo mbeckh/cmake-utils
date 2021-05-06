@@ -1,0 +1,22 @@
+name: 'Coverage Action'
+author: 'Michael Beckh'
+description: 'Get code coverage and send it to codecov.io and codacy.com'
+inputs:
+  configuration:
+    description: 'The name of the configuration which was built'
+    required: true
+  source-dir:
+    description: 'CMake source directory'
+    required: true
+  binary-dir:
+    description: 'CMake binary directory'
+    required: true
+  github-token:
+    description: 'The Github token'
+    required: true
+  codacy-token:
+    description: 'The value of the codacy project token'
+    required: true
+runs:
+  using: 'node12'
+  main: './coverage.js'

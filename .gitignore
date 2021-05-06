@@ -1,3 +1,4 @@
 .vs/
 CMakeSettings.json
 UserSettings.cmake
+node_modules/
