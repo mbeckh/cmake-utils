@@ -187,7 +187,7 @@ exports.coverage = async function() {
                     `--excluded_modules=${path.join(binaryPath, 'vcpkg_installed', path.sep)}`,
                     `--sources=${sourcePath}`,
                     `--excluded_sources=${path.join(sourcePath, 'test', path.sep)}`,
-                    '--cover_children'
+                    '--cover_children',
                     `--export_type=cobertura:${path.relative(binaryPath, coverageFile)}`,
                     '--', 'ctest', '-C', configuration, '--output-on-failure' ], { 'cwd': binaryPath });
       
