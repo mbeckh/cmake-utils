@@ -35,7 +35,7 @@ jobs:
         path: |
           ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}/vcpkg_installed
           ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/vcpkg-packages
-        key: vcpkg-${{hashFiles('source/**/vcpkg.json')}}
+        key: vcpkg-${{hashFiles('source/**/vcpkg.json')}}-2
 
     - name: Setup MSVC Environment
       uses: ilammy/msvc-dev-cmd@dd5e2fa0a7de1e7929605d9ecc020e749d9856a3
