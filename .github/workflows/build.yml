@@ -29,13 +29,19 @@ jobs:
         echo ::set-output name=repository::%GITHUB_REPOSITORY:*/=%
         nuget sources add -source "https://nuget.pkg.github.com/${{github.repository_owner}}/index.json" -storepasswordincleartext -name "GitHub" -username "${{github.repository_owner}}" -password "${{secrets.GITHUB_TOKEN}}"
 
-    - name: Cache vcpkg
+    - name: Cache vcpkg-packages
+      uses: actions/cache@v2
+      with:
+        path: |
+          ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/vcpkg-packages
+        key: vcpkg_installed-${{matrix.configuration}}-${{hashFiles('source/**/vcpkg.json', 'source/**/vcpkg-configuration.json')}}
+
+    - name: Cache vcpkg-installed
       uses: actions/cache@v2
       with:
         path: |
           ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}/vcpkg_installed
-          ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/vcpkg-packages
-        key: vcpkg-${{hashFiles('source/**/vcpkg.json')}}-2
+        key: vcpkg-packages-${{hashFiles('source/**/vcpkg.json', 'source/**/vcpkg-configuration.json')}}
 
     - name: Setup MSVC Environment
       uses: ilammy/msvc-dev-cmd@dd5e2fa0a7de1e7929605d9ecc020e749d9856a3
