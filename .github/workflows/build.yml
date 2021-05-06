@@ -32,16 +32,14 @@ jobs:
     - name: Cache vcpkg-packages
       uses: actions/cache@v2
       with:
-        path: |
-          ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/vcpkg-packages
-        key: vcpkg_installed-${{matrix.configuration}}-${{hashFiles('source/**/vcpkg.json', 'source/**/vcpkg-configuration.json')}}
+        path: ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/vcpkg-packages
+        key: vcpkg-packages-${{hashFiles('source/**/vcpkg.json', 'source/**/vcpkg-configuration.json')}}
 
-    - name: Cache vcpkg-installed
+    - name: Cache vcpkg_installed
       uses: actions/cache@v2
       with:
-        path: |
-          ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}/vcpkg_installed
-        key: vcpkg-packages-${{hashFiles('source/**/vcpkg.json', 'source/**/vcpkg-configuration.json')}}
+        path: ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}/vcpkg_installed
+        key: vcpkg_installed-${{matrix.configuration}}-${{hashFiles('source/**/vcpkg.json', 'source/**/vcpkg-configuration.json')}}
 
     - name: Setup MSVC Environment
       uses: ilammy/msvc-dev-cmd@dd5e2fa0a7de1e7929605d9ecc020e749d9856a3
@@ -78,21 +76,19 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: vcpkg-build
-        path: |
-          ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/vcpkg-buildtrees/*/*.log
+        path: ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/vcpkg-buildtrees/*/*.log
+        if-no-files-found: ignore
 
     - name: Save Test Logs
       if: always()
       uses: actions/upload-artifact@v2
       with:
         name: test
-        path: |
-          ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}/Testing/**/*.log
+        path: ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}/Testing/**/*.log
 
     - name: Save clang-tidy Logs
       if: always()
       uses: actions/upload-artifact@v2
       with:
         name: clang-tidy
-        path: |
-          ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}/clang-tidy-*.log
+        path: ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}/clang-tidy-*.log
