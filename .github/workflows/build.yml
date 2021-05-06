@@ -56,7 +56,7 @@ jobs:
 
     - name: Coverage
       if: matrix.configuration == 'Debug'
-      uses: ./actions/coverage
+      uses: ./source/actions/coverage
       with:
         configuration: ${{matrix.configuration}}
         source-dir: ${{github.workspace}}/source/test
