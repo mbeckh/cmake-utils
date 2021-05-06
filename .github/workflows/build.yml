@@ -45,7 +45,9 @@ jobs:
       #Using a variable in working-directory leads to error 'The directory name is invalid.'
       #working-directory: ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}
       run: |
+        dir
         cd ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}
+        dir
         cmake -DCMAKE_BUILD_TYPE=${{matrix.configuration}} -DBUILD_ROOT=${{github.workspace}}/build -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/source/Toolchain.cmake -Dvcpkg_ROOT=%VCPKG_INSTALLATION_ROOT% -DVCPKG_BINARY_SOURCES=clear;nuget,GitHub,readwrite -G Ninja --log-level=DEBUG ${{github.workspace}}/source/test
 
     - name: Build
@@ -72,9 +74,10 @@ jobs:
         ctest -C ${{matrix.configuration}} --output-on-failure
 
     - name: Analyze
-      #shell: cmd
+      shell: cmd
       #working-directory: ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}
       run: |
+        cd ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}
         cd ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}
         cmake --build . --target clang-tidy
 
