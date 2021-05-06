@@ -43,9 +43,7 @@ jobs:
     - name: Configure
       shell: cmd
       working-directory: ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}
-      run: |
-        dir
-        cmake -DCMAKE_BUILD_TYPE=${{matrix.configuration}} -DBUILD_ROOT=${{github.workspace}}/build -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/source/Toolchain.cmake -Dvcpkg_ROOT=%VCPKG_INSTALLATION_ROOT% -DVCPKG_BINARY_SOURCES=clear;nuget,GitHub,readwrite -G Ninja --log-level=DEBUG ${{github.workspace}}/source/test
+      run: cmake -DCMAKE_BUILD_TYPE=${{matrix.configuration}} -DBUILD_ROOT=${{github.workspace}}/build -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/source/Toolchain.cmake -Dvcpkg_ROOT=%VCPKG_INSTALLATION_ROOT% -DVCPKG_BINARY_SOURCES=clear;nuget,GitHub,readwrite -G Ninja --log-level=DEBUG ${{github.workspace}}/source/test
 
     - name: Build
       shell: cmd
@@ -69,23 +67,26 @@ jobs:
       working-directory: ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}
       run: cmake --build . --target clang-tidy
 
-    - name: Save logs
+    - name: Save vcpkg Build Logs
       if: always()
       uses: actions/upload-artifact@v2
       with:
-        name: logs
+        name: vcpkg-build
         path: |
-          ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}/*.log
-          !${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}/clang-tidy.log
-          ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}/Testing/**/*.log
           ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/vcpkg-buildtrees/*/*.log
 
-    - name: Save analysis
+    - name: Save Test Logs
+      if: always()
+      uses: actions/upload-artifact@v2
+      with:
+        name: test
+        path: |
+          ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}/Testing/**/*.log
+
+    - name: Save clang-tidy Logs
       if: always()
       uses: actions/upload-artifact@v2
       with:
         name: clang-tidy
         path: |
-          ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}/clang-tidy-*.log
-          ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}/clang-tidy-*.log
           ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}/clang-tidy-*.log
