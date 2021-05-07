@@ -55,7 +55,7 @@ jobs:
 
     - name: Coverage
       if: matrix.configuration == 'Debug'
-      uses: ./${{steps.setup.outputs.repository_name}}/actions/coverage
+      uses: ./cmake-utils/actions/coverage
       with:
         command: ctest --output-on-failure -R execute
         source-dir: ${{github.workspace}}/${{steps.setup.outputs.repository_name}}/test
@@ -69,7 +69,7 @@ jobs:
       run: cmake --build . --target clang-tidy
 
     - name: Analyze Report
-      uses: ./${{steps.setup.outputs.repository_name}}/actions/analyze-report
+      uses: ./cmake-utils/actions/analyze-report
       with:
         binary-dir: ${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/${{matrix.configuration}}
         github-token: ${{secrets.GITHUB_TOKEN}}
