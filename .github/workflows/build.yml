@@ -41,7 +41,7 @@ jobs:
     - name: Configure
       shell: cmd
       working-directory: ${{github.workspace}}/build/${{steps.setup.outputs.repository_name}}/${{matrix.configuration}}
-      run: cmake -DCMAKE_BUILD_TYPE=${{matrix.configuration}} -DBUILD_ROOT=${{github.workspace}}/build -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/${{steps.setup.outputs.repository_name}}/Toolchain.cmake -Dvcpkg_ROOT=%VCPKG_INSTALLATION_ROOT% -DVCPKG_BINARY_SOURCES=clear;nuget,GitHub,readwrite -G Ninja --log-level=DEBUG ${{github.workspace}}/${{steps.setup.outputs.repository_name}}/test
+      run: cmake -DCMAKE_BUILD_TYPE=${{matrix.configuration}} -DBUILD_ROOT=${{github.workspace}}/build -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/${{steps.setup.outputs.repository_name}}/Toolchain.cmake -Dvcpkg_ROOT=%VCPKG_INSTALLATION_ROOT% -DVCPKG_BINARY_SOURCES=clear;nuget,GitHub,readwrite -G Ninja ${{github.workspace}}/${{steps.setup.outputs.repository_name}}/test
 
     - name: Build
       shell: cmd
