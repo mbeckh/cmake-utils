@@ -195,7 +195,7 @@ exports.coverage = async function() {
 
     core.startGroup('Sending coverage to codacy');
     // Codacy requires language argument, else coverage is not detected
-    await exec.exec('bash', [ '-c', `./${path.relative(workDir, CODACY_SCRIPT)} report -r '${forcePosix(path.relative(path.join(env.GITHUB_WORKSPACE, TEMP_PATH), coverageFile))}' -l CPP -t ${codacyToken} --commit-uuid ${env.GITHUB_SHA}` ], { 'cwd': path.join(env.GITHUB_WORKSPACE, TEMP_PATH) });
+    await exec.exec('bash', [ '-c', `./${path.relative(path.join(env.GITHUB_WORKSPACE, TEMP_PATH), CODACY_SCRIPT)} report -r '${forcePosix(path.relative(path.join(env.GITHUB_WORKSPACE, TEMP_PATH), coverageFile))}' -l CPP -t ${codacyToken} --commit-uuid ${env.GITHUB_SHA}` ], { 'cwd': path.join(env.GITHUB_WORKSPACE, TEMP_PATH) });
 
     if (!codacyCoverageCacheId) {
       await saveCache([ path.join(env.GITHUB_WORKSPACE, TEMP_PATH, '.codacy-coverage') ], codacyCacheKey);
