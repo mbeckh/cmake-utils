@@ -173,7 +173,7 @@ exports.coverage = async function() {
                     `--excluded_sources=${path.join(sourcePath, 'test', path.sep)}`,
                     `--working_dir=${binaryPath}`,
                     '--cover_children',
-                    `--export_type=cobertura:${path.relative(binaryPath, coverageFile)}`,
+                    `--export_type=cobertura:${coverageFile}`,
                     '--', ...command ], { 'cwd': binaryPath });
       
     // beautify file
@@ -201,7 +201,7 @@ exports.coverage = async function() {
     core.endGroup();
 
     core.startGroup('Sending coverage to codecov');
-    await exec.exec('bash', [ '-c', `bash <(curl -sS https://codecov.io/bash) -Z -s ${forcePosix(coveragePath)} -f '*.xml'` ], { 'cwd': path.join(env.GITHUB_WORKSPACE, repositoryName) });
+    await exec.exec('bash', [ '-c', `bash <(curl -sS https://codecov.io/bash) -Z -f "${forcePosix(coverageFile)}"` ], { 'cwd': path.join(env.GITHUB_WORKSPACE, repositoryName) });
     core.endGroup();
 
     core.startGroup('Sending coverage to codacy');
