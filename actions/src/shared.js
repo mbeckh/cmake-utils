@@ -51,7 +51,7 @@ async function restoreCache(paths, key, altKeys) {
 }
 
 async function setupOpenCppCoverage() {
-  const toolPath = path.join(TEMP_PATH, 'OpenCppCoverage');
+  const toolPath = path.join(env.GITHUB_WORKSPACE, TEMP_PATH, 'OpenCppCoverage');
   
   core.startGroup('Installing OpenCppCoverage');
   // Install "by hand" because running choco on github is incredibly slow
@@ -74,18 +74,18 @@ async function setupOpenCppCoverage() {
       const asset = release.assets.filter((e) => /-windows\.zip$/.test(e.name))[0];
       core.info(`Downloading ${release.name} from ${asset.browser_download_url}`);
       
-      const downloadPath = path.join(TEMP_PATH, asset.name);
+      const downloadPath = path.join(env.GITHUB_WORKSPACE, TEMP_PATH, asset.name);
       await exec.exec('curl', [ '-s', '-S', '-L', `-o${downloadPath}`, '--create-dirs', asset.browser_download_url ]);
       core.info('Unpacking innoextract');
-      await exec.exec('7z', [ 'x', '-aos', `-o${TEMP_PATH}`, downloadPath, 'innoextract.exe' ]);
+      await exec.exec('7z', [ 'x', '-aos', `-o${path.join(env.GITHUB_WORKSPACE, TEMP_PATH)}`, downloadPath, 'innoextract.exe' ]);
     }
 
     core.info(`Downloading ${release.name} from ${asset.browser_download_url}`);
 
-    const downloadPath = path.join(TEMP_PATH, asset.name);
+    const downloadPath = path.join(env.GITHUB_WORKSPACE, TEMP_PATH, asset.name);
     await exec.exec('curl', [ '-s', '-S', '-L', `-o${downloadPath}`, '--create-dirs', asset.browser_download_url ]);
     core.info('Unpacking OpenCppCoverage');
-    await exec.exec(path.join(TEMP_PATH, 'innoextract'), [ '-e', '-m', '--output-dir', toolPath, downloadPath ]);
+    await exec.exec(path.join(env.GITHUB_WORKSPACE, TEMP_PATH, 'innoextract'), [ '-e', '-m', '--output-dir', toolPath, downloadPath ]);
 
     await saveCache([ toolPath ], key);
     core.info(`Installed ${release.name} at ${toolPath}`);
@@ -97,7 +97,7 @@ async function setupOpenCppCoverage() {
 }
 
 async function setupCodacyClangTidy() {
-  const toolPath = path.join(TEMP_PATH, 'codacy-clang-tidy');
+  const toolPath = path.join(env.GITHUB_WORKSPACE, TEMP_PATH, 'codacy-clang-tidy');
 
   core.startGroup('Installing codacy-clang-tidy');
   core.info('Getting latest release for codacy-clang-tidy');
@@ -145,7 +145,7 @@ exports.coverage = async function() {
     core.setSecret(codacyToken);
 
     core.startGroup('Loading codacy coverage reporter');
-    const CODACY_SCRIPT = '.codacy-coverage.sh';
+    const CODACY_SCRIPT = path.join(env.GITHUB_WORKSPACE, TEMP_PATH, '.codacy-coverage.sh');
     await exec.exec('curl', ['-s', '-S', '-L', `-o${CODACY_SCRIPT}`, 'https://coverage.codacy.com/get.sh' ]);
     const file = fs.readFileSync(CODACY_SCRIPT);
     const hash = crypto.createHash('sha256');
@@ -153,7 +153,7 @@ exports.coverage = async function() {
     const hex = hash.digest('hex');
           
     const codacyCacheKey = `codacy-coverage-${hex}`;
-    const codacyCoverageCacheId = await restoreCache([ '.codacy-coverage' ], codacyCacheKey, [ 'codacy-coverage-' ]);
+    const codacyCoverageCacheId = await restoreCache([ path.join(env.GITHUB_WORKSPACE, TEMP_PATH, '.codacy-coverage') ], codacyCacheKey, [ 'codacy-coverage-' ]);
     if (codacyCoverageCacheId) {
       core.info('.codacy-coverage is found in cache');   
     }
@@ -177,39 +177,28 @@ exports.coverage = async function() {
                     '--', ...command ], { 'cwd': binaryPath });
       
     // beautify file
-    if (false) {
-      let data = fs.readFileSync(coverageFile, 'utf8');
-      const root = /(?<=<source>).+?(?=<\/source>)/.exec(data)[0];
-      const workspaceWithoutRoot = env.GITHUB_WORKSPACE.substring(root.length).replace(/^[\\\/]/, ''); // remove leading (back-) slashes
-      data = data.replace(/(?<=<source>).+?(?=<\/source>)/, path.join(repositoryName, 'source'));
-      data = data.replace(new RegExp(`(?<= name=")${escapeRegExp(env.GITHUB_WORKSPACE)}`), repositoryName);  // only one occurrence
-      data = data.replace(new RegExp(`(?<= filename=")${escapeRegExp(workspaceWithoutRoot)}`, 'g'), repositoryName);
-      data = data.replace(/\\/g, '/');
-      fs.writeFileSync(coverageFile, data);
-    } else {
-      let data = fs.readFileSync(coverageFile, 'utf8');
-      fs.writeFileSync(path.join(coveragePath, `${repositoryName}-original.xml`), data);
-      const root = /(?<=<source>).+?(?=<\/source>)/.exec(data)[0];
-      const workspaceWithoutRoot = env.GITHUB_WORKSPACE.substring(root.length).replace(/^[\\\/]/, ''); // remove leading (back-) slashes
-      data = data.replace(/(?<=<source>).+?(?=<\/source>)/, path.join(env.GITHUB_WORKSPACE, repositoryName));
-      data = data.replace(new RegExp(`(?<= name=")${escapeRegExp(path.join(binaryPath, path.sep))}`, 'g'), '');
-      data = data.replace(new RegExp(`(?<= filename=")${escapeRegExp(path.join(workspaceWithoutRoot, repositoryName, path.sep))}`, 'g'), '');
-      data = data.replace(/\\/g, '/');
-      fs.writeFileSync(coverageFile, data);
-    }
+    let data = fs.readFileSync(coverageFile, 'utf8');
+    fs.writeFileSync(path.join(coveragePath, `${repositoryName}-original.xml`), data);
+    const root = /(?<=<source>).+?(?=<\/source>)/.exec(data)[0];
+    const workspaceWithoutRoot = env.GITHUB_WORKSPACE.substring(root.length).replace(/^[\\\/]/, ''); // remove leading (back-) slashes
+    data = data.replace(/(?<=<source>).+?(?=<\/source>)/, path.join(env.GITHUB_WORKSPACE, repositoryName));
+    data = data.replace(new RegExp(`(?<= name=")${escapeRegExp(path.join(binaryPath, path.sep))}`, 'g'), '');
+    data = data.replace(new RegExp(`(?<= filename=")${escapeRegExp(path.join(workspaceWithoutRoot, repositoryName, path.sep))}`, 'g'), '');
+    data = data.replace(/\\/g, '/');
+    fs.writeFileSync(coverageFile, data);
 
     core.endGroup();
 
     core.startGroup('Sending coverage to codecov');
-    await exec.exec('bash', [ '-c', `bash <(curl -sS https://codecov.io/bash) -Z -f "${forcePosix(coverageFile)}"` ], { 'cwd': path.join(env.GITHUB_WORKSPACE, repositoryName) });
+    await exec.exec('bash', [ '-c', `bash <(curl -sS https://codecov.io/bash) -Z -f "${forcePosix(path.relative(path.join(env.GITHUB_WORKSPACE, repositoryName), coverageFile))}"` ], { 'cwd': path.join(env.GITHUB_WORKSPACE, repositoryName) });
     core.endGroup();
 
     core.startGroup('Sending coverage to codacy');
     // Codacy requires language argument, else coverage is not detected
-    await exec.exec('bash', [ '-c', `./${CODACY_SCRIPT} report -r '${forcePosix(coverageFile)}' -l CPP -t ${codacyToken} --commit-uuid ${env.GITHUB_SHA}` ], { 'cwd': path.join(env.GITHUB_WORKSPACE, repositoryName) });
+    await exec.exec('bash', [ '-c', `./${CODACY_SCRIPT} report -r '${forcePosix(path.relative(path.join(env.GITHUB_WORKSPACE, TEMP_PATH), coverageFile))}' -l CPP -t ${codacyToken} --commit-uuid ${env.GITHUB_SHA}` ], { 'cwd': path.join(env.GITHUB_WORKSPACE, TEMP_PATH) });
 
     if (!codacyCoverageCacheId) {
-      await saveCache([ '.codacy-coverage' ], codacyCacheKey);
+      await saveCache([ path.join(env.GITHUB_WORKSPACE, TEMP_PATH, '.codacy-coverage') ], codacyCacheKey);
       core.info('Added .codacy-coverage to cache');
     }
     core.endGroup();
@@ -220,18 +209,19 @@ exports.coverage = async function() {
 
 exports.analyzeReport = async function() {
   try {
-    const toolPath = await setupCodacyClangTidy();
+    const repositoryName = getRepositoryName();
+    const workDir = path.join(env.GITHUB_WORKSPACE, repositoryName);
+    const toolPath = forcePosix(path.relative(workDir, await setupCodacyClangTidy()));
 
-    const binaryPath = core.getInput('binary-dir', { 'required': true });
+    const binaryPath = forcePosix(path.relative(workDir, core.getInput('binary-dir', { 'required': true })));
     const codacyToken = core.getInput('codacy-token', { 'required': true });
     core.setSecret(codacyToken);
 
     core.startGroup('Sending code analysis to codacy');
-    const logFile = path.posix.join(TEMP_PATH, 'clang-tidy.json');
-    const repositoryName = getRepositoryName();
-    await exec.exec('bash', [ '-c', `find ${binaryPath} -maxdepth 1 -name 'clang-tidy-*.log' -exec cat {} \\; | java -jar ${forcePosix(toolPath)} | sed -r -e "s#[\\\\]{2}#/#g" > ${logFile}` ], { 'cwd': path.join(env.GITHUB_WORKSPACE, repositoryName) });
-    await exec.exec('bash', [ '-c', `curl -s -S -XPOST -L -H "project-token: ${codacyToken}" -H "Content-type: application/json" -w "\\n" -d @${logFile} "https://api.codacy.com/2.0/commit/${env.GITHUB_SHA}/issuesRemoteResults"` ], { 'cwd': path.join(env.GITHUB_WORKSPACE, repositoryName) });
-    await exec.exec('bash', [ '-c', `curl -s -S -XPOST -L -H "project-token: ${codacyToken}" -H "Content-type: application/json" -w "\\n" "https://api.codacy.com/2.0/commit/${env.GITHUB_SHA}/resultsFinal"` ], { 'cwd': path.join(env.GITHUB_WORKSPACE, repositoryName) });
+    const logFile = forcePosix(path.relative(workDir, path.join(env.GITHUB_WORKSPACE, TEMP_PATH, 'clang-tidy.json')));
+    await exec.exec('bash', [ '-c', `find ${binaryPath} -maxdepth 1 -name 'clang-tidy-*.log' -exec cat {} \\; | java -jar ${toolPath} | sed -r -e "s#[\\\\]{2}#/#g" > ${logFile}` ], { 'cwd': workDir });
+    await exec.exec('bash', [ '-c', `curl -s -S -XPOST -L -H "project-token: ${codacyToken}" -H "Content-type: application/json" -w "\\n" -d @${logFile} "https://api.codacy.com/2.0/commit/${env.GITHUB_SHA}/issuesRemoteResults"` ], { 'cwd': workDir });
+    await exec.exec('bash', [ '-c', `curl -s -S -XPOST -L -H "project-token: ${codacyToken}" -H "Content-type: application/json" -w "\\n" "https://api.codacy.com/2.0/commit/${env.GITHUB_SHA}/resultsFinal"` ], { 'cwd': workDir });
     core.endGroup();
   } catch (error) {
     core.setFailed(error.message);
