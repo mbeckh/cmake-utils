@@ -29,11 +29,12 @@ const env = process.env;
 const TEMP_PATH = '.mbeckh';
 const COVERAGE_PATH = 'coverage';
 
-/*
+
 // Normalize functions do not change separators, so add additional version
 function forcePosix(filePath) {
   return path.posix.normalize(filePath).replace(/\\/g, '/');
 }
+
 function forceWin32(filePath) {
   return path.win32.normalize(filePath).replace(/\//, '\\');
 }
@@ -42,7 +43,7 @@ const forceNative = path.sep === '/' ? forcePosix : forceWin32;
 function escapeRegExp(str) {
     return str.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
 }
-*/
+
 async function saveCache(paths, key) {
   try {
     return await cache.saveCache(paths.map((e) => forcePosix(e)), key);
@@ -155,8 +156,8 @@ exports.coverage = async function() {
     await setupOpenCppCoverage();
 
     const configuration = core.getInput('configuration', { 'required': true });
-    const sourcePath = core.getInput('source-dir', { 'required': true });
-    const binaryPath = core.getInput('binary-dir', { 'required': true });
+    const sourcePath = forceNative(core.getInput('source-dir', { 'required': true }));
+    const binaryPath = forceNative(core.getInput('binary-dir', { 'required': true }));
     const codacyToken = core.getInput('codacy-token', { 'required': true });
     core.setSecret(codacyToken);
 
