@@ -193,7 +193,7 @@ exports.coverage = async function() {
                     '--', 'ctest', '-C', configuration, '--output-on-failure' ], { 'cwd': binaryPath });
       
     // beautify file
-    const checkoutRoot = path.join(env.GITHUB_WORKSPACE, 'source', path.sep);
+    const checkoutRoot = path.join(env.GITHUB_WORKSPACE, 'source');
     let data = fs.readFileSync(coverageFile, 'utf8');
     const root = /(?<=<source>).+?(?=<\/source>)/.exec(data)[0];
     const workspaceWithoutRoot = checkoutRoot.substring(root.length).replace(/^[\\\/]/, ''); // remove leading (back-) slashes
