@@ -193,11 +193,12 @@ exports.coverage = async function() {
                     '--', 'ctest', '-C', configuration, '--output-on-failure' ], { 'cwd': binaryPath });
       
     // beautify file
+    const checkoutRoot = path.join(env.GITHUB_WORKSPACE, 'source', path.sep);
     let data = fs.readFileSync(coverageFile, 'utf8');
     const root = /(?<=<source>).+?(?=<\/source>)/.exec(data)[0];
-    const workspaceWithoutRoot = env.GITHUB_WORKSPACE.substring(root.length).replace(/^[\\\/]/, ''); // remove leading (back-) slashes
+    const workspaceWithoutRoot = checkoutRoot.substring(root.length).replace(/^[\\\/]/, ''); // remove leading (back-) slashes
     data = data.replace(/(?<=<source>).+?(?=<\/source>)/, repositoryName);
-    data = data.replace(new RegExp(`(?<= name=")${escapeRegExp(env.GITHUB_WORKSPACE)}`), repositoryName);  // only one occurrence
+    data = data.replace(new RegExp(`(?<= name=")${escapeRegExp(checkoutRoot)}`), repositoryName);  // only one occurrence
     data = data.replace(new RegExp(`(?<= filename=")${escapeRegExp(workspaceWithoutRoot)}`, 'g'), repositoryName);
     data = data.replace(/\\/g, '/');
     fs.writeFileSync(coverageFile, data);
