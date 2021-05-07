@@ -1,17 +1,5 @@
 /*
-Copyright 2020 Michael Beckh
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+MIT License, Copyright(c) 2021 Michael Beckh, see LICENSE
 */
 
 'use strict';
@@ -19,11 +7,9 @@ const core = require('@actions/core');
 const exec = require('@actions/exec');
 const cache = require('@actions/cache');
 const github = require('@actions/github');
-//const glob = require('@actions/glob');
 const fs = require('fs');
 const crypto = require('crypto');
 const path = require('path');
-//const yaml = require('js-yaml');
 
 const env = process.env;
 const TEMP_PATH = '.mbeckh';
@@ -109,7 +95,7 @@ async function setupOpenCppCoverage() {
   core.addPath(binPath);
   return path.join(binPath, 'OpenCppCoverage.exe');
 }
-/*
+
 async function setupCodacyClangTidy() {
   const toolPath = path.join(TEMP_PATH, 'codacy-clang-tidy');
 
@@ -136,26 +122,23 @@ async function setupCodacyClangTidy() {
   core.endGroup();
   return path.join(toolPath, asset.name);
 }
-*/
+
 function getRepositoryName() {
   return env.GITHUB_REPOSITORY.substring(env.GITHUB_REPOSITORY.indexOf('/') + 1);
 }
-/*
-function getSolutionPath() {
-  const solutionPath = core.getInput('solution-path').replace(/[\\\/]+$/, ''); // remove trailing (back-)slashes
-  return forceNative(solutionPath);
-}
-*/
 
-//function getProjects() {
-//  return core.getInput('projects', { 'required': true }).split(/\s*[,;\n]\s*/).filter((e) => e !== '');
-//}
+function parseCommandLine(str) {
+  // This absolute beast of a regular expression parses a command line.
+  // Kudos to https://stackoverflow.com/questions/13796594/how-to-split-string-into-arguments-and-options-in-javascript
+  const regex = /((?:"[^"\\]*(?:\\[\S\s][^"\\]*)*"|'[^'\\]*(?:\\[\S\s][^'\\]*)*'|\/[^\/\\]*(?:\\[\S\s][^\/\\]*)*\/[gimy]*(?=\s|$)|(?:\\\s|\S))+)(?=\s|$)/g;
+  return [...str.matchAll(regex)].map((e) => e[1]);
+}
 
 exports.coverage = async function() {
   try {
     await setupOpenCppCoverage();
 
-    const configuration = core.getInput('configuration', { 'required': true });
+    const command = parseCommandLine(core.getInput('command', { 'required': true }));
     const sourcePath = forceNative(core.getInput('source-dir', { 'required': true }));
     const binaryPath = forceNative(core.getInput('binary-dir', { 'required': true }));
     const codacyToken = core.getInput('codacy-token', { 'required': true });
@@ -184,34 +167,46 @@ exports.coverage = async function() {
       
     const coverageFile = path.join(coveragePath, `${repositoryName}.xml`);
     await exec.exec('OpenCppCoverage', [
-                    `--modules=${binaryPath}`,
+                    `--modules=${path.join(binaryPath, path.sep)}`,
                     `--excluded_modules=${path.join(binaryPath, 'vcpkg_installed', path.sep)}`,
-                    `--sources=${sourcePath}`,
+                    `--sources=${path.join(sourcePath, path.sep)}`,
                     `--excluded_sources=${path.join(sourcePath, 'test', path.sep)}`,
+                    `--working_dir=${binaryPath}`,
                     '--cover_children',
                     `--export_type=cobertura:${path.relative(binaryPath, coverageFile)}`,
-                    '--', 'ctest', '-C', configuration, '--output-on-failure' ], { 'cwd': binaryPath });
+                    '--', ...command ], { 'cwd': binaryPath });
       
     // beautify file
-    const checkoutRoot = path.join(env.GITHUB_WORKSPACE, 'source');
-    let data = fs.readFileSync(coverageFile, 'utf8');
-    const root = /(?<=<source>).+?(?=<\/source>)/.exec(data)[0];
-    const workspaceWithoutRoot = checkoutRoot.substring(root.length).replace(/^[\\\/]/, ''); // remove leading (back-) slashes
-    data = data.replace(/(?<=<source>).+?(?=<\/source>)/, repositoryName);
-    data = data.replace(new RegExp(`(?<= name=")${escapeRegExp(checkoutRoot)}`), repositoryName);  // only one occurrence
-    data = data.replace(new RegExp(`(?<= filename=")${escapeRegExp(workspaceWithoutRoot)}`, 'g'), repositoryName);
-    data = data.replace(/\\/g, '/');
-    fs.writeFileSync(coverageFile, data);
+    if (false) {
+      let data = fs.readFileSync(coverageFile, 'utf8');
+      const root = /(?<=<source>).+?(?=<\/source>)/.exec(data)[0];
+      const workspaceWithoutRoot = env.GITHUB_WORKSPACE.substring(root.length).replace(/^[\\\/]/, ''); // remove leading (back-) slashes
+      data = data.replace(/(?<=<source>).+?(?=<\/source>)/, path.join(repositoryName, 'source'));
+      data = data.replace(new RegExp(`(?<= name=")${escapeRegExp(env.GITHUB_WORKSPACE)}`), repositoryName);  // only one occurrence
+      data = data.replace(new RegExp(`(?<= filename=")${escapeRegExp(workspaceWithoutRoot)}`, 'g'), repositoryName);
+      data = data.replace(/\\/g, '/');
+      fs.writeFileSync(coverageFile, data);
+    } else {
+      let data = fs.readFileSync(coverageFile, 'utf8');
+      fs.writeFileSync(path.join(coveragePath, `${repositoryName}-original.xml`), data);
+      const root = /(?<=<source>).+?(?=<\/source>)/.exec(data)[0];
+      const workspaceWithoutRoot = env.GITHUB_WORKSPACE.substring(root.length).replace(/^[\\\/]/, ''); // remove leading (back-) slashes
+      data = data.replace(/(?<=<source>).+?(?=<\/source>)/, path.join(env.GITHUB_WORKSPACE, repositoryName));
+      data = data.replace(new RegExp(`(?<= name=")${escapeRegExp(path.join(binaryPath, path.sep))}`, 'g'), '');
+      data = data.replace(new RegExp(`(?<= filename=")${escapeRegExp(path.join(workspaceWithoutRoot, repositoryName, path.sep))}`, 'g'), '');
+      data = data.replace(/\\/g, '/');
+      fs.writeFileSync(coverageFile, data);
+    }
 
     core.endGroup();
 
     core.startGroup('Sending coverage to codecov');
-    await exec.exec('bash', [ '-c', `bash <(curl -sS https://codecov.io/bash) -Z -s ${forcePosix(coveragePath)} -f '*.xml'` ]);
+    await exec.exec('bash', [ '-c', `bash <(curl -sS https://codecov.io/bash) -Z -s ${forcePosix(coveragePath)} -f '*.xml'` ], { 'cwd': path.join(env.GITHUB_WORKSPACE, repositoryName) });
     core.endGroup();
 
     core.startGroup('Sending coverage to codacy');
     // Codacy requires language argument, else coverage is not detected
-    await exec.exec('bash', [ '-c', `./${CODACY_SCRIPT} report -r '${path.posix.join(forcePosix(coveragePath), '*.xml')}' -l CPP -t ${codacyToken} --commit-uuid ${env.GITHUB_SHA}` ]);
+    await exec.exec('bash', [ '-c', `./${CODACY_SCRIPT} report -r '${path.posix.join(forcePosix(coveragePath), '*.xml')}' -l CPP -t ${codacyToken} --commit-uuid ${env.GITHUB_SHA}` ], { 'cwd': path.join(env.GITHUB_WORKSPACE, repositoryName) });
 
     if (!codacyCoverageCacheId) {
       await saveCache([ '.codacy-coverage' ], codacyCacheKey);
@@ -223,86 +218,22 @@ exports.coverage = async function() {
   }
 };
 
-/*
-async function getMsvcVersion() {
-  const globber = await glob.create(CL_PATH);
-  const cl = await globber.glob();
-
-  const filePath = path.join(TEMP_PATH, 'msc-version.cpp');
-  fs.writeFileSync(filePath, '_MSC_VER');
-  let version = '';
-  await exec.exec(`"${cl[0]}"`, [ '/EP', filePath ], { 'listeners': { 'stdout': (data) => version += data.toString() }});
-  return /([0-9]+)/.exec(version)[1];
-}
-*/
-/*
-function getExclusions() {
-  let exclusions = [ `${TEMP_PATH}`, 'lib', 'msvc-common' ];
-  if (fs.existsSync('.codacy.yml')) {
-    const codacyFile = fs.readFileSync('.codacy.yml');
-    const codacyData = yaml.safeLoad(codacyFile);
-    if (codacyData.exclude_paths) {
-      Array.prototype.push.apply(exclusions, codacyData.exclude_paths);
-    }
-    // be prepared for future enhancement...
-    if (codacyData.engines && codacyData.engines['clang-tidy'] && codacyData.engines['clang-tidy'].exclude_paths) {
-      Array.prototype.push.apply(exclusions, codacyData.engines['clang-tidy'].exclude_paths);
-    }
-    if (exclusions.length > 3) {
-      core.info(`Using ${exclusions.length - 3} exclusion${exclusions.length > 1 ? 's' : ''} from .codacy.yml: ${exclusions.slice(3).join(', ')}`);
-    }
-  }
-  return exclusions.map((e) => `!${e}`);
-}
-*/
-
-//exports.analyzeClangTidy = async function() {
-//  try {
-//    const id = core.getInput('id', { 'required': true });
-//    const clangArgs = core.getInput('clang-args');
-//
-//    // make temp path for getMsvcVersion and clang-tidy logs
-//    fs.mkdirSync(TEMP_PATH);
-//
-//    core.startGroup('Getting version of MSVC compiler');
-//    const version = await getMsvcVersion();
-//    core.endGroup();
-//    
-//    core.startGroup('Running code analysis');
-//    const globber = await glob.create([ '**/*.c', '**/*.cc', '**/*.cpp', '**/*.cxx' ].concat(getExclusions()).join('\n'));
-//    const workspace = env.GITHUB_WORKSPACE;
-//    const files = (await globber.glob()).map((e) => path.relative(workspace, e));
-//
-//    const args = `-fmsc-version=${version}${clangArgs ? ' ' : ''}${clangArgs}`;
-//    const output = fs.openSync(path.join(TEMP_PATH, `clang-tidy-${id}.log`), 'ax');
-//    try {
-//      await exec.exec(`"${CLANGTIDY_PATH}" ${files.join(' ')} -- ${args}`,
-//        [ ], { 'windowsVerbatimArguments': true, 'ignoreReturnCode': true, 'listeners': { 'stdout': (data) => fs.appendFileSync(output, data) }});
-//    } finally {
-//      fs.closeSync(output);
-//    }
-//    core.endGroup();
-//  } catch (error) {
-//    core.setFailed(error.message);
-//  }
-//};
-
-/*
 exports.analyzeReport = async function() {
   try {
     const toolPath = await setupCodacyClangTidy();
 
+    const binaryPath = core.getInput('binary-dir', { 'required': true });
     const codacyToken = core.getInput('codacy-token', { 'required': true });
     core.setSecret(codacyToken);
 
     core.startGroup('Sending code analysis to codacy');
     const logFile = path.posix.join(TEMP_PATH, 'clang-tidy.json');
-    await exec.exec('bash', [ '-c', `find ${TEMP_PATH} -maxdepth 1 -name 'clang-tidy-*.log' -exec cat {} \\; | java -jar ${forcePosix(toolPath)} | sed -r -e "s#[\\\\]{2}#/#g" > ${logFile}` ]);
-    await exec.exec('bash', [ '-c', `curl -s -S -XPOST -L -H "project-token: ${codacyToken}" -H "Content-type: application/json" -w "\\n" -d @${logFile} "https://api.codacy.com/2.0/commit/${env.GITHUB_SHA}/issuesRemoteResults"` ]);
-    await exec.exec('bash', [ '-c', `curl -s -S -XPOST -L -H "project-token: ${codacyToken}" -H "Content-type: application/json" -w "\\n" "https://api.codacy.com/2.0/commit/${env.GITHUB_SHA}/resultsFinal"` ]);
+    const repositoryName = getRepositoryName();
+    await exec.exec('bash', [ '-c', `find ${binaryPath} -maxdepth 1 -name 'clang-tidy-*.log' -exec cat {} \\; | java -jar ${forcePosix(toolPath)} | sed -r -e "s#[\\\\]{2}#/#g" > ${logFile}` ], { 'cwd': path.join(env.GITHUB_WORKSPACE, repositoryName) });
+    await exec.exec('bash', [ '-c', `curl -s -S -XPOST -L -H "project-token: ${codacyToken}" -H "Content-type: application/json" -w "\\n" -d @${logFile} "https://api.codacy.com/2.0/commit/${env.GITHUB_SHA}/issuesRemoteResults"` ], { 'cwd': path.join(env.GITHUB_WORKSPACE, repositoryName) });
+    await exec.exec('bash', [ '-c', `curl -s -S -XPOST -L -H "project-token: ${codacyToken}" -H "Content-type: application/json" -w "\\n" "https://api.codacy.com/2.0/commit/${env.GITHUB_SHA}/resultsFinal"` ], { 'cwd': path.join(env.GITHUB_WORKSPACE, repositoryName) });
     core.endGroup();
   } catch (error) {
     core.setFailed(error.message);
   }
 };
-*/
