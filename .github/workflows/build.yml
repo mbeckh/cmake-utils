@@ -82,7 +82,9 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: test
-        path: ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}/Testing/**/*.log
+        path: |
+            ${{github.workspace}}/build/${{steps.setup.outputs.repository}}/${{matrix.configuration}}/Testing/**/*.log
+            ${{github.workspace}}/.mbeckh/coverage/*.xml
 
     - name: Save clang-tidy Logs
       if: always()
