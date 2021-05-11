@@ -66,7 +66,7 @@ function(z_cmake_utils_settings_common)
     set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "/external:I " CACHE STRING "" FORCE)
 
     # Debug information
-    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:$<IF:$<CONFIG:Debug>,/ZI,/Zi>;/FS>")
+    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:$<IF:$<CONFIG:Debug>,/ZI,/Z7>;/FS>")
 
     # Google Test Adapter requires full paths (which prohibits the use of /d1trimfile)
     # OpenCppCoverage requires untrimmed paths to apply filtering
@@ -74,12 +74,13 @@ function(z_cmake_utils_settings_common)
                         # cannot combine into one argument because CMake gets trailing backslash wrong
                         "$<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<NOT:$<OR:$<CONFIG:Debug>,${gtest_targets}>>>:/d1trimfile:$<SHELL_PATH:$<TARGET_PROPERTY:SOURCE_DIR>/>>"
                         "$<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<NOT:$<OR:$<CONFIG:Debug>,${gtest_targets}>>>:/d1trimfile:$<SHELL_PATH:$<TARGET_PROPERTY:BINARY_DIR>/>>")
-                        
+
 
     # Place program database in output folder using the default name, else single file compilation is broken in Visual Studio
     # cf. https://developercommunity.visualstudio.com/t/CMake-single-file-compilation-broken-whe/1394819
     # Not used in vcpkg which uses /Z7. Also do not interfere with PDB handling in port.
-    cmake_language(DEFER DIRECTORY "${CMAKE_SOURCE_DIR}" CALL cmake_utils_for_each_target z_cmake_utils_set_compile_pdb)
+    # Currently disabled because /Zi gives linker warnings because of parallel access to pdb in root directory
+    # cmake_language(DEFER DIRECTORY "${CMAKE_SOURCE_DIR}" CALL cmake_utils_for_each_target z_cmake_utils_set_compile_pdb)
 
     #
     # Linker options
