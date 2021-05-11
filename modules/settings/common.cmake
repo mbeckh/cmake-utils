@@ -1,7 +1,19 @@
+# Copyright 2021 Michael Beckh
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 #
 # Common build settings for Visual Studio 2019 used in regular builds but not vcpkg.
-#
-# MIT License, Copyright (c) 2021 Michael Beckh, see LICENSE
 #
 include_guard(GLOBAL)
 
@@ -54,18 +66,21 @@ function(z_cmake_utils_settings_common)
     set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "/external:I " CACHE STRING "" FORCE)
 
     # Debug information
-    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:$<IF:$<CONFIG:Debug>,/ZI,/Zi>;/FS>")
+    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:$<IF:$<CONFIG:Debug>,/ZI,/Z7>;/FS>")
 
     # Google Test Adapter requires full paths (which prohibits the use of /d1trimfile)
+    # OpenCppCoverage requires untrimmed paths to apply filtering
     add_compile_options("$<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<OR:${gtest_targets}>>:/FC>"
                         # cannot combine into one argument because CMake gets trailing backslash wrong
-                        "$<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<NOT:$<OR:${gtest_targets}>>>:/d1trimfile:$<SHELL_PATH:$<TARGET_PROPERTY:SOURCE_DIR>/>>"
-                        "$<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<NOT:$<OR:${gtest_targets}>>>:/d1trimfile:$<SHELL_PATH:$<TARGET_PROPERTY:BINARY_DIR>/>>")
+                        "$<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<NOT:$<OR:$<CONFIG:Debug>,${gtest_targets}>>>:/d1trimfile:$<SHELL_PATH:$<TARGET_PROPERTY:SOURCE_DIR>/>>"
+                        "$<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<NOT:$<OR:$<CONFIG:Debug>,${gtest_targets}>>>:/d1trimfile:$<SHELL_PATH:$<TARGET_PROPERTY:BINARY_DIR>/>>")
+
 
     # Place program database in output folder using the default name, else single file compilation is broken in Visual Studio
     # cf. https://developercommunity.visualstudio.com/t/CMake-single-file-compilation-broken-whe/1394819
     # Not used in vcpkg which uses /Z7. Also do not interfere with PDB handling in port.
-    cmake_language(DEFER DIRECTORY "${CMAKE_SOURCE_DIR}" CALL cmake_utils_for_each_target z_cmake_utils_set_compile_pdb)
+    # Currently disabled because /Zi gives linker warnings because of parallel access to pdb in root directory
+    # cmake_language(DEFER DIRECTORY "${CMAKE_SOURCE_DIR}" CALL cmake_utils_for_each_target z_cmake_utils_set_compile_pdb)
 
     #
     # Linker options

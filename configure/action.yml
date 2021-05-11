@@ -1,0 +1,25 @@
+name: Configure
+author: Michael Beckh
+description: Configure a project using CMake and cmake-utils.
+inputs:
+  source-dir:
+    description: The CMake source directory (defaults to github.workspace)
+    default: .
+  build-root:
+    description: The root build directory (defaults to github.workspace)
+    default: .
+  binary-dir:
+    description: The CMake binary directory (defaults to github.workspace)
+    default: .
+  configuration:
+    description: The CMake build type (defaults to Release)
+    default: Release
+  extra-args:
+    description: Additional arguments for CMake
+runs:
+  using: composite
+  steps:
+    - shell: cmd
+      run: |
+        nuget sources add -source "https://nuget.pkg.github.com/${{github.repository_owner}}/index.json" -storepasswordincleartext -name "GitHub" -username "${{github.repository_owner}}" -password "${{github.token}}"
+        cmake -DCMAKE_BUILD_TYPE=${{inputs.configuration}} -DBUILD_ROOT="${{github.workspace}}/${{inputs.build-root}}" -DCMAKE_TOOLCHAIN_FILE="${{github.action_path}}/../Toolchain.cmake" -Dvcpkg_ROOT="%VCPKG_INSTALLATION_ROOT%" -DVCPKG_BINARY_SOURCES=clear;nuget,GitHub,readwrite -G Ninja ${{inputs.extra-args}} -S "${{inputs.source-dir}}" -B "${{inputs.binary-dir}}"

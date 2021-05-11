@@ -1,6 +1,16 @@
+# Copyright 2021 Michael Beckh
 #
-# MIT License, Copyright(c) 2021 Michael Beckh, see LICENSE
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
 project("cmake-utils-test" VERSION 0.0.1
@@ -18,7 +28,7 @@ set(CMAKE_CXX_EXTENSIONS OFF CACHE BOOL "")
 
 add_compile_definitions(WIN32_LEAN_AND_MEAN=1)
 
-add_library(ok
+add_executable(ok
 	"src/ok_1.cpp"
     "src/ok_2.cpp"
     "include/cmake-utils/ok.h"
@@ -142,26 +152,29 @@ $]])
 
 add_test(NAME cmake-utils.clang-tidy.tidy_error
          COMMAND "${CMAKE_COMMAND}" --build . --target clang-tidy-tidy_error)
+
+string(CONFIGURE [[
+^\[1/1\] clang-tidy \(tidy_error\)
+clang-tidy: tidy_error
+src/tidy_error\.h:.+\[modernize-avoid-c-arrays\]
+.+"@CMAKE_BUILD_TYPE@".+// deliberate error.+
+ +\^
+src/tidy_error_1\.cpp:.+\[modernize-avoid-c-arrays\]
+.+"@CMAKE_BUILD_TYPE@".+// deliberate error.+
+ +\^
+src/tidy_error_2\.h:.+\[modernize-avoid-c-arrays\]
+.+"@CMAKE_BUILD_TYPE@".+// deliberate error.+
+ +\^
+src/tidy_error_2\.cpp:.+\[modernize-avoid-c-arrays\]
+.+"@CMAKE_BUILD_TYPE@".+// deliberate error.+
+ +\^
+$]] pass @ONLY)
+
 set_tests_properties(cmake-utils.clang-tidy.tidy_error PROPERTIES
                      ENVIRONMENT "INCLUDE=${include}"
                      FIXTURES_REQUIRED build-clang-tidy
                      DEPENDS cmake-utils.common.build-clang-tidy
-                     PASS_REGULAR_EXPRESSION [[
-^\[1/1\] clang-tidy \(tidy_error\)
-clang-tidy: tidy_error
-src/tidy_error\.h:.+\[modernize-avoid-c-arrays\]
-.+// deliberate error.+
- +\^
-src/tidy_error_1\.cpp:.+\[modernize-avoid-c-arrays\]
-.+// deliberate error.+
- +\^
-src/tidy_error_2\.h:.+\[modernize-avoid-c-arrays\]
-.+// deliberate error.+
- +\^
-src/tidy_error_2\.cpp:.+\[modernize-avoid-c-arrays\]
-.+// deliberate error.+
- +\^
-$]])
+                     PASS_REGULAR_EXPRESSION "${pass}")
 
 
 add_test(NAME cmake-utils.clang-tidy.include_error

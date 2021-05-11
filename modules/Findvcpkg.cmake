@@ -1,8 +1,21 @@
+# Copyright 2021 Michael Beckh
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 #
 # Load and configure vcpkg.
 #
-# MIT License, Copyright (c) 2021 Michael Beckh, see LICENSE
-#
+
 if(vcpkg_FOUND)
     return()
 endif()
@@ -16,11 +29,21 @@ set(vcpkg_INSTALL_REVISION "395cb682bd8f9cc65228f48e40390f5241373659" CACHE STRI
 if(NOT BUILD_ROOT)
     if(DEFINED ENV{BUILD_ROOT})
         # allow unified access to value for cache and environment variable
-        set(BUILD_ROOT "$ENV{BUILD_ROOT}" CACHE PATH "Root output directory for all projects")
+        set(BUILD_ROOT "$ENV{BUILD_ROOT}")
     else()
         message(FATAL_ERROR "Build requires setting BUILD_ROOT to a valid output directory")
-	endif()
+    endif()
 endif()
+
+function(z_vcpkg_check_build_root_absolute)
+    cmake_path(IS_ABSOLUTE BUILD_ROOT absolute)
+    if(NOT absolute)
+        message(FATAL_ERROR "BUILD_ROOT must be an absolute path: ${BUILD_ROOT}")
+    endif()
+endfunction()
+z_vcpkg_check_build_root_absolute()
+
+set(BUILD_ROOT "${BUILD_ROOT}" CACHE PATH "Root output directory for all projects")
 
 include(FindPackageHandleStandardArgs)
 

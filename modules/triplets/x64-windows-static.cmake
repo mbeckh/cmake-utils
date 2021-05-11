@@ -11,11 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
-project("cmake-utils-test-subproject" VERSION 0.0.1
-    DESCRIPTION "Test sub project for cmake-utils"
-    HOMEPAGE_URL "https://github.com/mbeckh/cmake-utils"
-    LANGUAGES CXX)
+#
+# Common triplet for Visual Studio 2019.
+#
 
-add_library(subproject "subproject.cpp")
+set(VCPKG_TARGET_ARCHITECTURE x64)
+set(VCPKG_CRT_LINKAGE static)
+set(VCPKG_LIBRARY_LINKAGE static)
+set(VCPKG_CHAINLOAD_TOOLCHAIN_FILE "${CMAKE_CURRENT_LIST_DIR}/../../toolchain.cmake")
+set(VCPKG_LOAD_VCVARS_ENV ON)

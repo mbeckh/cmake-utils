@@ -1,16 +1,25 @@
+# Copyright 2021 Michael Beckh
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 #
 # Find module for include-what-you-use.
 # Adds a single function: include_what_you_use(<[ ALL | <target> ...]).
 # Set variable include-what-you-use_ROOT if include-what-you-use is not found automatically.
 #
-# MIT License, Copyright (c) 2021 Michael Beckh, see LICENSE
-#
 
 include(CMakeFindDependencyMacro)
 include(FindPackageHandleStandardArgs)
-
-find_dependency(ClangTools)
-find_dependency(Python COMPONENTS Interpreter)
 
 function(z_include_what_you_use_get_version)
     execute_process(COMMAND "${include-what-you-use_EXE}" --version OUTPUT_VARIABLE out)
@@ -20,13 +29,20 @@ function(z_include_what_you_use_get_version)
 endfunction()
 
 find_program(include-what-you-use_EXE include-what-you-use)
-cmake_path(GET include-what-you-use_EXE PARENT_PATH include-what-you-use_ROOT)
-find_program(include-what-you-use_PY iwyu_tool.py HINTS "${include-what-you-use_ROOT}")
-find_file(include-what-you-use_IMP_STDLIB stl.c.headers.imp HINTS "${include-what-you-use_ROOT}" PATH_SUFFIXES include-what-you-use)
-mark_as_advanced(include-what-you-use_EXE include-what-you-use_PY include-what-you-use_IMP_STDLIB)
 if(include-what-you-use_EXE)
-    z_include_what_you_use_get_version()
+    cmake_path(GET include-what-you-use_EXE PARENT_PATH include-what-you-use_ROOT)
+    find_program(include-what-you-use_PY iwyu_tool.py HINTS "${include-what-you-use_ROOT}")
+    if(include-what-you-use_PY)
+        find_file(include-what-you-use_IMP_STDLIB stl.c.headers.imp HINTS "${include-what-you-use_ROOT}" PATH_SUFFIXES include-what-you-use)
+        z_include_what_you_use_get_version()
+
+        if(include-what-you-use_VERSION)
+            find_dependency(ClangTools)
+            find_dependency(Python COMPONENTS Interpreter)
+        endif()
+    endif()
 endif()
+mark_as_advanced(include-what-you-use_EXE include-what-you-use_PY include-what-you-use_IMP_STDLIB)
 find_package_handle_standard_args(include-what-you-use
                                   REQUIRED_VARS include-what-you-use_EXE include-what-you-use_PY include-what-you-use_IMP_STDLIB ClangTools_FOUND Python_FOUND
                                   VERSION_VAR include-what-you-use_VERSION

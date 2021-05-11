@@ -1,20 +1,31 @@
+# Copyright 2021 Michael Beckh
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 #
 # Run build command for one or several files.
 # Can e.g. be used inside Visual Studio as an external tool to run clang-tidy, include-what-you-use or PCH check for a
 # file from within the IDE with the following settings.
 # - Command: Path of CMake.exe
-# - Arguments: -D TOOL=[clang-tidy | iwyu | pch ] -D FILE="$(ItemPath)" -P <Path-of-this-File>
+# - Arguments: -D TOOL=[clang-tidy | iwyu | pch ] -D FILE="$(ItemPath)" -P "<Path-of-this-File>"
 # - Initial Directory: $(SolutionDir)
-# - Use Output window: checked
+# - Use Output Window: checked
 #
 # Usage: cmake
 #        -D TOOL=<name>
 #        -D FILE=<file>
 #        -P run-clang-tools.cmake
 #
-# MIT License, Copyright (c) 2021 Michael Beckh, see LICENSE
-#
-
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
 cmake_path(RELATIVE_PATH FILE BASE_DIRECTORY "${CMAKE_SOURCE_DIR}" OUTPUT_VARIABLE file_in_solution)
@@ -97,7 +108,7 @@ replace_variables(build_root)
 #
 # Get target
 #
-include("${CMAKE_CURRENT_LIST_DIR}/regex.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/../modules/Regex.cmake")
 
 file(READ "${build_root}/compile_commands.json" compile_commands)
 string(JSON count LENGTH "${compile_commands}")
@@ -110,7 +121,7 @@ foreach(index RANGE ${last_file})
 	if(is_equal)
 		string(JSON command GET "${compile_commands}" ${index} "command")
 		cmake_path(NATIVE_PATH file relative_file_path)
-        clang_tools_regex_escape_pattern(relative_file_path)
+        regex_escape_pattern(relative_file_path)
 		string(REGEX MATCH " /FoCMakeFiles\\\\(.+)\\.dir\\\\${relative_file_path}\\.obj " match "${command}")
 		if(match)
 			set(target "${CMAKE_MATCH_1}")
