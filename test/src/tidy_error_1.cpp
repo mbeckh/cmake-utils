@@ -19,9 +19,9 @@ limitations under the License.
 
 int tidy_error_1() {
 #ifdef _DEBUG
-	char sz[] = "Debug";  // deliberate error for clang-tidy
+	const char sz[] = "Debug";  // deliberate error for clang-tidy
 #else
-	char sz[] = "Release";  // deliberate error for clang-tidy
+	const char sz[] = "Release";  // deliberate error for clang-tidy
 #endif
 	return tidy_error() + tidy_error_2() + sz[0];  // use tidy_error.h and tidy_error_2.h
 }

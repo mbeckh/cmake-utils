@@ -19,9 +19,9 @@ int tidy_error_2();
 
 inline int tidy_error_2_inline() {
 #ifdef _DEBUG
-	char sz[] = "Debug";  // deliberate error for clang-tidy
+	const char sz[] = "Debug";  // deliberate error for clang-tidy
 #else
-	char sz[] = "Release";  // deliberate error for clang-tidy
+	const char sz[] = "Release";  // deliberate error for clang-tidy
 #endif
 	return sz[0];
 }
