@@ -38,7 +38,7 @@ jobs:
     - name: Build
       shell: cmd
       working-directory: build/${{matrix.configuration}}
-      run: cmake --build .
+      run: cmake --build . -v -- -v
 
     - name: Test
       shell: cmd
