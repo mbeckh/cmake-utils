@@ -29,11 +29,14 @@ set(vcpkg_INSTALL_REVISION "395cb682bd8f9cc65228f48e40390f5241373659" CACHE STRI
 if(NOT BUILD_ROOT)
     if(DEFINED ENV{BUILD_ROOT})
         # allow unified access to value for cache and environment variable
-        set(BUILD_ROOT "$ENV{BUILD_ROOT}" CACHE PATH "Root output directory for all projects")
+        set(BUILD_ROOT "$ENV{BUILD_ROOT}")
     else()
         message(FATAL_ERROR "Build requires setting BUILD_ROOT to a valid output directory")
 	endif()
 endif()
+
+cmake_path(ABSOLUTE_PATH BUILD_ROOT NORMALIZE)
+set(BUILD_ROOT "${BUILD_ROOT}" CACHE PATH "Root output directory for all projects" FORCE)
 
 include(FindPackageHandleStandardArgs)
 
