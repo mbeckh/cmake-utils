@@ -1,0 +1,57 @@
+name: test
+
+on:
+  push:
+    branches: [ master, 'feature**' ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    name: Test
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        # Release
+        configuration: [ Debug ]
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Cache vcpkg
+      uses: actions/cache@v2
+      with:
+        path: build/${{matrix.configuration}}/vcpkg_installed
+        key: vcpkg_installed-${{matrix.configuration}}-${{hashFiles('test/vcpkg.json', 'test/vcpkg-configuration.json')}}
+
+    - name: Setup MSVC Environment
+      uses: mbeckh/msvc-dev-cmd@master
+
+    - name: Configure
+      uses: ./configure
+      with:
+        source-dir: test
+        build-root: build
+        binary-dir: build/${{matrix.configuration}}
+        configuration: ${{matrix.configuration}}
+        
+    - name: Build
+      shell: cmd
+      working-directory: build/${{matrix.configuration}}
+      run: cmake --build .
+
+    - name: Test
+      shell: cmd
+      working-directory: build/${{matrix.configuration}}
+      run: ctest --output-on-failure
+
+    - name: Save Logs
+      if: always()
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{matrix.configuration}}-Logs
+        path: |
+          build/vcpkg-buildtrees/*/*.log
+          build/${{matrix.configuration}}/Testing/**/*.log
+          build/${{matrix.configuration}}/clang-tidy-*.log
