@@ -51,6 +51,6 @@ jobs:
       with:
         name: ${{matrix.configuration}}-Logs
         path: |
-          build/vcpkg-buildtrees/*/*.log
+          build/**/vcpkg-buildtrees/*/*.log
           build/${{matrix.configuration}}/Testing/**/*.log
           build/${{matrix.configuration}}/clang-tidy-*.log
