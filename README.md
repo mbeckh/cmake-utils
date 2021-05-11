@@ -71,20 +71,20 @@ Add one or more external tools within Visual Studio with the following settings:
 - Use Output Window: checked
 
 ## System Requirements / Tested with
--   Visual Studio 2019 v16.9 or newer
+-   Visual Studio 2019 v16.9 or newer.
 
--   CMake v3.20 or newer
+-   CMake v3.20 or newer.
 
 -   clang-tidy executable v11 or newer. Set environment variable `clang-tidy_ROOT` to folder path if not found
     automatically.
 
 -   include-what-you-use executable v0.15 or newer. Set environment variable `include-what-you-use_ROOT` to folder path
     if not found automatically. `iwyu_tool.py` is expected in the same path as well as the configuration file
-	`stl.c.headers.imp`.
+    `stl.c.headers.imp`.
 
 -   Running include-what-you-use requires Python. Set CMake variable `Python_EXECUTABLE` to file path if interpreter is
     not found automatically.
-   
+ 
 ## License
 The code is released under the Apache License Version 2.0. Please see [LICENSE](LICENSE) for details and
 [NOTICE](NOTICE) for the required information when using llamalog in your own work.
