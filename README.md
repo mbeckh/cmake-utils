@@ -64,11 +64,14 @@ and cache vcpkg artifacts to speed up the builds.
 ## Visual Studio Integration
 Add one or more external tools within Visual Studio with the following settings:
 -   Command: Path of `cmake.exe`.
+
 -   Arguments: `-D TOOL=<tool> -D FILE="$(ItemPath)" -P "<script>"` with
     -   `tool` set to either `clang-tidy`, `iwyu` or `pch` and 
     -   `script` set to the full file path of `scripts/run-clang-tools.cmake`.
-- Initial Directory: `$(SolutionDir)`.
-- Use Output window: checked.
+
+-   Initial Directory: `$(SolutionDir)`.
+
+-   Use Output window: checked.
 
 ## System Requirements / Tested with
 -   Visual Studio 2019 v16.9 or newer.
