@@ -21,8 +21,6 @@
 include(CMakeFindDependencyMacro)
 include(FindPackageHandleStandardArgs)
 
-find_dependency(ClangTools)
-
 function(z_clang_tidy_get_version)
     execute_process(COMMAND "${clang-tidy_EXE}" --version OUTPUT_VARIABLE out)
     if(out MATCHES "LLVM version ([0-9.]+)")
@@ -34,6 +32,9 @@ find_program(clang-tidy_EXE clang-tidy)
 mark_as_advanced(clang-tidy_EXE)
 if(clang-tidy_EXE)
     z_clang_tidy_get_version()
+    if(clang-tidy_VERSION)
+      find_dependency(ClangTools)
+    endif()
 endif()
 find_package_handle_standard_args(clang-tidy
                                   REQUIRED_VARS clang-tidy_EXE ClangTools_FOUND
