@@ -12,8 +12,7 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        # Release
-        configuration: [ Debug ]
+        configuration: [ Debug, Release ]
 
     steps:
     - name: Checkout
