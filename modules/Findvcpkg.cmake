@@ -32,11 +32,18 @@ if(NOT BUILD_ROOT)
         set(BUILD_ROOT "$ENV{BUILD_ROOT}")
     else()
         message(FATAL_ERROR "Build requires setting BUILD_ROOT to a valid output directory")
-	endif()
+    endif()
 endif()
 
-cmake_path(ABSOLUTE_PATH BUILD_ROOT NORMALIZE)
-set(BUILD_ROOT "${BUILD_ROOT}" CACHE PATH "Root output directory for all projects" FORCE)
+function(z_vcpkg_check_build_root_absolute)
+    cmake_path(IS_ABSOLUTE BUILD_ROOT absolute)
+    if(NOT absolute)
+        message(FATAL_ERROR "BUILD_ROOT must be an absolute path: ${BUILD_ROOT}")
+    endif()
+endfunction()
+z_vcpkg_check_build_root_absolute()
+
+set(BUILD_ROOT "${BUILD_ROOT}" CACHE PATH "Root output directory for all projects")
 
 include(FindPackageHandleStandardArgs)
 

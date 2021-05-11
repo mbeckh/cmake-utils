@@ -51,15 +51,15 @@ and cache vcpkg artifacts to speed up the builds.
 ### Inputs for `configure`
 -   `source-dir` - The CMake source directory (optional, defaults to GitHub workspace directory).
 
--   `build-root` - The root build directory which includes the vcpkg build  folder (optional, defaults to GitHub 
-    workspace directory).
+-   `build-root` - The path to the root build directory - relative to GitHub workspace - which includes the vcpkg 
+    build folder (optional, defaults to GitHub workspace directory).
 
 -   `binary-dir` - The CMake binary directory (optional, defaults to GitHub workspace directory).
     default: .
 
 -   `configuration` - The CMake build type (optional, defaults to `Release`).
 
--   `extra-args` - Additional arguments which are passed to CMake, e.g. for setting CMake variables.
+-   `extra-args` - Additional arguments which are passed to CMake, e.g. for setting CMake variables (optional).
 
 ## Visual Studio Integration
 Add one or more external tools within Visual Studio with the following settings:
