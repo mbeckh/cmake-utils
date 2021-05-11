@@ -23,7 +23,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: build/${{matrix.configuration}}/vcpkg_installed
-        key: vcpkg_installed-${{matrix.configuration}}-${{hashFiles('test/vcpkg.json', 'test/vcpkg-configuration.json')}}
+        key: vcpkg_installed-${{matrix.configuration}}-${{hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json', '!build/**')}}
 
     - name: Setup MSVC Environment
       uses: mbeckh/msvc-dev-cmd@master
