@@ -78,10 +78,13 @@ Add one or more external tools within Visual Studio with the following settings:
 
 -   CMake v3.20 or newer.
 
--   clang-tidy executable v11 or newer. Set environment variable `clang-tidy_ROOT` to folder path if not found
+-   clang 13.0.0 or newer is required for precompiled header analysis. Set environment variable `clang_ROOT` to folder 
+    path if not found automatically.
+
+-   clang-tidy 11.0.0 or newer. Set environment variable `clang-tidy_ROOT` to folder path if not found
     automatically.
 
--   include-what-you-use executable v0.15 or newer. Set environment variable `include-what-you-use_ROOT` to folder path
+-   include-what-you-use executable 0.15 or newer. Set environment variable `include-what-you-use_ROOT` to folder path
     if not found automatically. `iwyu_tool.py` is expected in the same path as well as the configuration file
     `stl.c.headers.imp`.
 
