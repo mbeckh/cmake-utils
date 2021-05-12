@@ -31,6 +31,28 @@ if(NOT ClangTools_FOUND)
 endif()
 include_guard(GLOBAL)
 
+function(z_clang_get_version)
+    execute_process(COMMAND "${clang_EXE}" --version OUTPUT_VARIABLE out)
+    if(out MATCHES "clang version ([0-9.]+)")
+        set(clang_VERSION "${CMAKE_MATCH_1}" PARENT_SCOPE)
+    endif()
+endfunction()
+
+if(NOT clang_EXE)
+    find_program(clang_EXE NAMES clang clang-cl PATHS "${clang_ROOT}" ENV clang_ROOT)
+    mark_as_advanced(clang_EXE)
+    if(clang_EXE)
+        z_clang_get_version()
+        if(clang_VERSION VERSION_LESS "13.0.0")
+            message(STATUS "Could NOT find clang: Found unsuitable version \"${clang_VERSION}\", but required is at least \"13.0.0\"")
+            unset(clang_EXE CACHE)
+        else()
+            message(STATUS "Found clang: ${clang_EXE} (found version \"${clang_VERSION}\")")
+        endif()
+    else()
+        message(STATUS "Could NOT find clang")
+    endif()
+endif()
 
 #
 # Helpers
@@ -154,6 +176,7 @@ function(z_clang_tools_deferred tool #[[ [ NAME <name> ] TARGETS <target> ... [ 
         get_target_property(source_dir "${target}" SOURCE_DIR)
         get_target_property(binary_dir "${target}" BINARY_DIR)
         get_target_property(target_sources "${target}" SOURCES)
+        list(SORT target_sources)
 
         # Main tool target
         message(STATUS "Creating target: ${tool}-${target}")
@@ -195,10 +218,13 @@ function(z_clang_tools_deferred tool #[[ [ NAME <name> ] TARGETS <target> ... [ 
 
         # Get list of auxiliary includes if required
         if(arg_WITH_AUX_INCLUDE)
-            if(NOT TARGET "clang-tools-analyze-aux-includes-${target}")
+            get_target_property(aux_includes_processed "${target}" "clang-tools_AUX_INCLUDES")
+            if(NOT aux_includes_processed)
                 if(NOT CMAKE_GENERATOR STREQUAL Ninja)
-	                message(FATAL_ERROR "Supported for Ninja only: ${CMAKE_GENERATOR}")
+                    message(FATAL_ERROR "Supported for Ninja only: ${CMAKE_GENERATOR}")
                 endif()
+                set_target_properties("${target}" PROPERTIES "clang-tools_AUX_INCLUDES" YES)
+
                 # Filter out "main" includes
                 set(aux_includes "${includes}")
                 foreach(source IN LISTS sources)
@@ -209,18 +235,53 @@ function(z_clang_tools_deferred tool #[[ [ NAME <name> ] TARGETS <target> ... [ 
                     list(FILTER aux_includes EXCLUDE REGEX "(^|.+/)(${base_name}|${canonical_base_name})\\.(h|H|hpp|hxx|hh|inl)$")
                 endforeach()
 
+                # Get includes from dependencies
+                get_target_property(libraries "${target}" LINK_LIBRARIES)
+                unset(libraries_includes)
+                foreach(library IN LISTS libraries)
+                    if(TARGET "${library}")
+                        get_target_property(imported "${library}" IMPORTED)
+                        if(NOT imported)
+                            get_target_property(library_aliased "${library}" ALIASED_TARGET)
+                            if(library_aliased)
+                                set(library "${library_aliased}")
+                            endif()
+
+                            set(libraries_include "${CMAKE_BINARY_DIR}/.clang-tools/_libs/${library}-includes.cmake")
+
+                            list(APPEND libraries_with_includes "${library}")
+                            list(APPEND libraries_includes "${libraries_include}")
+
+                            get_target_property(library_processed "${library}" "clang-tools_AUX_INCLUDES_LIBRARY")
+                            if(NOT library_processed)
+                                file(GENERATE OUTPUT "${libraries_include}" INPUT "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/aux-includes-library.cmake.in" TARGET "${library}")
+                                set_target_properties("${library}" PROPERTIES "clang-tools_AUX_INCLUDES_LIBRARY" YES)
+                            endif()
+                        endif()
+                    endif()
+                endforeach()
+
+                file(CONFIGURE OUTPUT "${CMAKE_BINARY_DIR}/.clang-tools/${target}/aux-includes.cmake" CONTENT [[
+set(CMAKE_MAKE_PROGRAM "@CMAKE_MAKE_PROGRAM@")
+set(TARGET "@target@")
+set(SOURCE_DIR "@source_dir@")
+set(BINARY_DIR "@binary_dir@")
+set(SOURCES "@sources@")
+set(INCLUDES "@includes@")
+set(AUX_INCLUDES "@aux_includes@")
+set(LIBRARIES "@libraries_with_includes@")
+set(LIBRARIES_INCLUDES "@libraries_includes@")
+set(OUTPUTS "@aux_includes_maps@")
+]] ESCAPE_QUOTES @ONLY)
+
                 add_custom_command(OUTPUT "${CMAKE_BINARY_DIR}/.clang-tools/${target}/.aux-includes"
                                    COMMAND "${CMAKE_COMMAND}"
-                                           -D "CMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}"
-                                           -D "TARGET=${target}"
-                                           -D "SOURCE_DIR=${source_dir}"
-                                           -D "SOURCES=${sources}"
-                                           -D "INCLUDES=${includes}"
-                                           -D "AUX_INCLUDES=${aux_includes}"
-                                           -D "OUTPUTS=${aux_includes_maps}"
+                                           -D "ARGUMENTS=${CMAKE_BINARY_DIR}/.clang-tools/${target}/aux-includes.cmake"
                                            -P "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/aux-includes.cmake"
                                    DEPENDS ${objects}
                                            "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/aux-includes.cmake"
+                                           "${CMAKE_BINARY_DIR}/.clang-tools/${target}/aux-includes.cmake"
+                                           ${libraries_includes}
                                    BYPRODUCTS ${aux_includes_maps}
                                    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
                                    COMMENT "Analyzing auxiliary includes (${target})"
@@ -230,6 +291,12 @@ function(z_clang_tools_deferred tool #[[ [ NAME <name> ] TARGETS <target> ... [ 
 
         # Run command for all source files
         unset(results)
+
+        # Hook to add additional processing logic
+        if(arg_MAP_CUSTOM)
+            cmake_language(CALL "${arg_MAP_CUSTOM}" "${target}" results)
+        endif()
+
         foreach(source object aux_includes_map IN ZIP_LISTS sources objects aux_includes_maps)
             set(files "${source}")
             set(aux_includes_files "${aux_includes_map}")
@@ -240,8 +307,8 @@ function(z_clang_tools_deferred tool #[[ [ NAME <name> ] TARGETS <target> ... [ 
             z_clang_tools_configure("${arg_MAP_DEPENDS}" depends)
 
             if(arg_WITH_AUX_INCLUDE)
-                list(APPEND depends "${CMAKE_BINARY_DIR}/.clang-tools/${target}/.aux-includes")
-                list(APPEND depends "${CMAKE_BINARY_DIR}/.clang-tools/${target}/${relative}.auxi")
+                list(APPEND depends "${CMAKE_BINARY_DIR}/.clang-tools/${target}/.aux-includes"
+                                    "${CMAKE_BINARY_DIR}/.clang-tools/${target}/${relative}.auxi")
             endif()
 
             add_custom_command(OUTPUT "${CMAKE_BINARY_DIR}/${output}"
@@ -254,11 +321,6 @@ function(z_clang_tools_deferred tool #[[ [ NAME <name> ] TARGETS <target> ... [ 
                                VERBATIM)
             list(APPEND results "${CMAKE_BINARY_DIR}/${output}")
         endforeach()
-
-        # Hook to add additional processing logic
-        if(arg_MAP_CUSTOM)
-            cmake_language(CALL "${arg_MAP_CUSTOM}" "${target}" results)
-        endif()
 
         # Aggregate results into final output
         if(results)
@@ -322,6 +384,7 @@ function(z_clang_tools_pch_scan_command target var)
     # scan HEADER for PCH
     add_custom_command(OUTPUT "${CMAKE_BINARY_DIR}/${output}"
                        COMMAND "${CMAKE_COMMAND}"
+                               -D "CLANG=${clang_EXE}"
                                -D "TARGET=${target}"
                                -D "SOURCE_DIR=${source_dir}"
                                -D "BINARY_DIR=${binary_dir}"
@@ -344,25 +407,28 @@ endfunction()
 # The function assumes that the pre-compiled header is a user-created file.
 # It does not make any sens to call that function when adding system headers directly in target_precompile_headers
 #
-function(check_pch #[[ <target> ... ]])
-    clang_tools_run(pch
-                    TARGETS ${ARGV}
-                    FILTER z_clang_tools_pch_used
-                    MAP_COMMAND "@CMAKE_COMMAND@"
-                                -D "TARGET=@target@"
-                                -D "SOURCE_DIR=@source_dir@"
-                                -D "BINARY_DIR=@binary_dir@"
-                                -D "FILES=@files@"
-                                -D "OUTPUT=@output@"
-                                -P "@CMAKE_CURRENT_FUNCTION_LIST_DIR@/clang-tools/scan-includes.cmake"
-                    MAP_DEPENDS "@CMAKE_CURRENT_FUNCTION_LIST_DIR@/clang-tools/scan-includes.cmake"
-                    MAP_EXTENSION si
-                    MAP_CUSTOM z_clang_tools_pch_scan_command
-                    REDUCE_COMMAND "@CMAKE_COMMAND@"
-                                   -D "TARGET=@target@"
-                                   -D "FILES=@files@"
-                                   -D "PCH_FILES=$<TARGET_PROPERTY:@target@,PRECOMPILE_HEADERS>"
-                                   -D "OUTPUT=@output@"
-                                   -P "@CMAKE_CURRENT_FUNCTION_LIST_DIR@/clang-tools/check-pch.cmake"
-                    REDUCE_DEPENDS "@CMAKE_CURRENT_FUNCTION_LIST_DIR@/clang-tools/check-pch.cmake")
-endfunction()
+if(clang_EXE)
+    function(check_pch #[[ <target> ... ]])
+        clang_tools_run(pch
+                        TARGETS ${ARGV}
+                        FILTER z_clang_tools_pch_used
+                        MAP_COMMAND "@CMAKE_COMMAND@"
+                                    -D "CLANG=@clang_EXE@"
+                                    -D "TARGET=@target@"
+                                    -D "SOURCE_DIR=@source_dir@"
+                                    -D "BINARY_DIR=@binary_dir@"
+                                    -D "FILES=@files@"
+                                    -D "OUTPUT=@output@"
+                                    -P "@CMAKE_CURRENT_FUNCTION_LIST_DIR@/clang-tools/scan-includes.cmake"
+                        MAP_DEPENDS "@CMAKE_CURRENT_FUNCTION_LIST_DIR@/clang-tools/scan-includes.cmake"
+                        MAP_EXTENSION si
+                        MAP_CUSTOM z_clang_tools_pch_scan_command
+                        REDUCE_COMMAND "@CMAKE_COMMAND@"
+                                       -D "TARGET=@target@"
+                                       -D "FILES=@files@"
+                                       -D "PCH_FILES=$<TARGET_PROPERTY:@target@,PRECOMPILE_HEADERS>"
+                                       -D "OUTPUT=@output@"
+                                       -P "@CMAKE_CURRENT_FUNCTION_LIST_DIR@/clang-tools/check-pch.cmake"
+                        REDUCE_DEPENDS "@CMAKE_CURRENT_FUNCTION_LIST_DIR@/clang-tools/check-pch.cmake")
+    endfunction()
+endif()
