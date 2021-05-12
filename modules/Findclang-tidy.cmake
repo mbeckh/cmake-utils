@@ -48,21 +48,16 @@ endif()
 include_guard(GLOBAL)
 
 function(clang_tidy #[[ <target> ... ]])
-    # Brute force for the time beeing, could be replaced by .d files per source
+    # Brute force for the time being, could be replaced by .d files per source
     file(GLOB_RECURSE depends LIST_DIRECTORIES NO .clang-tidy)
     clang_tools_run(clang-tidy
                     TARGETS ${ARGV}
-                    MAP_COMMAND "@CMAKE_COMMAND@"
-                                -D "MSVC_VERSION=@MSVC_VERSION@"
-                                -D "clang-tidy_EXE=@clang-tidy_EXE@"
-                                -D "TARGET=@target@"
-                                -D "INCLUDES=@includes@"
-                                -D "FILES=@files@"
-                                -D "AUX_INCLUDES_FILES=@aux_includes_files@"
-                                -D "OUTPUT=@output@"
-                                -P "@CMAKE_CURRENT_FUNCTION_LIST_DIR@/clang-tools/run-clang-tidy.cmake"
+                    MAP_COMMAND "@clang-tidy_EXE@"
+                                -p .clang-tools
+                                "--extra-arg=-fmsc-version=@MSVC_VERSION@"
+                                "--header-filter=.*"
+                                @files@
+                                > "@output@"
                     MAP_DEPENDS ${depends}
-                                "@CMAKE_CURRENT_FUNCTION_LIST_DIR@/clang-tools/run-clang-tidy.cmake"
-                    MAP_EXTENSION tidy
-                    WITH_AUX_INCLUDE)
+                    MAP_EXTENSION tidy)
 endfunction()

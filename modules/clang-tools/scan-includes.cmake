@@ -15,6 +15,7 @@
 #
 # Detect all system includes for a source file or precompiled header.
 # Usage: cmake
+#        -D CLANG=<file>
 #        -D TARGET=<name>
 #        -D SOURCE_DIR=<path>
 #        -D BINARY_DIR=<path>
@@ -28,11 +29,11 @@ if(NOT FILES AND NOT PCH)
     message(FATAL_ERROR "No input files or PCH")
 endif()
 
-file(READ "compile_commands.json" compile_commands)
+file(READ ".clang-tools/compile_commands.json" compile_commands)
 string(JSON count LENGTH "${compile_commands}")
 math(EXPR count "${count} - 1")
 
-set(system_include_path $ENV{INCLUDE})
+set(default_system_include_path $ENV{INCLUDE})
 
 if(PCH)
     include("${CMAKE_CURRENT_LIST_DIR}/../Regex.cmake")
@@ -40,7 +41,6 @@ if(PCH)
     regex_escape_pattern(BINARY_DIR OUT binary_dir_pattern)
     regex_escape_pattern(TARGET OUT target_pattern)
     set(pch_source_pattern "^${binary_dir_pattern}/CMakeFiles/${target_pattern}\\.dir/cmake_pch\\.c(.+)$")
-	set(pch_header_pattern "^${binary_dir_pattern}/CMakeFiles/${target_pattern}\\.dir/cmake_pch\\.h(.+)$")
 endif()
 
 foreach(i RANGE ${count})
@@ -63,12 +63,14 @@ foreach(i RANGE ${count})
     string(JSON directory GET "${compile_commands}" ${i} "directory")
 
     separate_arguments(command NATIVE_COMMAND "${command}")
-    list(FILTER command EXCLUDE REGEX "^[/-]((Y[cu]|F[dop]).*)|c$")
-    if(NOT PCH)
-        # do not remove forced include for PCH
-        list(FILTER command EXCLUDE REGEX "^[/-]FI.*$")
+    list(FILTER command EXCLUDE REGEX "^[/-](((Y[cu]|F[dopI]).*)|c|MP|ZI)$")
+    if(PCH)
+        # parse heder instead of source because dumping includes does not work for includes added using -include
+        string(REPLACE "cmake_pch.c${CMAKE_MATCH_1}" "cmake_pch.h${CMAKE_MATCH_1}" command "${command}")
     endif()
-    list(INSERT command 1 /EP /showIncludes)
+    list(INSERT command 1 /EP /showIncludes /clang:-fshow-skipped-includes)
+    list(POP_FRONT command)
+    list(PREPEND command "${CLANG}" --driver-mode=cl)
 
     execute_process(COMMAND ${command}
                     WORKING_DIRECTORY "${directory}"
@@ -82,24 +84,31 @@ foreach(i RANGE ${count})
 
     string(REPLACE ";" "\\;" results "${results}")
     string(REGEX REPLACE "[\r\n]+" ";" results "${results}")
+    list(LENGTH results l)
     list(FILTER results INCLUDE REGEX "^Note: including file:")
+    list(LENGTH results l)
     list(TRANSFORM results REPLACE "^Note: including file: " "")
+
+    set(system_include_path "${default_system_include_path}")
+    list(FILTER command INCLUDE REGEX "^/clang:-isystem")
+    list(TRANSFORM command REPLACE "/clang:-isystem" "")
+    if(command)
+        list(APPEND system_include_path "${command}")
+    endif()
 
     set(ignore "-")
     unset(includes)
     while(results)
         list(POP_FRONT results item)
         string(STRIP "${item}" file)
-        cmake_path(CONVERT "${file}" TO_CMAKE_PATH_LIST file NORMALIZE)
         if(NOT ignore STREQUAL "-" AND item MATCHES "^${ignore} ")
             continue()
         endif()
+
+        cmake_path(CONVERT "${file}" TO_CMAKE_PATH_LIST file NORMALIZE)
         cmake_path(IS_PREFIX SOURCE_DIR "${file}" NORMALIZE prefix_source)
         cmake_path(IS_PREFIX BINARY_DIR "${file}" NORMALIZE prefix_binary)
-        if(PCH)
-            string(REGEX MATCH "${pch_header_pattern}" is_pch "${file}")
-        endif()
-        if((prefix_source AND NOT prefix_binary) OR is_pch)
+        if(prefix_source AND NOT prefix_binary)
             set(ignore "-")
         else()
             foreach(system_include IN LISTS system_include_path)

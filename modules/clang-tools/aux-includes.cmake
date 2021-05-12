@@ -18,14 +18,24 @@
 #        -D CMAKE_MAKE_PROGRAM=<file>
 #        -D TARGET=<name>
 #        -D SOURCE_DIR=<path>
+#        -D BINARY_DIR=<path>
 #        -D SOURCES=<file>;...
 #        -D INCLUDES=<file>;...
+#        -D AUX_INCLUDES=<file>;...
+#        -D LIBRARIES=<name>;...
+#        -D LIBRARIES_INCLUDES=<file>;...
 #        -D OUTPUTS=<file>;...
+#        [ -D ARGUMENTS=<file> ]
 #        -P aux-includes.cmake
 #
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
 include("${CMAKE_CURRENT_LIST_DIR}/../Regex.cmake")
+
+# Allow arguments from include instead of command line
+if(ARGUMENTS)
+    include("${ARGUMENTS}")
+endif()
 
 # Read dependencies
 execute_process(COMMAND "${CMAKE_MAKE_PROGRAM}" -t deps
@@ -134,11 +144,23 @@ foreach(include IN LISTS AUX_INCLUDES)
         endif()
     endforeach()
     if(NOT file)
-        message(FATAL_ERROR "Include is never used: ${include}")
+        string(ASCII 27 esc)
+        message(STATUS "${esc}[95mInclude is never used: ${include}${esc}[m")
     endif()
     string(APPEND mapping "${file}\t${include}\n")
 
     list(REMOVE_ITEM unseen_includes "${include}")
+endforeach()
+
+# Remove any includes from libraries
+foreach(include IN LISTS LIBRARIES_INCLUDES)
+    include("${include}")
+endforeach()
+
+foreach(library IN LISTS LIBRARIES)
+    foreach(include IN LISTS ${library}_INCLUDES)
+        list(REMOVE_ITEM unseen_includes "${include}")
+    endforeach()
 endforeach()
 
 # Report any includes not part of add_library/add_executable calls
