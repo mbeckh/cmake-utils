@@ -66,6 +66,8 @@
   { symbol: ["IID_IUnknown", "private", "<unknwn.h>", "public" ] },
   { symbol: ["IUnknown", "private", "<unknwn.h>", "public" ] },
 
+  { symbol: ["ULONG", "private", "<windows.h>", "public" ] },
+  
   { symbol: ["PROPERTYKEY", "private", "<wtypes.h>", "public" ] },
 
   { symbol: ["std::copy", "private", "<algorithm>", "public" ] },
