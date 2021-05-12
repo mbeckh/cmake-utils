@@ -86,7 +86,7 @@ foreach(target clang-tidy iwyu pch)
              COMMAND "${CMAKE_COMMAND}" --build . --target ${target})
 
     set_tests_properties(cmake-utils.common.build-${target} PROPERTIES
-                         DISABLED "$<AND:$<STREQUAL:${target},iwyu>,$<NOT:$<TARGET_EXISTS:${target}>>>"
+                         DISABLED "$<AND:$<OR:$<STREQUAL:${target},iwyu>,$<STREQUAL:${target},pch>>,$<NOT:$<TARGET_EXISTS:${target}>>>"
                          ENVIRONMENT "INCLUDE=${include}"
                          DEPENDS cmake-utils.common.clean
                          FIXTURES_SETUP build-${target}
@@ -346,6 +346,7 @@ add_test(NAME cmake-utils.pch.logs
                  "${CMAKE_BINARY_DIR}/pch-include_error.log")
 
 set_tests_properties(cmake-utils.pch.logs PROPERTIES
+                     DISABLED "$<NOT:$<TARGET_EXISTS:pch>>"
                      FIXTURES_REQUIRED build-pch
                      DEPENDS cmake-utils.common.build-pch)
 
@@ -355,6 +356,7 @@ foreach(target subdirectory subproject)
              COMMAND "${CMAKE_COMMAND}" -E cat "${CMAKE_BINARY_DIR}/pch-${target}.log")
 
     set_tests_properties(cmake-utils.pch.no-log-${target} PROPERTIES
+                         DISABLED "$<NOT:$<TARGET_EXISTS:pch>>"
                          FIXTURES_REQUIRED build-pch
                          DEPENDS cmake-utils.common.build-pch
                          WILL_FAIL YES)
@@ -364,6 +366,7 @@ endforeach()
 add_test(NAME cmake-utils.pch.ok
          COMMAND "${CMAKE_COMMAND}" --build . --target pch-ok)
 set_tests_properties(cmake-utils.pch.ok PROPERTIES
+                     DISABLED "$<NOT:$<TARGET_EXISTS:pch>>"
                      ENVIRONMENT "INCLUDE=${include}"
                      FIXTURES_REQUIRED build-pch
                      DEPENDS cmake-utils.common.build-pch
@@ -378,6 +381,7 @@ $]])
 add_test(NAME cmake-utils.pch.tidy_error
          COMMAND "${CMAKE_COMMAND}" --build . --target pch-tidy_error)
 set_tests_properties(cmake-utils.pch.tidy_error PROPERTIES
+                     DISABLED "$<NOT:$<TARGET_EXISTS:pch>>"
                      ENVIRONMENT "INCLUDE=${include}"
                      FIXTURES_REQUIRED build-pch
                      DEPENDS cmake-utils.common.build-pch
@@ -392,6 +396,7 @@ $]])
 add_test(NAME cmake-utils.pch.include_error
          COMMAND "${CMAKE_COMMAND}" --build . --target pch-include_error)
 set_tests_properties(cmake-utils.pch.include_error PROPERTIES
+                     DISABLED "$<NOT:$<TARGET_EXISTS:pch>>"
                      ENVIRONMENT "INCLUDE=${include}"
                      FIXTURES_REQUIRED build-pch
                      DEPENDS cmake-utils.common.build-pch
