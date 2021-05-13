@@ -13,13 +13,13 @@
 # limitations under the License.
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
+string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}" IS_MAIN_PROJECT)
+option(BUILD_TESTING "Build tests" ${IS_MAIN_PROJECT})
+
 project("cmake-utils-test" VERSION 0.0.1
     DESCRIPTION "Test project for cmake-utils"
     HOMEPAGE_URL "https://github.com/mbeckh/cmake-utils"
     LANGUAGES CXX)
-
-string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}" IS_MAIN_PROJECT)
-option(BUILD_TESTING "Build tests" ${IS_MAIN_PROJECT})
 
 set(CMAKE_DEBUG_POSTFIX d CACHE STRING "")
 set(CMAKE_CXX_STANDARD 20 CACHE STRING "")
