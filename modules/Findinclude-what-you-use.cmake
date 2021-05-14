@@ -68,6 +68,7 @@ function(include_what_you_use #[[ <target> ... ]])
                                 -D "OUTPUT=@output@"
                                 -P "@CMAKE_CURRENT_FUNCTION_LIST_DIR@/clang-tools/run-include-what-you-use.cmake"
                     MAP_DEPENDS "@CMAKE_CURRENT_FUNCTION_LIST_DIR@/clang-tools/run-include-what-you-use.cmake"
+								@include-what-you-use_IMP_STDLIB@
                     MAP_EXTENSION iwyu
                     WITH_AUX_INCLUDE)
 endfunction()
