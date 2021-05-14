@@ -57,7 +57,7 @@ function(clang_tidy #[[ <target> ... ]])
                                 "--extra-arg=-fmsc-version=@MSVC_VERSION@"
                                 "--header-filter=.*"
                                 @files@
-                                > "@output@"
+                                > "@output@" || "@CMAKE_COMMAND@" -E true
                     MAP_DEPENDS ${depends}
                     MAP_EXTENSION tidy)
 endfunction()
