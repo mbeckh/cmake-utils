@@ -145,7 +145,7 @@ foreach(include IN LISTS AUX_INCLUDES)
     endforeach()
     if(NOT file)
         string(ASCII 27 esc)
-        message(STATUS "${esc}[95mInclude is never used: ${include}${esc}[m")
+        message(STATUS "${esc}[95mUnused include in target ${TARGET}: ${include}${esc}[m")
     endif()
     string(APPEND mapping "${file}\t${include}\n")
 
@@ -174,7 +174,8 @@ if(unseen_includes)
     endforeach()
 	list(SORT unseen_includes CASE INSENSITIVE)
     list(JOIN unseen_includes " " unseen_includes)
-    message(FATAL_ERROR "Target ${TARGET} has undeclared includes: ${unseen_includes}")
+    string(ASCII 27 esc)
+    message(FATAL_ERROR "${esc}[95mUndeclared include in target ${TARGET}: ${unseen_includes}${esc}[m")
 endif()
 
 # Write .auxi file for each source
