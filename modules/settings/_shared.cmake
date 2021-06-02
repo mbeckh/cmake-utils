@@ -127,6 +127,16 @@ function(z_cmake_utils_settings_shared)
         string(STRIP "${CMAKE_STATIC_LINKER_FLAGS_RELEASE}" CMAKE_STATIC_LINKER_FLAGS_RELEASE)
         set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE}" CACHE STRING "" FORCE)
     endif()
- endfunction()
+
+	#
+	# Resource compiler options
+	#
+
+    if(NOT CMAKE_RC_FLAGS MATCHES "(^| )[/-][Nn][Oo][Ll][Oo][Gg][Oo]( |$)")
+        string(APPEND CMAKE_RC_FLAGS " /nologo")
+        string(STRIP "${CMAKE_RC_FLAGS}" CMAKE_RC_FLAGS)
+        set(CMAKE_RC_FLAGS "${CMAKE_RC_FLAGS}" CACHE STRING "" FORCE)
+    endif()
+endfunction()
 
 z_cmake_utils_settings_shared()

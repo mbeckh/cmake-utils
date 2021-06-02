@@ -178,6 +178,7 @@ function(z_clang_tools_deferred tool #[[ [ NAME <name> ] TARGETS <target> ... [ 
         get_target_property(binary_dir "${target}" BINARY_DIR)
         get_target_property(target_sources "${target}" SOURCES)
         list(SORT target_sources)
+		list(FILTER target_sources EXCLUDE REGEX "\\.(man|rc)$")
 
         # Main tool target
         message(STATUS "Creating target: ${tool}-${target}")
@@ -201,12 +202,23 @@ function(z_clang_tools_deferred tool #[[ [ NAME <name> ] TARGETS <target> ... [ 
         unset(includes)
         unset(aux_includes_maps)
         foreach(source IN LISTS target_sources)
-            get_source_file_property(location "${source_dir}/${source}" LOCATION)
+			if(IS_ABSOLUTE "${source}")
+				get_source_file_property(location "${source}" LOCATION)
+			else()
+				get_source_file_property(location "${source_dir}/${source}" LOCATION)
+			endif()
+			get_source_file_property(generated "${location}" GENERATED)
+			if(generated)
+				continue()
+			endif()
+			if(IS_ABSOLUTE "${source}")
+				message(FATAL_ERROR "Cannot process absolute path: ${source}")
+			endif()
             get_source_file_property(header "${location}" HEADER_FILE_ONLY)
             if (source MATCHES ".*\\.(${extensions})" AND NOT header)
                 list(APPEND sources "${location}")
 
-                get_source_file_property(language "${source_dir}/${source}" LANGUAGE)
+                get_source_file_property(language "${location}" LANGUAGE)
                 list(APPEND objects "${binary_dir}/CMakeFiles/${target}.dir/${source}${CMAKE_${language}_OUTPUT_EXTENSION}")
 
                 if(arg_WITH_AUX_INCLUDE)
