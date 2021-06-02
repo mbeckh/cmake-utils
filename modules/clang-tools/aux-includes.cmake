@@ -56,29 +56,30 @@ string(REGEX REPLACE "(^|\n)([^:\n]+/)CMakeFiles/[^/\n]+/([^:\n]*)\\.[^.:\n]*: #
 string(REGEX REPLACE "\n+ +" "\t" dependencies "${dependencies}")
 # remove empty lines
 string(REGEX REPLACE "\n\n+" "\n" dependencies "${dependencies}")
-# remove double whitespace
-string(REGEX REPLACE "[ \t][ \t]+" "\t" dependencies "${dependencies}")
+# remove double whitespace and convert all spaces to tabs
+string(REGEX REPLACE "[ \t][ \t]*" "\t" dependencies "${dependencies}")
 # escape semicolons
 string(REPLACE ";" "\\;" dependencies "${dependencies}")
 # split into list, one item per source file
 string(REPLACE "\n" ";" dependencies "${dependencies}")
 # remove empty entries
-list(FILTER dependencies EXCLUDE REGEX "^ *$")
+list(FILTER dependencies EXCLUDE REGEX "^ *\$")
 
 # Make all paths absolute
 unset(result)
 foreach(entry IN LISTS dependencies)
-    string(REGEX MATCH "^([^\t\n]+):\t" source "${entry}")
+    string(REGEX MATCH "^([^\t\n]+):\t([^\n]*)" source "${entry}")
     if(NOT source)
         message(FATAL_ERROR "Error matching source: ${entry}")
     endif()
+	set(includes "${CMAKE_MATCH_2}")
     cmake_path(ABSOLUTE_PATH CMAKE_MATCH_1 NORMALIZE OUTPUT_VARIABLE source)
     string(REPLACE ";" "\\;" source "${source}")
     set(line "${source}:")
 
-    string(REGEX MATCHALL "\t[^\t\n]+([\t\n]|$)" includes "${entry}")
+    string(REGEX MATCHALL "[^\t\n]+([\t\n]|\$)" includes "${includes}")
     foreach(include IN LISTS includes)
-        string(REGEX MATCH "^\t([^\t\n]+)([\t\n]|$)" match "${include}")
+        string(REGEX MATCH "^([^\t\n]+)([\t\n]|\$)" match "${include}")
         if(NOT match)
             message(FATAL_ERROR "Error matching include: ${include}")
         endif()
