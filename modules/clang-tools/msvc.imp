@@ -91,6 +91,7 @@
   { symbol: ["memcmp", "private", "<cstring>", "public" ] },
   { symbol: ["memset", "private", "<cstring>", "public" ] },
   { symbol: ["size_t", "private", "<cstring>", "public" ] },
+  { symbol: ["strchr", "private", "<cstring>", "public" ] },
 
   { symbol: ["size_t", "private", "<ctime>", "public" ] },
 
@@ -131,6 +132,7 @@
   { symbol: ["std::disjunction", "private", "<type_traits>", "public" ] },
   { symbol: ["std::enable_if_t", "private", "<type_traits>", "public" ] },
   { symbol: ["std::is_same", "private", "<type_traits>", "public" ] },
+  { symbol: ["std::is_same_v", "private", "<type_traits>", "public" ] },
   { symbol: ["std::remove_cv_t", "private", "<type_traits>", "public" ] },
   { symbol: ["std::remove_cvref_t", "private", "<type_traits>", "public" ] },
 
