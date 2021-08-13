@@ -326,7 +326,7 @@ set(OUTPUTS "@aux_includes_maps@")
 
             add_custom_command(OUTPUT "${CMAKE_BINARY_DIR}/${output}"
                                COMMAND ${command}
-                               DEPENDS "${object}"
+                               DEPENDS "${source}" "${object}"
                                        clang-tools-compile_commands
                                        ${depends}
                                WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
