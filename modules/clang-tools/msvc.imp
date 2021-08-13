@@ -135,6 +135,7 @@
   { symbol: ["std::is_same_v", "private", "<type_traits>", "public" ] },
   { symbol: ["std::remove_cv_t", "private", "<type_traits>", "public" ] },
   { symbol: ["std::remove_cvref_t", "private", "<type_traits>", "public" ] },
+  { symbol: ["std::remove_reference_t", "private", "<type_traits>", "public" ] },
 
   { symbol: ["std::forward", "private", "<utility>", "public" ] },
   { symbol: ["std::move", "private", "<utility>", "public" ] },
