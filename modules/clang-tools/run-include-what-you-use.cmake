@@ -42,7 +42,7 @@ foreach(file aux_includes_file IN ZIP_LISTS FILES AUX_INCLUDES_FILES)
     if(entries)
         list(APPEND aux_includes "${entries}")
     endif()
-    if(file MATCHES [[(^|[/\\])([^/\\]+)_Test\.[^/\\]+]])
+    if(file MATCHES [[(^|[/\\])([^/\\]+)\.test\.[^/\\]+]])
         list(APPEND aux_includes "*/${CMAKE_MATCH_2}.h*")
     endif()
 endforeach()
@@ -59,7 +59,7 @@ if(include-what-you-use_MAPPING_FILES)
     list(APPEND options "${include-what-you-use_MAPPING_FILES}")
 endif()
 list(APPEND options "--mapping_file=${CMAKE_CURRENT_LIST_DIR}/msvc.imp"
-                    --verbose=2 --quoted_includes_first --cxx17ns)
+                    --verbose=2 --update_comments --quoted_includes_first --cxx17ns --max_line_length=256)
 if(aux_includes)
     list(APPEND options "${aux_includes}")
 endif()
@@ -71,11 +71,11 @@ foreach(index RANGE 0 ${stop})
     list(INSERT options ${pos} -Xiwyu)
 endforeach()
 
-execute_process(COMMAND "${Python_EXECUTABLE}" "${include-what-you-use_PY}" -p .clang-tools ${FILES} --
+execute_process(COMMAND "${Python_EXECUTABLE}" "${include-what-you-use_PY}" -p ".clang-tools/${TARGET}" ${FILES} --
                         ${options}
                         --driver-mode=cl "-fmsc-version=${MSVC_VERSION}"
                         -Wno-unknown-attributes -Qunused-arguments
-                        -D__clang_analyzer__ -D_CRT_USE_BUILTIN_OFFSETOF
+                        -D__clang_analyzer__ -D__iwyu__ -D_CRT_USE_BUILTIN_OFFSETOF
                 RESULT_VARIABLE result
                 ERROR_VARIABLE error
                 OUTPUT_FILE "${OUTPUT}"

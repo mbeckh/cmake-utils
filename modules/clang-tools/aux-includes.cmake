@@ -72,7 +72,7 @@ foreach(entry IN LISTS dependencies)
     if(NOT source)
         message(FATAL_ERROR "Error matching source: ${entry}")
     endif()
-	set(includes "${CMAKE_MATCH_2}")
+    set(includes "${CMAKE_MATCH_2}")
     cmake_path(ABSOLUTE_PATH CMAKE_MATCH_1 NORMALIZE OUTPUT_VARIABLE source)
     string(REPLACE ";" "\\;" source "${source}")
     set(line "${source}:")
@@ -97,13 +97,13 @@ set(dependencies "${result}")
 foreach(source IN LISTS SOURCES)
     set(entries "${dependencies}")
 
-	# Filter by source file
-	regex_escape_pattern(source OUT pattern)
+    # Filter by source file
+    regex_escape_pattern(source OUT pattern)
     list(FILTER entries INCLUDE REGEX "^${pattern}:(\t|$)")
-	# Get headers only
+    # Get headers only
     list(TRANSFORM entries REPLACE "^${pattern}:(\t|$)" "")
 
-	# Add tab-separated list of includes
+    # Add tab-separated list of includes
     if(entries)
         list(APPEND unseen_includes "${entries}")
     endif()
@@ -132,10 +132,10 @@ list(REMOVE_DUPLICATES unseen_includes)
 foreach(include IN LISTS AUX_INCLUDES)
     set(candidates "${dependencies}")
 
-	regex_escape_pattern(include OUT pattern)
+    regex_escape_pattern(include OUT pattern)
     list(FILTER candidates INCLUDE REGEX "\t+${pattern}(\t|$)")
     list(TRANSFORM candidates REPLACE "^([^\t]+):(\t.*|$)" "\\1")
-	list(SORT candidates CASE INSENSITIVE)
+    list(SORT candidates CASE INSENSITIVE)
 
     unset(file)
     foreach(candidate IN LISTS candidates)
@@ -173,7 +173,7 @@ if(unseen_includes)
         string(REPLACE ";" "\\;" file "${file}")
         list(APPEND unseen_includes "${file}")
     endforeach()
-	list(SORT unseen_includes CASE INSENSITIVE)
+    list(SORT unseen_includes CASE INSENSITIVE)
     list(JOIN unseen_includes " " unseen_includes)
     string(ASCII 27 esc)
     message(FATAL_ERROR "${esc}[95mUndeclared include in target ${TARGET}: ${unseen_includes}${esc}[m")
@@ -183,12 +183,12 @@ endif()
 foreach(source output IN ZIP_LISTS SOURCES OUTPUTS)
     set(entries "${mapping}")
 
-	regex_escape_pattern(source OUT pattern)
+    regex_escape_pattern(source OUT pattern)
     list(FILTER entries INCLUDE REGEX "${pattern}\t")
 
     # Get all headers of source
     list(TRANSFORM entries REPLACE "${pattern}\t" "")
-	list(SORT entries CASE INSENSITIVE)
+    list(SORT entries CASE INSENSITIVE)
     list(JOIN entries "\n" contents)
 
     if(EXISTS "${output}")

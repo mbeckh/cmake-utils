@@ -48,9 +48,9 @@ function(cmake_utils_for_each_target _cu_fet_command #[[ ARGS <args> ... DIRECTO
             list(APPEND _cu_fet_directories "${_cu_fet_subdirectories}")
         endif()
     endwhile()
-	foreach(_cu_fet_out IN LISTS _cu_fet_arg_OUT)
-		set("${_cu_fet_out}" "${${_cu_fet_out}}" PARENT_SCOPE)
-	endforeach()
+    foreach(_cu_fet_out IN LISTS _cu_fet_arg_OUT)
+        set("${_cu_fet_out}" "${${_cu_fet_out}}" PARENT_SCOPE)
+    endforeach()
 endfunction()
 
 function(z_cmake_utils_add_to_module_path)
