@@ -70,7 +70,7 @@ foreach(i RANGE ${count})
         # parse header instead of source because dumping includes does not work for includes added using -include
         string(REPLACE "cmake_pch.c${CMAKE_MATCH_1}" "cmake_pch.h${CMAKE_MATCH_1}" command "${command}")
     endif()
-    list(INSERT command 1 /EP /showIncludes /clang:-fshow-skipped-includes /clang:-Qunused-arguments)
+    list(INSERT command 1 /EP /showIncludes /clang:-fshow-skipped-includes /clang:-Qunused-arguments /clang:-Wno-pragma-system-header-outside-header)
     list(POP_FRONT command)
     list(PREPEND command "${CLANG}" --driver-mode=cl)
 
