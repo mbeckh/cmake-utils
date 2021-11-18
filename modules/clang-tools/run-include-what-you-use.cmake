@@ -74,7 +74,7 @@ endforeach()
 execute_process(COMMAND "${Python_EXECUTABLE}" "${include-what-you-use_PY}" -p ".clang-tools/${TARGET}" ${FILES} --
                         ${options}
                         --driver-mode=cl "-fmsc-version=${MSVC_VERSION}"
-                        -Wno-unknown-attributes -Qunused-arguments
+                        -Wno-unknown-attributes -Qunused-arguments -Wno-unused-command-line-argument
                         -D__clang_analyzer__ -D__iwyu__ -D_CRT_USE_BUILTIN_OFFSETOF
                 RESULT_VARIABLE result
                 ERROR_VARIABLE error
