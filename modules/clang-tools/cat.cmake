@@ -15,6 +15,7 @@
 #
 # Concatenate files to stderr or file.
 # Usage: cmake
+#        [ -D TOOL ]
 #        [ -D COLOR=<color> | -D OUTPUT=<file> ]
 #        -D FILES=<file>;...
 #        -P cat.cmake
@@ -38,14 +39,53 @@ if(COLOR STREQUAL cyan)
     message("${esc}[96m")
 endif()
 
-foreach(file IN LISTS FILES)
-    file(READ "${file}" contents)
+function(clang_tidy_unique var messages)
+    unset(result)
+    unset(entry)
+    foreach(message IN LISTS messages)
+        string(REPLACE ";" "\\\\;" message "${message}")
+        if(message MATCHES [[^.+:[0-9]+:[0-9]+: [a-z]+: .+ \[[a-z0-9,-]+\]$]])
+            if(entry)
+                list(APPEND result "${entry}")
+            endif()
+            set(entry "${message}")
+        else()
+            string(APPEND entry "\n" "${message}")
+        endif()
+    endforeach()
+    if(entry)
+        list(APPEND result "${entry}")
+    endif()
+
+    list(REMOVE_DUPLICATES result)
+    list(JOIN result "\n" result)
+    set("${var}" "${result}" PARENT_SCOPE)
+endfunction()
+
+if(TOOL STREQUAL clang-tidy)
+    unset(messages)
+    foreach(file IN LISTS FILES)
+        file(STRINGS "${file}" contents)
+        list(APPEND messages "${contents}")
+    endforeach()
+
+    clang_tidy_unique(contents "${messages}")
+
     if(OUTPUT)
-        file(APPEND "${OUTPUT}" "${contents}")
+        file(WRITE "${OUTPUT}" "${contents}")
     else()
         message("${contents}")
     endif()
-endforeach()
+else()
+    foreach(file IN LISTS FILES)
+        file(READ "${file}" contents)
+        if(OUTPUT)
+            file(APPEND "${OUTPUT}" "${contents}")
+        else()
+            message("${contents}")
+        endif()
+    endforeach()
+endif()
 
 if(COLOR)
     message("${esc}[m")

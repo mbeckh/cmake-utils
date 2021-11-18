@@ -20,7 +20,7 @@
 
 include(FindPackageHandleStandardArgs)
 
-set(ClangTools_VERSION "0.0.1")
+set(ClangTools_VERSION "0.0.2")
 find_package_handle_standard_args(ClangTools
                                   REQUIRED_VARS ClangTools_VERSION
                                   VERSION_VAR ClangTools_VERSION
@@ -94,7 +94,7 @@ function(z_clang_tools_visit_target target tool var)
         get_target_property(binary_dir "${target}" BINARY_DIR)
         get_target_property(imported "${target}" IMPORTED)
         get_target_property(type "${target}" TYPE)
-		get_target_property(vcpkg "${target}" vcpkg_LOCAL)
+        get_target_property(vcpkg "${target}" vcpkg_LOCAL)
         cmake_path(IS_PREFIX PROJECT_BINARY_DIR "${binary_dir}" NORMALIZE is_in_project)
         if(is_in_project AND NOT aliased AND NOT imported AND NOT vcpkg AND type MATCHES "^((INTERFACE|MODULE|OBJECT|SHARED|STATIC)_LIBRARY|EXECUTABLE)$")
             set(result "${${var}}")
@@ -138,22 +138,34 @@ function(z_clang_tools_deferred tool #[[ [ NAME <name> ] TARGETS <target> ... [ 
     endif()
 
     # Create compile_commands.json for clang from MSVC version.
-    if(NOT TARGET "clang-tools-compile_commands")
-        message(STATUS "Creating target: clang-tools-compile_commands")
-        add_custom_target(clang-tools-compile_commands
-                          DEPENDS "${CMAKE_BINARY_DIR}/.clang-tools/compile_commands.json"
-                          WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
-                          COMMENT "Patching compile_commands.json"
-                          VERBATIM)
+    foreach(target IN LISTS arg_TARGETS)
+        if(arg_FILTER)
+            cmake_language(CALL "${arg_FILTER}" "${target}" process)
+            if(NOT process)
+                continue()
+            endif()
+        endif()
 
-        add_custom_command(OUTPUT "${CMAKE_BINARY_DIR}/.clang-tools/compile_commands.json"
-                           COMMAND "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/compile_commands.cmake"
-                           DEPENDS "${CMAKE_BINARY_DIR}/compile_commands.json"
-                                   "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/compile_commands.cmake"
-                           WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
-                           COMMENT "Patching compile_commands.json"
-                           VERBATIM)
-    endif()
+        # Request generation of compile_commands.json
+        set_target_properties("${target}" PROPERTIES EXPORT_COMPILE_COMMANDS YES)
+
+        if(NOT TARGET "clang-tools-compile_commands-${target}")
+            message(STATUS "Creating target: clang-tools-compile_commands-${target}")
+            add_custom_target("clang-tools-compile_commands-${target}"
+                              DEPENDS "${CMAKE_BINARY_DIR}/.clang-tools/${target}/compile_commands.json"
+                              WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+                              COMMENT "Patching compile_commands.json (${target})"
+                              VERBATIM)
+
+            add_custom_command(OUTPUT "${CMAKE_BINARY_DIR}/.clang-tools/${target}/compile_commands.json"
+                               COMMAND "${CMAKE_COMMAND}" -D "TARGET=${target}" -P "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/compile_commands.cmake"
+                               DEPENDS "${CMAKE_BINARY_DIR}/compile_commands.json"
+                                       "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/compile_commands.cmake"
+                               WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+                               COMMENT "Patching compile_commands.json (${target})"
+                               VERBATIM)
+        endif()
+    endforeach()
 
     # Main target
     if(NOT TARGET "${tool}")
@@ -171,14 +183,12 @@ function(z_clang_tools_deferred tool #[[ [ NAME <name> ] TARGETS <target> ... [ 
                 continue()
             endif()
         endif()
-        # Request generation of compile_commands.json
-        set_target_properties("${target}" PROPERTIES EXPORT_COMPILE_COMMANDS YES)
 
         get_target_property(source_dir "${target}" SOURCE_DIR)
         get_target_property(binary_dir "${target}" BINARY_DIR)
         get_target_property(target_sources "${target}" SOURCES)
         list(SORT target_sources)
-		list(FILTER target_sources EXCLUDE REGEX "\\.(man|rc)$")
+        list(FILTER target_sources EXCLUDE REGEX "\\.(man|rc)$")
 
         # Main tool target
         message(STATUS "Creating target: ${tool}-${target}")
@@ -202,18 +212,18 @@ function(z_clang_tools_deferred tool #[[ [ NAME <name> ] TARGETS <target> ... [ 
         unset(includes)
         unset(aux_includes_maps)
         foreach(source IN LISTS target_sources)
-			if(IS_ABSOLUTE "${source}")
-				get_source_file_property(location "${source}" LOCATION)
-			else()
-				get_source_file_property(location "${source_dir}/${source}" LOCATION)
-			endif()
-			get_source_file_property(generated "${location}" GENERATED)
-			if(generated)
-				continue()
-			endif()
-			if(IS_ABSOLUTE "${source}")
-				message(FATAL_ERROR "Cannot process absolute path: ${source}")
-			endif()
+            if(IS_ABSOLUTE "${source}")
+                get_source_file_property(location "${source}" LOCATION)
+            else()
+                get_source_file_property(location "${source_dir}/${source}" LOCATION)
+            endif()
+            get_source_file_property(generated "${location}" GENERATED)
+            if(generated)
+                continue()
+            endif()
+            if(IS_ABSOLUTE "${source}")
+                message(FATAL_ERROR "Cannot process absolute path: ${source}")
+            endif()
             get_source_file_property(header "${location}" HEADER_FILE_ONLY)
             if (source MATCHES ".*\\.(${extensions})" AND NOT header)
                 list(APPEND sources "${location}")
@@ -242,7 +252,7 @@ function(z_clang_tools_deferred tool #[[ [ NAME <name> ] TARGETS <target> ... [ 
                 set(aux_includes "${includes}")
                 foreach(source IN LISTS sources)
                     cmake_path(GET source STEM LAST_ONLY base_name)
-                    string(REGEX REPLACE "(_(unit|reg)?test)|(-inl)$" "" canonical_base_name "${base_name}")
+                    string(REGEX REPLACE "([_.](unit|reg)?test)|(-inl)$" "" canonical_base_name "${base_name}")
                     regex_escape_pattern(base_name)
                     regex_escape_pattern(canonical_base_name)
                     list(FILTER aux_includes EXCLUDE REGEX "(^|.+/)(${base_name}|${canonical_base_name})\\.(h|H|hpp|hxx|hh|inl)$")
@@ -287,6 +297,11 @@ set(LIBRARIES_INCLUDES "@libraries_includes@")
 set(OUTPUTS "@aux_includes_maps@")
 ]] ESCAPE_QUOTES @ONLY)
 
+                add_custom_target(${target}-aux-includes 
+                                  COMMENT "Analyzing auxiliary includes (${target})"
+                                  DEPENDS "${CMAKE_BINARY_DIR}/.clang-tools/${target}/.aux-includes"
+                                  VERBATIM)
+
                 add_custom_command(OUTPUT "${CMAKE_BINARY_DIR}/.clang-tools/${target}/.aux-includes"
                                    COMMAND "${CMAKE_COMMAND}"
                                            -D "ARGUMENTS=${CMAKE_BINARY_DIR}/.clang-tools/${target}/aux-includes.cmake"
@@ -320,14 +335,14 @@ set(OUTPUTS "@aux_includes_maps@")
             z_clang_tools_configure("${arg_MAP_DEPENDS}" depends)
 
             if(arg_WITH_AUX_INCLUDE)
-                list(APPEND depends "${CMAKE_BINARY_DIR}/.clang-tools/${target}/.aux-includes"
+                list(APPEND depends "${target}-aux-includes"
                                     "${CMAKE_BINARY_DIR}/.clang-tools/${target}/${relative}.auxi")
             endif()
 
             add_custom_command(OUTPUT "${CMAKE_BINARY_DIR}/${output}"
                                COMMAND ${command}
-                               DEPENDS "${source}" "${object}"
-                                       clang-tools-compile_commands
+                               DEPENDS "${object}"
+                                       "clang-tools-compile_commands-${target}"
                                        ${depends}
                                WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
                                COMMENT "${arg_NAME} (${target}): ${relative}"
@@ -349,6 +364,7 @@ set(OUTPUTS "@aux_includes_maps@")
             else()
                 # cmake -E cat Does not work: Stops on empty file as of CMake 3.20.0.
                 set(command "@CMAKE_COMMAND@"
+                            -D "TOOL=${tool}"
                             -D "FILES=@files@"
                             -D "OUTPUT=@output@"
                             -P "@CMAKE_CURRENT_FUNCTION_LIST_DIR@/clang-tools/cat.cmake")
@@ -404,7 +420,7 @@ function(z_clang_tools_pch_scan_command target var)
                                -D "PCH=$<JOIN:$<TARGET_PROPERTY:${target},PRECOMPILE_HEADERS>,$<SEMICOLON>>"
                                -D "OUTPUT=${output}"
                                -P "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/scan-includes.cmake"
-                       DEPENDS clang-tools-compile_commands
+                       DEPENDS "clang-tools-compile_commands-${target}"
                                "$<TARGET_PROPERTY:${target},PRECOMPILE_HEADERS>"
                                "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/scan-includes.cmake"
                        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"

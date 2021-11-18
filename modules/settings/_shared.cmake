@@ -102,7 +102,7 @@ function(z_cmake_utils_settings_shared)
     #
 
     # Optimization
-    add_link_options("$<$<CONFIG:Release>:/LTCG:INCREMENTAL;/OPT:ICF;/OPT:REF>")
+    add_link_options("$<$<CONFIG:Release>:/LTCG;/OPT:ICF;/OPT:REF>")
     if(NOT CMAKE_STATIC_LINKER_FLAGS_RELEASE MATCHES "(^| )[/-]LTCG( |$)")
         string(APPEND CMAKE_STATIC_LINKER_FLAGS_RELEASE " /LTCG")
         string(STRIP "${CMAKE_STATIC_LINKER_FLAGS_RELEASE}" CMAKE_STATIC_LINKER_FLAGS_RELEASE)

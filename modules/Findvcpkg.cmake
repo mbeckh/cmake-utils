@@ -128,17 +128,17 @@ endif()
 set(VCPKG_OVERLAY_TRIPLETS "${CMAKE_CURRENT_LIST_DIR}/triplets" CACHE PATH "Additional triplets for vcpkg")
 
 function(z_vcpkg_add_tests)
-	if(PROJECT_IS_TOP_LEVEL)
-		file(READ "${CMAKE_SOURCE_DIR}/vcpkg.json" content)
-		set(result "${VCPKG_MANIFEST_FEATURES}")
-		foreach(feature "test" "tests" "testing")
-			string(JSON tests_feature ERROR_VARIABLE error GET "${content}" "features" "${feature}")
-			if(tests_feature)
-				list(APPEND result "${feature}")
-			endif()
-		endforeach()
-		set(VCPKG_MANIFEST_FEATURES "${result}" PARENT_SCOPE)
-	endif()
+    if(PROJECT_IS_TOP_LEVEL AND BUILD_TESTING)
+        file(READ "${CMAKE_SOURCE_DIR}/vcpkg.json" content)
+        set(result "${VCPKG_MANIFEST_FEATURES}")
+        foreach(feature "test" "tests" "testing")
+            string(JSON tests_feature ERROR_VARIABLE error GET "${content}" "features" "${feature}")
+            if(tests_feature)
+                list(APPEND result "${feature}")
+            endif()
+        endforeach()
+        set(VCPKG_MANIFEST_FEATURES "${result}" PARENT_SCOPE)
+    endif()
 endfunction()
 z_vcpkg_add_tests()
 
@@ -177,50 +177,149 @@ set(VCPKG_OVERRIDE_FIND_PACKAGE_NAME "vcpkg_find_package")
 function(z_vcpkg_configure_local_target target)
     get_property(includes TARGET "${target}" PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
     set_property(TARGET "${target}" APPEND PROPERTY INTERFACE_SYSTEM_INCLUDE_DIRECTORIES ${includes})
-	set_target_properties("${target}" PROPERTIES vcpkg_LOCAL YES)
+    set_target_properties("${target}" PROPERTIES vcpkg_LOCAL YES)
 endfunction()
 
 function(z_vcpkg_fix_local_includes_for_target main_target target)
-	if(NOT target)
-		set(target "${main_target}")
-	endif()
+    if(NOT target)
+        set(target "${main_target}")
+    endif()
     get_target_property(imported "${target}" IMPORTED)
-	if(NOT imported)
-		get_target_property(source "${target}" SOURCE_DIR)
-		get_target_property(libs "${target}" LINK_LIBRARIES)
-		foreach(lib IN LISTS libs)
-			if(TARGET "${lib}")
-				get_target_property(is_local "${lib}" vcpkg_LOCAL)
-				if(is_local)
-					get_target_property(lib_source "${lib}" SOURCE_DIR)
-					if(NOT source STREQUAL lib_source)
-						message("${main_target}: Fixing include for ${lib}")
-						get_target_property(includes "${lib}" INTERFACE_SYSTEM_INCLUDE_DIRECTORIES)
-						target_include_directories("${main_target}" SYSTEM PRIVATE ${includes})
-						z_vcpkg_fix_local_includes_for_target("${main_target}" "${lib}")
-					endif()
-				endif()
-			endif()
-		endforeach()
-	endif()
+    if(NOT imported)
+        get_target_property(source "${target}" SOURCE_DIR)
+        get_target_property(libs "${target}" LINK_LIBRARIES)
+        foreach(lib IN LISTS libs)
+            if(TARGET "${lib}")
+                get_target_property(is_local "${lib}" vcpkg_LOCAL)
+                if(is_local)
+                    get_target_property(lib_source "${lib}" SOURCE_DIR)
+                    if(NOT source STREQUAL lib_source)
+                        message("${main_target}: Fixing include for ${lib}")
+                        get_target_property(includes "${lib}" INTERFACE_SYSTEM_INCLUDE_DIRECTORIES)
+                        target_include_directories("${main_target}" SYSTEM PRIVATE ${includes})
+                        z_vcpkg_fix_local_includes_for_target("${main_target}" "${lib}")
+                    endif()
+                endif()
+            endif()
+        endforeach()
+    endif()
 endfunction()
 
 function(z_vcpkg_fix_local_includes target)
-	z_vcpkg_fix_local_includes_for_target("${target}" "${target}")
+    z_vcpkg_fix_local_includes_for_target("${target}" "${target}")
+endfunction()
+
+function(z_vcpkg_add_path name list suffix)
+    set(vcpkg_paths
+        "${VCPKG_INSTALLED_DIR}/_local-${name}/${VCPKG_TARGET_TRIPLET}${suffix}"
+        "${VCPKG_INSTALLED_DIR}/_local-${name}/${VCPKG_TARGET_TRIPLET}/debug${suffix}"
+    )
+    if(NOT DEFINED CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE MATCHES "^[Dd][Ee][Bb][Uu][Gg]$")
+        list(REVERSE vcpkg_paths) # Debug build: Put Debug paths before Release paths.
+    endif()
+    if(VCPKG_PREFER_SYSTEM_LIBS)
+        list(APPEND "${list}" "${vcpkg_paths}")
+    else()
+        list(PREPEND "${list}" "${vcpkg_paths}")
+    endif()
+    set("${list}" "${${list}}" PARENT_SCOPE)
+endfunction()
+
+function(z_vcpkg_run name source_dir)
+    if(NOT EXISTS "${source_dir}/vcpkg.json")
+        return()
+    endif()
+
+    message(STATUS "${name}: Running vcpkg install")
+
+    unset(args)
+
+    if(DEFINED VCPKG_HOST_TRIPLET AND VCPKG_HOST_TRIPLET STREQUAL "")
+        list(APPEND args "--host-triplet=${VCPKG_HOST_TRIPLET}")
+    endif()
+
+    if(VCPKG_OVERLAY_PORTS)
+        foreach(port IN LISTS VCPKG_OVERLAY_PORTS)
+            list(APPEND args "--overlay-ports=${port}")
+        endforeach()
+    endif()
+
+    if(VCPKG_OVERLAY_TRIPLETS)
+        foreach(triplet IN LISTS VCPKG_OVERLAY_TRIPLETS)
+            list(APPEND args "--overlay-triplets=${triplet}")
+        endforeach()
+    endif()
+
+    if(DEFINED VCPKG_FEATURE_FLAGS OR DEFINED CACHE{VCPKG_FEATURE_FLAGS})
+        list(JOIN VCPKG_FEATURE_FLAGS "," feature_flags)
+        set(feature_flags "--feature-flags=${feature_flags}")
+    endif()
+
+    foreach(feature IN LISTS VCPKG_MANIFEST_FEATURES)
+        # list(APPEND args "--x-feature=${feature}")
+    endforeach()
+
+    if(VCPKG_MANIFEST_NO_DEFAULT_FEATURES)
+        list(APPEND args "--x-no-default-features")
+    endif()
+
+    if(NOT vcpkg_EXE)
+        find_program(vcpkg_EXE vcpkg PATHS "${vcpkg_ROOT}" NO_DEFAULT_PATH)
+    endif()
+    execute_process(
+        COMMAND "${vcpkg_EXE}" install
+                "--triplet=${VCPKG_TARGET_TRIPLET}"
+                "--vcpkg-root=${vcpkg_ROOT}"
+                "--x-wait-for-lock"
+                "--x-manifest-root=${source_dir}"
+                "--x-install-root=${VCPKG_INSTALLED_DIR}/_local-${name}"
+                "${feature_flags}"
+                ${args}
+                ${VCPKG_INSTALL_OPTIONS}
+        RESULT_VARIABLE result
+        OUTPUT_VARIABLE output
+        ERROR_VARIABLE output
+        ECHO_OUTPUT_VARIABLE
+        ECHO_ERROR_VARIABLE)
+
+    file(TO_NATIVE_PATH "${CMAKE_BINARY_DIR}/vcpkg-manifest-install-${name}.log" log_file)
+    file(WRITE "${log_file}" "${output}")
+
+    if(result EQUAL 0)
+        message(STATUS "${name}: Running vcpkg install - done")
+
+        file(TOUCH "${VCPKG_INSTALLED_DIR}/_local-${name}/.cmakestamp")
+        set_property(DIRECTORY "${CMAKE_SOURCE_DIR}" APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${source_dir}/vcpkg.json" "${VCPKG_INSTALLED_DIR}/_local-${name}/.cmakestamp")
+        if(EXISTS "${source_dir}/vcpkg-configuration.json")
+            set_property(DIRECTORY "${CMAKE_SOURCE_DIR}" APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${source_dir}/vcpkg-configuration.json")
+        endif()
+    else()
+        message(STATUS "${name}: Running vcpkg install - failed")
+        message(FATAL_ERROR "${name}: vcpkg install failed. See logs for more information: ${log_file}")
+    endif()
+
+    z_vcpkg_add_path("${name}" CMAKE_PREFIX_PATH "")
+    z_vcpkg_add_path("${name}" CMAKE_LIBRARY_PATH "/lib/manual-link")
+    z_vcpkg_add_path("${name}" CMAKE_FIND_ROOT_PATH "")
+	
+	set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH}" PARENT_SCOPE)
+	set(CMAKE_LIBRARY_PATH "${CMAKE_LIBRARY_PATH}" PARENT_SCOPE)
+	set(CMAKE_FIND_ROOT_PATH "${CMAKE_FIND_ROOT_PATH}" PARENT_SCOPE)
 endfunction()
 
 function(z_vcpkg_configure_local_package name)
     get_property(local GLOBAL PROPERTY vcpkg_LOCAL_DEPENDENCY_NAMES)
     if(NOT name IN_LIST local)
         set_property(GLOBAL APPEND PROPERTY vcpkg_LOCAL_DEPENDENCY_NAMES "${name}")
+        z_vcpkg_run("${name}" "${LOCAL_${name}_ROOT}")
         add_subdirectory("${LOCAL_${name}_ROOT}" "${CMAKE_BINARY_DIR}/_local/${name}" EXCLUDE_FROM_ALL)
         cmake_utils_for_each_target(z_vcpkg_configure_local_target DIRECTORY "${LOCAL_${name}_ROOT}")
-		
-		get_property(hook GLOBAL PROPERTY vcpkg_LOCAL_DEPENDENCY_HOOK)
-		if(NOT hook)
-			cmake_language(DEFER DIRECTORY "${CMAKE_SOURCE_DIR}" CALL cmake_utils_for_each_target z_vcpkg_fix_local_includes)
-			set_property(GLOBAL PROPERTY vcpkg_LOCAL_DEPENDENCY_HOOK YES)
-		endif()
+        
+        get_property(hook GLOBAL PROPERTY vcpkg_LOCAL_DEPENDENCY_HOOK)
+        if(NOT hook)
+            cmake_language(DEFER DIRECTORY "${CMAKE_SOURCE_DIR}" CALL cmake_utils_for_each_target z_vcpkg_fix_local_includes)
+            set_property(GLOBAL PROPERTY vcpkg_LOCAL_DEPENDENCY_HOOK YES)
+        endif()
     endif()
 endfunction()
 

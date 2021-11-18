@@ -27,8 +27,14 @@ function(z_cmake_utils_toolchain)
 
     if(VCPKG_CHAINLOAD_TOOLCHAIN_FILE)
         set(file "settings/vcpkg")
+
+        # Disable building tests
+        set(BUILD_TESTING OFF)
     else()
         set(file "cmake-utils")
+
+        # Enable tests for top-level projects if not run by vcpkg
+        option(BUILD_TESTING "Build tests" ${PROJECT_IS_TOP_LEVEL})
     endif()
 
     if(CMAKE_PROJECT_INCLUDE)
