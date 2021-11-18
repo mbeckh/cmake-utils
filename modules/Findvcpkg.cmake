@@ -21,7 +21,7 @@ if(vcpkg_FOUND)
 endif()
 
 # vcpkg revision
-set(vcpkg_INSTALL_REVISION "801f40c6883e40792ed4dc13547dcd9c4c2e2701" CACHE STRING "Revision of vcpkg if not using system binaries")
+set(vcpkg_INSTALL_REVISION "70033dbb31527fb3e69654731f540f59c87787f9" CACHE STRING "Revision of vcpkg if not using system binaries")
 
 #
 # Check and configure required settings
