@@ -159,10 +159,10 @@ clang-tidy: tidy_error
 src/tidy_error\.h:.+\[modernize-avoid-c-arrays\]
 .+"@CMAKE_BUILD_TYPE@".+// deliberate error.+
  +\^
-src/tidy_error_1\.cpp:.+\[modernize-avoid-c-arrays\]
+src/tidy_error_2\.h:.+\[modernize-avoid-c-arrays\]
 .+"@CMAKE_BUILD_TYPE@".+// deliberate error.+
  +\^
-src/tidy_error_2\.h:.+\[modernize-avoid-c-arrays\]
+src/tidy_error_1\.cpp:.+\[modernize-avoid-c-arrays\]
 .+"@CMAKE_BUILD_TYPE@".+// deliberate error.+
  +\^
 src/tidy_error_2\.cpp:.+\[modernize-avoid-c-arrays\]
@@ -245,14 +245,39 @@ set_tests_properties(cmake-utils.iwyu.ok PROPERTIES
 ^\[1/1\] include-what-you-use \(ok\)
 include-what-you-use: ok
 
-\(include/cmake-utils/ok\.h has correct #includes/fwd-decls\)
+include/cmake-utils/ok\.h should add these lines:
 
-\(src/ok_1\.cpp has correct #includes/fwd-decls\)
+include/cmake-utils/ok\.h should remove these lines:
+
+The full include-list for include/cmake-utils/ok\.h:
+---
+
+src/ok_1\.cpp should add these lines:
+
+src/ok_1\.cpp should remove these lines:
+
+The full include-list for src/ok_1\.cpp:
+#include "cmake-utils/ok_2\.h"  // for ok_2
+---
 
 
-\(include/cmake-utils/ok_2\.h has correct #includes/fwd-decls\)
+include/cmake-utils/ok_2\.h should add these lines:
 
-\(src/ok_2\.cpp has correct #includes/fwd-decls\)
+include/cmake-utils/ok_2\.h should remove these lines:
+
+The full include-list for include/cmake-utils/ok_2\.h:
+#include "ok\.h"     // for ok
+#include <cstdint>  // for uint32_t
+---
+
+src/ok_2\.cpp should add these lines:
+
+src/ok_2\.cpp should remove these lines:
+
+The full include-list for src/ok_2\.cpp:
+#include "cmake-utils/ok_2\.h"
+#include <cstddef>  // for size_t
+---
 
 $]])
 
@@ -268,14 +293,38 @@ set_tests_properties(cmake-utils.iwyu.tidy_error PROPERTIES
 ^\[1/1\] include-what-you-use \(tidy_error\)
 include-what-you-use: tidy_error
 
-\(src/tidy_error\.h has correct #includes/fwd-decls\)
+src/tidy_error\.h should add these lines:
 
-\(src/tidy_error_1\.cpp has correct #includes/fwd-decls\)
+src/tidy_error\.h should remove these lines:
+
+The full include-list for src/tidy_error\.h:
+---
+
+src/tidy_error_1\.cpp should add these lines:
+
+src/tidy_error_1\.cpp should remove these lines:
+
+The full include-list for src/tidy_error_1\.cpp:
+#include "tidy_error\.h"    // for tidy_error
+#include "tidy_error_2\.h"  // for tidy_error_2
+---
 
 
-\(src/tidy_error_2\.h has correct #includes/fwd-decls\)
+src/tidy_error_2\.h should add these lines:
 
-\(src/tidy_error_2\.cpp has correct #includes/fwd-decls\)
+src/tidy_error_2\.h should remove these lines:
+
+The full include-list for src/tidy_error_2\.h:
+---
+
+src/tidy_error_2\.cpp should add these lines:
+
+src/tidy_error_2\.cpp should remove these lines:
+
+The full include-list for src/tidy_error_2\.cpp:
+#include "tidy_error_2\.h"
+#include "tidy_error\.h"  // for tidy_error
+---
 
 $]])
 #]=]
@@ -314,9 +363,6 @@ set_tests_properties(cmake-utils.iwyu.subdirectory PROPERTIES
                      PASS_REGULAR_EXPRESSION [[
 ^\[1/1\] include-what-you-use \(subdirectory\)
 include-what-you-use: subdirectory
-
-\(subdirectory\.cpp has correct #includes/fwd-decls\)
-
 $]])
 
 add_test(NAME cmake-utils.iwyu.subproject
@@ -329,9 +375,6 @@ set_tests_properties(cmake-utils.iwyu.subproject PROPERTIES
                      PASS_REGULAR_EXPRESSION [[
 ^\[1/1\] include-what-you-use \(subproject\)
 include-what-you-use: subproject
-
-\(subproject\.cpp has correct #includes/fwd-decls\)
-
 $]])
 
 
