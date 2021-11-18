@@ -7,6 +7,6 @@ HeaderFilterRegex: '.*'
 ExtraArgsBefore: [
   '-fms-extensions', '-fms-compatibility', '-D_CRT_USE_BUILTIN_OFFSETOF',
   '-WCL4', '-Wpedantic', '-Wthread-safety', '-Wmicrosoft', '-Wdocumentation', '-Wdocumentation-pedantic',
-  '-fno-delayed-template-parsing', '-fcomment-block-commands=internal,hideinitializer'
+  '-fno-delayed-template-parsing', '/clang:-fcomment-block-commands=internal,hideinitializer'
   ]
 CheckOptions:

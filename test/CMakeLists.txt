@@ -29,7 +29,7 @@ set(CMAKE_CXX_EXTENSIONS OFF CACHE BOOL "")
 add_compile_definitions(WIN32_LEAN_AND_MEAN=1)
 
 add_executable(ok
-	"src/ok_1.cpp"
+    "src/ok_1.cpp"
     "src/ok_2.cpp"
     "include/cmake-utils/ok.h"
     "include/cmake-utils/ok_2.h"
@@ -39,7 +39,7 @@ target_include_directories(ok PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/in
 
 
 add_library(tidy_error
-	"src/tidy_error_1.cpp"
+    "src/tidy_error_1.cpp"
     "src/tidy_error_2.cpp"
     "src/tidy_error_2.h"
     "src/tidy_error.h"
@@ -49,7 +49,7 @@ target_include_directories(tidy_error PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE
 
 
 add_library(include_error
-	"src/include_error.cpp"
+    "src/include_error.cpp"
 )
 target_precompile_headers(include_error PRIVATE "src/include_error_pch.h")
 target_include_directories(include_error PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>" "$<INSTALL_INTERFACE:include>")
