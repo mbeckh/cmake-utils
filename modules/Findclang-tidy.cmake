@@ -55,7 +55,7 @@ function(clang_tidy #[[ <target> ... ]])
                     MAP_COMMAND "@clang-tidy_EXE@"
                                 -p ".clang-tools/@target@"
                                 "--extra-arg=-fmsc-version=@MSVC_VERSION@"
-                                "--extra-arg=-Qunused-arguments" "--extra-arg=-Wno-unused-command-line-argument"
+                                "--extra-arg=-Qunused-arguments"
                                 "--header-filter=.*"
                                 @files@
                                 > "@output@" || "@CMAKE_COMMAND@" -E true
