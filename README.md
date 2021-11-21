@@ -20,6 +20,8 @@ Modules for building projects using [CMake](https://cmake.org/).
 
 -   Check includes of precompiled header files in a way similar to include-what-you-use.
 
+-   Supports unity builds for build and clang-tidy (no support for include-what-you-use and precompiled header check).
+
 -   [Script](#visual-studio-integration) for running single file compilation, clang-tidy, include-what-you-use and
     the precompiled header check from within Visual Studio. Single file compilation is provided as an alternative to
     the built-in feature of Visual Studio which fails with an error message if a precompiled header is used.
@@ -102,20 +104,20 @@ Add one or more external tools within Visual Studio with the following settings:
 ## System Requirements / Tested with
 -   Visual Studio 2019 v16.11 or newer.
 
--   CMake v3.21 or newer.
+-   CMake v3.21 or newer running on Microsoft Windows.
 
 -   clang 13.0.0 or newer is required for precompiled header analysis. Set environment variable `clang_ROOT` to folder 
     path if not found automatically.
 
 -   clang-tidy 13.0.0 or newer. Set environment variable `clang-tidy_ROOT` to folder path if not found
-    automatically.
+    automatically. Script `run-clang-tidy.py` is expected in the same path.
 
 -   include-what-you-use executable 0.16 or newer. Set environment variable `include-what-you-use_ROOT` to folder path
     if not found automatically. `iwyu_tool.py` is expected in the same path as well as the configuration file
     `stl.c.headers.imp`.
 
--   Running include-what-you-use requires Python. Set CMake variable `Python_EXECUTABLE` to file path if interpreter is
-    not found automatically.
+-   Running clang-tidy (required only for unity builds, but always checked) and include-what-you-use requires Python.
+    Set CMake variable `Python_EXECUTABLE` to file path if interpreter is not found automatically.
 
 ## License
 The code is released under the Apache License Version 2.0. Please see [LICENSE](LICENSE) for details and

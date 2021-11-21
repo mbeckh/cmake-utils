@@ -17,6 +17,7 @@
 # Usage: cmake
 #        -D CMAKE_MAKE_PROGRAM=<file>
 #        -D TARGET=<name>
+#        -D PROJECT_SOURCE_DIR=<path>
 #        -D SOURCE_DIR=<path>
 #        -D BINARY_DIR=<path>
 #        -D SOURCES=<file>;...
@@ -47,11 +48,14 @@ if(result)
     message(FATAL_ERROR "Error ${result}:\n${error}")
 endif()
 
+cmake_path(RELATIVE_PATH SOURCE_DIR BASE_DIRECTORY "${PROJECT_SOURCE_DIR}" OUTPUT_VARIABLE relative)
+if(relative)
+    string(APPEND relative "/")
+endif()
+regex_escape_pattern(relative)
 regex_escape_replacement(SOURCE_DIR OUT replacement)
-# remove comments
-string(REGEX REPLACE "(^|\n)CMakeFiles/[^/\n]+/([^:\n]*)\\.[^.:\n]*: #[^\n]*" "${replacement}/\\2:\t" dependencies "${dependencies}")
-# cannot reference optional group in replacement
-string(REGEX REPLACE "(^|\n)([^:\n]+/)CMakeFiles/[^/\n]+/([^:\n]*)\\.[^.:\n]*: #[^\n]*" "${replacement}/\\2\\3:\t" dependencies "${dependencies}")
+# remove comments (wrap optional group to support replacement)
+string(REGEX REPLACE "(^|\n)${relative}(([^/\n]+/)*)CMakeFiles/[^/\n]+/([^:\n]*)\\.[^.:\n]*: #[^\n]*" "${replacement}/\\2\\4:\t" dependencies "${dependencies}")
 # place all headers on a single line
 string(REGEX REPLACE "\n+ +" "\t" dependencies "${dependencies}")
 # remove empty lines
