@@ -59,6 +59,8 @@ function(z_clang_tidy_unity target #[[ OUTPUT <output> [ DEPENDS <dependencies> 
         message(FATAL_ERROR "OUTPUT is missing for z_clang_tidy_unity")
     endif()
 
+    set_property(TARGET "${target}" APPEND_STRING PROPERTY UNITY_BUILD_CODE_BEFORE_INCLUDE "// NOLINTNEXTLINE(bugprone-suspicious-include)")
+
     get_target_property(source_dir "${target}" SOURCE_DIR)
     get_target_property(binary_dir "${target}" BINARY_DIR)
 
