@@ -17,7 +17,8 @@
 # Usage: cmake
 #        -D CLANG=<file>
 #        -D TARGET=<name>
-#        -D SOURCE_DIR=<path>
+#        -D PROJECT_SOURCE_DIR=<path>
+#        -D PROJECT_BINARY_DIR=<path>
 #        -D BINARY_DIR=<path>
 #        [ -D FILES=<file>;... | -D PCH=<language> ]
 #        -D OUTPUT=<file>
@@ -43,7 +44,7 @@ if(PCH)
     set(pch_source_pattern "^${binary_dir_pattern}/CMakeFiles/${target_pattern}\\.dir/cmake_pch\\.c(.+)$")
 endif()
 
-set(vcpkg_build_dir "${BINARY_DIR}/vcpkg_installed/")
+set(vcpkg_build_dir "${PROJECT_BINARY_DIR}/vcpkg_installed/")
 
 foreach(i RANGE ${count})
     string(JSON file GET "${compile_commands}" ${i} "file")
@@ -108,7 +109,7 @@ foreach(i RANGE ${count})
         endif()
 
         cmake_path(CONVERT "${file}" TO_CMAKE_PATH_LIST file NORMALIZE)
-        cmake_path(IS_PREFIX SOURCE_DIR "${file}" NORMALIZE prefix_source)
+        cmake_path(IS_PREFIX PROJECT_SOURCE_DIR "${file}" NORMALIZE prefix_source)
         cmake_path(IS_PREFIX BINARY_DIR "${file}" NORMALIZE prefix_binary)
         cmake_path(IS_PREFIX vcpkg_build_dir "${file}" NORMALIZE prefix_vcpkg)
         if(prefix_source AND NOT prefix_binary)

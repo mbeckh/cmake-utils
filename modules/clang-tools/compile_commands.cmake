@@ -27,7 +27,7 @@ foreach(i RANGE ${count})
     math(EXPR index "${count} - ${i}")
     string(JSON command GET "${compile_commands}" ${index} "command")
 
-    if(NOT command MATCHES " [/-]FoCMakeFiles[/\\\\]${TARGET}\\.dir[/\\\\]")
+    if(NOT command MATCHES " [/-]Fo([^/\\\\]+[/\\\\])*CMakeFiles[/\\\\]${TARGET}\\.dir[/\\\\]")
         # entry belongs to a different target 
         string(JSON compile_commands REMOVE "${compile_commands}" ${index})
         continue()

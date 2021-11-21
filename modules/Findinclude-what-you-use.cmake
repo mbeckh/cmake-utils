@@ -42,7 +42,7 @@ if(include-what-you-use_EXE)
         endif()
     endif()
 endif()
-mark_as_advanced(include-what-you-use_EXE include-what-you-use_PY include-what-you-use_IMP_STDLIB)
+mark_as_advanced(include-what-you-use_EXE include-what-you-use_PY include-what-you-use_ROOT include-what-you-use_IMP_STDLIB)
 find_package_handle_standard_args(include-what-you-use
                                   REQUIRED_VARS include-what-you-use_EXE include-what-you-use_PY include-what-you-use_IMP_STDLIB ClangTools_FOUND Python_FOUND
                                   VERSION_VAR include-what-you-use_VERSION

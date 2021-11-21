@@ -61,7 +61,7 @@ function(z_cmake_utils_settings_shared)
     foreach(suffix "" "_DEBUG" "_RELEASE")
         foreach(language C CXX)
             if(CMAKE_${language}_FLAGS${suffix})
-                string(REGEX REPLACE "(^| )[/-]((D(WIN32|_WINDOWS|_?UNICODE|[_N]DEBUG|WINVER|_WIN32_WINNT)(=[^ ]*)?)|GR-?|M[DT]d?|EH([sc]|sc)|Z[7iI]|O[12dgistxy]|Ob[0-9]|RTC1|w|W[0-4])($| )" " " flags "${CMAKE_${language}_FLAGS${suffix}}")
+                string(REGEX REPLACE "(^| )[/-]((D(WIN32|_WINDOWS|_?UNICODE|[_N]DEBUG|WINVER|_WIN32_WINNT)(=[^ ]*)?)|GR-?|M[DT]d?|EH([sc]|sc)|Z[7iI]|O[12dgistxy]|Ob[0-9]|RTC1|bigobj|w|W[0-4])($| )" " " flags "${CMAKE_${language}_FLAGS${suffix}}")
                 string(STRIP "${flags}" flags)
                 string(REGEX REPLACE "  +" " " flags "${flags}")
                 set(CMAKE_${language}_FLAGS${suffix} "${flags}" CACHE STRING "" FORCE)
@@ -95,7 +95,7 @@ function(z_cmake_utils_settings_shared)
     add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:/W4;/wd4373;$<$<CONFIG:Release>:/WX>>")
 
     # Compiler behavior
-    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:/nologo;/MP;/diagnostics:caret>")
+    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:/nologo;/MP;/diagnostics:caret;/bigobj>")
 
     #
     # Linker options
