@@ -90,21 +90,27 @@ function(z_clang_tidy_unity target #[[ OUTPUT <output> [ DEPENDS <dependencies> 
     endif()
 
     add_custom_command(OUTPUT "${CMAKE_BINARY_DIR}/${arg_OUTPUT}"
-                       COMMAND "${CMAKE_COMMAND}" -E rm -f "${CMAKE_BINARY_DIR}/${arg_OUTPUT}"
+                       COMMAND "${CMAKE_COMMAND}" -E rm -f "${CMAKE_BINARY_DIR}/.clang-tools/${arg_OUTPUT}"
                        COMMAND "${Python_EXECUTABLE}" "${clang-tidy_PY}"
                                 "-clang-tidy-binary=${clang-tidy_EXE}"
                                 -p "${CMAKE_BINARY_DIR}/.clang-tools/${target}"
                                 "-extra-arg=-fmsc-version=${MSVC_VERSION}"
                                 "-extra-arg=-Qunused-arguments"
                                 "-header-filter=.*"
-                                >> "${CMAKE_BINARY_DIR}/${arg_OUTPUT}" || "${CMAKE_COMMAND}" -E true
+                                >> "${CMAKE_BINARY_DIR}/.clang-tools/${arg_OUTPUT}" || "${CMAKE_COMMAND}" -E true
                        COMMAND powershell -ExecutionPolicy Bypass
                                -File "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/remove-shell-colors.ps1"
-                               "${CMAKE_BINARY_DIR}/${arg_OUTPUT}"
+                               "${CMAKE_BINARY_DIR}/.clang-tools/${arg_OUTPUT}"
+                       COMMAND "${CMAKE_COMMAND}"
+                               -D "TOOL=clang-tidy"
+                               -D "OUTPUT=${CMAKE_BINARY_DIR}/${arg_OUTPUT}"
+                               -D "FILES=${CMAKE_BINARY_DIR}/.clang-tools/${arg_OUTPUT}"
+                               -P "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/cat.cmake"
                        DEPENDS ${arg_DEPENDS}
                                "clang-tools-compile_commands-${target}"
                                "${depends}"
                                "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/remove-shell-colors.ps1"
+                               "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/cat.cmake"
                        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
                        COMMENT "clang-tidy (${target}): Analyzing"
                        VERBATIM)
