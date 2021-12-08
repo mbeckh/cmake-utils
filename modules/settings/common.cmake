@@ -59,7 +59,10 @@ function(z_cmake_utils_settings_common)
     #
 
     # Treat all non-local packages (e.g. in vcpkg) as third party code
-    set(CMAKE_VS_JUST_MY_CODE_DEBUGGING ON CACHE BOOL "")
+    if(CMAKE_BUILD_TYPE MATCHES "[Dd][Ee]?[Bb][Uu]?[Gg]" OR CMAKE_BUILD_TYPE MATCHES "[Ww][Ii][Tt][Hh][Dd][Ee][Bb][Ii][Nn][Ff][Oo]")
+        # Configurations matching Debug, Dbg, Debg, Dbug and WithDebInfo (case insensitive) are treated as debug
+        set(CMAKE_VS_JUST_MY_CODE_DEBUGGING ON CACHE BOOL "")
+    endif()
 
     # Includes
     add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:/experimental:external;/external:W0>")
