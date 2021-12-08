@@ -48,6 +48,7 @@
   { include: ["<windef.h>", "private", "<windows.h>", "public" ] },
   { include: ["<winerror.h>", "private", "<windows.h>", "public" ] },
   { include: ["<winnls.h>", "private", "<windows.h>", "public" ] },
+  { include: ["<winscard.h>", "private", "<windows.h>", "public" ] },
   { include: ["<winuser.h>", "private", "<windows.h>", "public" ] },
   { include: ["<wtypesbase.h>", "private", "<windows.h>", "public" ] },
   
@@ -71,32 +72,36 @@
   { symbol: ["PROPERTYKEY", "private", "<wtypes.h>", "public" ] },
 
   { symbol: ["std::copy", "private", "<algorithm>", "public" ] },
+  { symbol: ["std::max", "private", "<algorithm>", "public" ] },
+  { symbol: ["std::min", "private", "<algorithm>", "public" ] },
   { symbol: ["std::remove", "private", "<algorithm>", "public" ] },
   { symbol: ["std::swap", "private", "<algorithm>", "public" ] },
 
-  { symbol: ["round", "private", "<cmath>", "public" ] },
+  { symbol: ["std::round", "private", "<cmath>", "public" ] },
 
-  { symbol: ["size_t", "private", "<cstddef>", "public" ] },
+  { symbol: ["std::size_t", "private", "<cstddef>", "public" ] },
 
   { symbol: ["uintptr_t", "private", "<cstdint>", "public" ] },
   { symbol: ["INT_MAX", "private", "<cstdint>", "public" ] },
 
-  { symbol: ["size_t", "private", "<cstdio>", "public" ] },
+  { symbol: ["std::size_t", "private", "<cstdio>", "public" ] },
   { symbol: ["stderr", "private", "<cstdio>", "public" ] },
 
-  { symbol: ["size_t", "private", "<cstdlib>", "public" ] },
+  { symbol: ["std::size_t", "private", "<cstdlib>", "public" ] },
 
   { symbol: ["std::memcpy", "private", "<cstring>", "public" ] },
   { symbol: ["memcpy", "private", "<cstring>", "public" ] },
-  { symbol: ["memcmp", "private", "<cstring>", "public" ] },
+  { symbol: ["std::memcmp", "private", "<cstring>", "public" ] },
+  { symbol: ["std::memset", "private", "<cstring>", "public" ] },
   { symbol: ["memset", "private", "<cstring>", "public" ] },
-  { symbol: ["size_t", "private", "<cstring>", "public" ] },
+  { symbol: ["std::size_t", "private", "<cstring>", "public" ] },
+  { symbol: ["std::strchr", "private", "<cstring>", "public" ] },
   { symbol: ["strchr", "private", "<cstring>", "public" ] },
 
-  { symbol: ["size_t", "private", "<ctime>", "public" ] },
+  { symbol: ["std::size_t", "private", "<ctime>", "public" ] },
 
-  { symbol: ["size_t", "private", "<cwchar>", "public" ] },
-  { symbol: ["wcslen", "private", "<cwchar>", "public" ] },
+  { symbol: ["std::size_t", "private", "<cwchar>", "public" ] },
+  { symbol: ["std::wcslen", "private", "<cwchar>", "public" ] },
 
   { symbol: ["std::exception", "private", "<exception>", "public" ] },
   { symbol: ["std::terminate", "private", "<exception>", "public" ] },
@@ -108,6 +113,9 @@
   { symbol: ["std::prev", "private", "<iterator>", "public" ] },
 
   { symbol: ["std::addressof", "private", "<memory>", "public" ] },
+  { symbol: ["std::construct_at", "private", "<memory>", "public" ] },
+  { symbol: ["std::destroy_at", "private", "<memory>", "public" ] },
+  { symbol: ["std::to_address", "private", "<memory>", "public" ] },
 
   { symbol: ["std::align_val_t", "private", "<new>", "public" ] },
   { symbol: ["std::bad_alloc", "private", "<new>", "public" ] },
@@ -121,21 +129,30 @@
   { symbol: ["std::basic_string", "private", "<string>", "public" ] },
   { symbol: ["std::char_traits", "private", "<string>", "public" ] },
 
+  { symbol: ["std::basic_string_view", "private", "<string_view>", "public" ] },
   { symbol: ["std::string_view", "private", "<string_view>", "public" ] },
   { symbol: ["std::_String_view_iterator", "private", "<string_view>", "public" ] },
   { symbol: ["std::wstring_view", "private", "<string_view>", "public" ] },
+  
+  { symbol: ["std::type_info", "private", "<typeinfo>", "public" ] },
+  { symbol: ["type_info", "private", "<typeinfo>", "public" ] },
   
   { symbol: ["std::get", "private", "<tuple>", "public" ] },
   { symbol: ["std::tuple_element", "private", "<tuple>", "public" ] },
   { symbol: ["std::tuple_size_v", "private", "<tuple>", "public" ] },
 
+  { symbol: ["std::bool_constant", "private", "<type_traits>", "public" ] },
+  { symbol: ["std::conditional_t", "private", "<type_traits>", "public" ] },
   { symbol: ["std::disjunction", "private", "<type_traits>", "public" ] },
   { symbol: ["std::enable_if_t", "private", "<type_traits>", "public" ] },
+  { symbol: ["std::false_type", "private", "<type_traits>", "public" ] },
   { symbol: ["std::is_same", "private", "<type_traits>", "public" ] },
   { symbol: ["std::is_same_v", "private", "<type_traits>", "public" ] },
+  { symbol: ["std::remove_const_t", "private", "<type_traits>", "public" ] },
   { symbol: ["std::remove_cv_t", "private", "<type_traits>", "public" ] },
   { symbol: ["std::remove_cvref_t", "private", "<type_traits>", "public" ] },
   { symbol: ["std::remove_reference_t", "private", "<type_traits>", "public" ] },
+  { symbol: ["std::true_type", "private", "<type_traits>", "public" ] },
 
   { symbol: ["std::forward", "private", "<utility>", "public" ] },
   { symbol: ["std::move", "private", "<utility>", "public" ] },
