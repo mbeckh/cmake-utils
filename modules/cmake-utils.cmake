@@ -71,8 +71,8 @@ set(VCPKG_FEATURE_FLAGS "versions,registries,binarycaching" CACHE PATH "Default 
 set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "Default configuration for vcpkg")
 
 # Hooks to include additional user settings or overrides
-include("${CMAKE_CURRENT_LIST_DIR}/../UserSettings.cmake" OPTIONAL)
-include("${CMAKE_SOURCE_DIR}/cmake/UserSettings.cmake" OPTIONAL)
+include("${CMAKE_CURRENT_LIST_DIR}/../UserSettings.cmake" OPTIONAL NO_POLICY_SCOPE)
+include("${CMAKE_SOURCE_DIR}/cmake/UserSettings.cmake" OPTIONAL NO_POLICY_SCOPE)
 
 # Fire up vcpkg if required
 if(EXISTS "${CMAKE_SOURCE_DIR}/vcpkg.json")
