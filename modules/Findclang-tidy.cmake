@@ -82,6 +82,7 @@ function(z_clang_tidy_unity target #[[ OUTPUT <output> [ DEPENDS <dependencies> 
         cmake_path(GET relative PARENT_PATH relative)
     endwhile()
 
+    # Make .clang-tidy config available to generated source files
     set(src "${PROJECT_SOURCE_DIR}/.clang-tidy")
     if(EXISTS "${src}")
         set(dst "${binary_dir}/CMakeFiles/.clang-tidy")
@@ -115,6 +116,7 @@ function(z_clang_tidy_unity target #[[ OUTPUT <output> [ DEPENDS <dependencies> 
                                "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/cat.cmake"
                        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
                        COMMENT "clang-tidy (${target}): Analyzing"
+                       JOB_POOL use_all_cpus
                        VERBATIM)
 endfunction()
 

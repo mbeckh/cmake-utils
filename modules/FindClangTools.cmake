@@ -108,7 +108,7 @@ endfunction()
 # Main entry function to run commands for all source files.
 # Schedules call until current directory is processed so that targets are fully populated.
 #
- function(clang_tools_run #[[ <tool> [ [ NAME <name> ] TARGETS <target> ... [ FILTER <function> ] [UNITY <function>] MAP_COMMAND <command> [ <arg> ... ] [ MAP_DEPENDS <depdency> ... ] [ MAP_EXTENSION <extension> ] [ MAP_CUSTOM <function> ] [ WITH_AUX_INCLUDE ] [ REDUCE_COMMAND <command> [ <arg> ... ] [ REDUCE_DEPENDS <dependency> ... ] ] ]])
+ function(clang_tools_run #[[ <tool> [ [ NAME <name> ] TARGETS <target> ... [ FILTER <function> ] [UNITY <function>] MAP_COMMAND <command> [ <arg> ... ] [ MAP_DEPENDS <depdency> ... ] [ MAP_EXTENSION <extension> ] [ MAP_CUSTOM <function> ] [ MAP_JOB_POOL <pool> ] [ WITH_AUX_INCLUDE ] [ REDUCE_COMMAND <command> [ <arg> ... ] [ REDUCE_DEPENDS <dependency> ... ] ] ]])
     # Force replacement of variables inside this function
     string(CONFIGURE [=[cmake_language(DEFER DIRECTORY "${PROJECT_BINARY_DIR}" CALL z_clang_tools_deferred @ARGV@)]=] code @ONLY ESCAPE_QUOTES)
     cmake_language(EVAL CODE ${code})
@@ -117,8 +117,8 @@ endfunction()
 #
 # Helper function used by clang_tools_run. Actually run the commands for all targets.
 #
-function(z_clang_tools_deferred tool #[[ [ NAME <name> ] TARGETS <target> ... [ FILTER <function> ] [UNITY <function>] MAP_COMMAND <command> [ <arg> ... ] [ MAP_DEPENDS <depdency> ... ] [ MAP_EXTENSION <extension> ] [ MAP_CUSTOM <function> ] [ WITH_AUX_INCLUDE ] [ REDUCE_COMMAND <command> [ <arg> ... ] [ REDUCE_DEPENDS <dependency> ... ] ] ]])
-    cmake_parse_arguments(PARSE_ARGV 1 arg "WITH_AUX_INCLUDE" "NAME;FILTER;UNITY;MAP_EXTENSION;MAP_CUSTOM" "TARGETS;MAP_COMMAND;MAP_DEPENDS;REDUCE_COMMAND;REDUCE_DEPENDS")
+function(z_clang_tools_deferred tool #[[ [ NAME <name> ] TARGETS <target> ... [ FILTER <function> ] [UNITY <function>] MAP_COMMAND <command> [ <arg> ... ] [ MAP_DEPENDS <depdency> ... ] [ MAP_EXTENSION <extension> ] [ MAP_CUSTOM <function> ] [ MAP_JOB_POOL <pool> ] [ WITH_AUX_INCLUDE ] [ REDUCE_COMMAND <command> [ <arg> ... ] [ REDUCE_DEPENDS <dependency> ... ] ] ]])
+    cmake_parse_arguments(PARSE_ARGV 1 arg "WITH_AUX_INCLUDE" "NAME;FILTER;UNITY;MAP_EXTENSION;MAP_CUSTOM;MAP_JOB_POOL" "TARGETS;MAP_COMMAND;MAP_DEPENDS;REDUCE_COMMAND;REDUCE_DEPENDS")
     if(NOT arg_NAME)
         set(arg_NAME "${tool}")
     endif()
@@ -354,6 +354,12 @@ set(OUTPUTS "@aux_includes_maps@")
 
             z_clang_tools_configure("${arg_MAP_COMMAND}" command)
             z_clang_tools_configure("${arg_MAP_DEPENDS}" depends)
+            if(arg_MAP_JOB_POOL)
+                z_clang_tools_configure("${arg_MAP_JOB_POOL}" job_pool)
+                set(job_pool JOB_POOL "${job_pool}")
+            else()
+                unset(job_pool)
+            endif()
 
             if(arg_WITH_AUX_INCLUDE)
                 list(APPEND depends "${target}-aux-includes"
@@ -367,6 +373,7 @@ set(OUTPUTS "@aux_includes_maps@")
                                        ${depends}
                                WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
                                COMMENT "${arg_NAME} (${target}): ${relative}"
+                               ${job_pool}
                                VERBATIM)
             list(APPEND results "${CMAKE_BINARY_DIR}/${output}")
         endforeach()

@@ -18,6 +18,8 @@
 
 # include_guard is already present in including file
 
+include(ProcessorCount)
+
 #
 # Function to keep global scope cleaner.
 #
@@ -41,6 +43,16 @@ function(z_cmake_utils_settings_shared)
                             WIN32=1 _WINDOWS=1
                             "$<$<CONFIG:Debug>:_DEBUG=1>" "$<$<CONFIG:Release>:NDEBUG=1>"
                             WINVER=0x0A00 _WIN32_WINNT=0x0A00)
+
+    ProcessorCount(cpu_count)
+    if(NOT cpu_count)
+        mesage(STATUS "Cannot determine CPU count")
+    else()
+        get_cmake_property(job_pools JOB_POOLS)
+        if(NOT job_pools MATCHES [[(^|;)use_all_cpus=[0-9]+]])
+            set_property(GLOBAL APPEND PROPERTY JOB_POOLS "use_all_cpus=${cpu_count}")
+        endif()
+    endif()
 
     # Remaining settings are MSVC only (i.e. not relevant for analysis with clang-tidy)
     if(NOT MSVC)
@@ -107,6 +119,11 @@ function(z_cmake_utils_settings_shared)
         string(APPEND CMAKE_STATIC_LINKER_FLAGS_RELEASE " /LTCG")
         string(STRIP "${CMAKE_STATIC_LINKER_FLAGS_RELEASE}" CMAKE_STATIC_LINKER_FLAGS_RELEASE)
         set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE}" CACHE STRING "" FORCE)
+    if(cpu_count)
+        add_link_options("$<$<OR:$<BOOL:$<TARGET_PROPERTY:INTERPROCEDURAL_OPTIMIZATION>>,$<BOOL:$<TARGET_PROPERTY:INTERPROCEDURAL_OPTIMIZATION_$<UPPER_CASE:$<CONFIG>>>>>:/CGTHREADS:${cpu_count}>")
+        if(CMAKE_INTERPROCEDURAL_OPTIMIZATION OR CMAKE_INTERPROCEDURAL_OPTIMIZATION_${CMAKE_BUILD_TYPE})
+            set(CMAKE_JOB_POOL_LINK "use_all_cpus" CACHE STRING "")
+        endif()
     endif()
 
     # Debug information
