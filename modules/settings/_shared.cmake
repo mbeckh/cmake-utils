@@ -77,7 +77,7 @@ function(z_cmake_utils_settings_shared)
     foreach(suffix "" "_DEBUG" "_RELEASE")
         foreach(language C CXX)
             if(CMAKE_${language}_FLAGS${suffix})
-                string(REGEX REPLACE "(^| )[/-]((D(WIN32|_WINDOWS|_?UNICODE|[_N]DEBUG|WINVER|_WIN32_WINNT)(=[^ ]*)?)|GR-?|M[DT]d?|EH([sc]|sc)|Z[7iI]|O[12dgistxy]|Ob[0-9]|RTC1|bigobj|w|W[0-4])($| )" " " flags "${CMAKE_${language}_FLAGS${suffix}}")
+                string(REGEX REPLACE "(^| )[/-]((D(WIN32|_WINDOWS|_?UNICODE|[_N]DEBUG|WINVER|_WIN32_WINNT)(=[^ ]*)?)|bigobj|GR-?|EH([sc]|sc)|M[DT]d?|O[12dgistxy]|Ob[0-9]|RTC1|utf-8|w|W[0-4]|Z[7iI])($| )" " " flags "${CMAKE_${language}_FLAGS${suffix}}")
                 string(STRIP "${flags}" flags)
                 string(REGEX REPLACE "  +" " " flags "${flags}")
                 set(CMAKE_${language}_FLAGS${suffix} "${flags}" CACHE STRING "" FORCE)
@@ -86,7 +86,7 @@ function(z_cmake_utils_settings_shared)
 
         foreach(output EXE SHARED MODULE STATIC)
             if(CMAKE_${output}_LINKER_FLAGS${suffix})
-                string(REGEX REPLACE "(^| )[/-](([Ll][Tt][Cc][Gg]|[Oo][Pp][Tt]|[Dd][Ee][Bb][Uu][Gg]|[Ii][Nn][Cc][Rr][Ee][Mm][Ee][Nn][Tt][Aa][Ll])(:[^ ]*)?)($| )" " " flags "${CMAKE_${output}_LINKER_FLAGS${suffix}}")
+                string(REGEX REPLACE "(^| )[/-](([Dd][Ee][Bb][Uu][Gg]|[Ii][Nn][Cc][Rr][Ee][Mm][Ee][Nn][Tt][Aa][Ll]|[Ll][Tt][Cc][Gg]|[Oo][Pp][Tt])(:[^ ]*)?)($| )" " " flags "${CMAKE_${output}_LINKER_FLAGS${suffix}}")
                 string(STRIP "${flags}" flags)
                 string(REGEX REPLACE "  +" " " flags "${flags}")
                 set(CMAKE_${output}_LINKER_FLAGS${suffix} "${flags}" CACHE STRING "" FORCE)
@@ -102,7 +102,7 @@ function(z_cmake_utils_settings_shared)
     add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:/EHsc;/GR-;/permissive-;$<$<CONFIG:Release>:/Zc:inline>>")
 
     # Optimizations
-    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:$<$<CONFIG:Debug>:/Od>;$<$<CONFIG:Release>:/O2;/Ob3;/Gw>>")
+    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:$<$<CONFIG:Debug>:/Od>;$<$<CONFIG:Release>:/Gw;/O2;/Ob3>>")
 
     # Checks
     add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:$<$<CONFIG:Debug>:/RTC1>;/sdl>")
@@ -111,7 +111,7 @@ function(z_cmake_utils_settings_shared)
     add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:/W4;/wd4373;$<$<CONFIG:Release>:/WX>>")
 
     # Compiler behavior
-    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:/nologo;/diagnostics:caret;/bigobj>")
+    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:/nologo;/bigobj;/diagnostics:caret;/utf-8>")
 
     #
     # Linker options
