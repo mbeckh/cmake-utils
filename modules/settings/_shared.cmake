@@ -31,12 +31,16 @@ function(z_cmake_utils_settings_shared)
     endif()
 
     # Default postfix
-    set(CMAKE_DEBUG_POSTFIX "d" CACHE STRING "")
+    if(NOT DEFINED CMAKE_DEBUG_POSTFIX)
+        set(CMAKE_DEBUG_POSTFIX "d" CACHE STRING "")
+    endif()
 
     # Favor e.g. vcpkg's gtest over FindGTest
     set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ON CACHE BOOL "Prefer config mode for vcpkg")
 
-    set(CMAKE_OPTIMIZE_DEPENDENCIES ON CACHE BOOL "")
+    if(NOT DEFINED CMAKE_OPTIMIZE_DEPENDENCIES)
+        set(CMAKE_OPTIMIZE_DEPENDENCIES ON CACHE BOOL "")
+    endif()
 
     # Unicode for Windows 10
     add_compile_definitions(UNICODE=1 _UNICODE=1
@@ -98,7 +102,7 @@ function(z_cmake_utils_settings_shared)
     add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:/EHsc;/GR-;/permissive-;$<$<CONFIG:Release>:/Zc:inline>>")
 
     # Optimizations
-    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:$<$<CONFIG:Debug>:/Od>;$<$<CONFIG:Release>:/O2;/Ob3;/GL;/Gw>>")
+    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:$<$<CONFIG:Debug>:/Od>;$<$<CONFIG:Release>:/O2;/Ob3;/Gw>>")
 
     # Checks
     add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:$<$<CONFIG:Debug>:/RTC1>;/sdl>")
@@ -107,18 +111,18 @@ function(z_cmake_utils_settings_shared)
     add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:/W4;/wd4373;$<$<CONFIG:Release>:/WX>>")
 
     # Compiler behavior
-    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:/nologo;/MP;/diagnostics:caret;/bigobj>")
+    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:/nologo;/diagnostics:caret;/bigobj>")
 
     #
     # Linker options
     #
 
     # Optimization
-    add_link_options("$<$<CONFIG:Release>:/LTCG;/OPT:ICF;/OPT:REF>")
-    if(NOT CMAKE_STATIC_LINKER_FLAGS_RELEASE MATCHES "(^| )[/-]LTCG( |$)")
-        string(APPEND CMAKE_STATIC_LINKER_FLAGS_RELEASE " /LTCG")
-        string(STRIP "${CMAKE_STATIC_LINKER_FLAGS_RELEASE}" CMAKE_STATIC_LINKER_FLAGS_RELEASE)
-        set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE}" CACHE STRING "" FORCE)
+    add_link_options("$<$<CONFIG:Release>:/OPT:ICF;/OPT:REF>")
+
+    if(NOT DEFINED CMAKE_INTERPROCEDURAL_OPTIMIZATION AND NOT DEFINED CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE)
+        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON CACHE BOOL "")
+    endif()
     if(cpu_count)
         add_link_options("$<$<OR:$<BOOL:$<TARGET_PROPERTY:INTERPROCEDURAL_OPTIMIZATION>>,$<BOOL:$<TARGET_PROPERTY:INTERPROCEDURAL_OPTIMIZATION_$<UPPER_CASE:$<CONFIG>>>>>:/CGTHREADS:${cpu_count}>")
         if(CMAKE_INTERPROCEDURAL_OPTIMIZATION OR CMAKE_INTERPROCEDURAL_OPTIMIZATION_${CMAKE_BUILD_TYPE})
@@ -130,7 +134,8 @@ function(z_cmake_utils_settings_shared)
     add_link_options(/PDBALTPATH:%_PDB%)
 
     # Linker behavior
-    add_link_options(/NOLOGO "/INCREMENTAL$<$<CONFIG:Release>::NO>")
+    # LTCG adds /INCREMENTAL switch automatically
+    add_link_options(/NOLOGO "$<$<NOT:$<OR:$<BOOL:$<TARGET_PROPERTY:INTERPROCEDURAL_OPTIMIZATION>>,$<BOOL:$<TARGET_PROPERTY:INTERPROCEDURAL_OPTIMIZATION_$<UPPER_CASE:$<CONFIG>>>>>>:/INCREMENTAL$<$<CONFIG:Release>::NO>>")
     if(NOT CMAKE_STATIC_LINKER_FLAGS MATCHES "(^| )[/-]NOLOGO( |$)")
         string(APPEND CMAKE_STATIC_LINKER_FLAGS " /NOLOGO")
         string(STRIP "${CMAKE_STATIC_LINKER_FLAGS}" CMAKE_STATIC_LINKER_FLAGS)
