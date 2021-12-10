@@ -130,12 +130,6 @@ function(z_cmake_utils_settings_shared)
             set(CMAKE_JOB_POOL_LINK "use_all_cpus" CACHE STRING "")
         endif()
     endif()
-    if(CMAKE_INTERPROCEDURAL_OPTIMIZATION OR (NOT DEFINED CMAKE_INTERPROCEDURAL_OPTIMIZATION_${config} OR CMAKE_INTERPROCEDURAL_OPTIMIZATION_${config}))
-        string(APPEND CMAKE_STATIC_LINKER_FLAGS_${config} " /LTCG")
-        string(STRIP "${CMAKE_STATIC_LINKER_FLAGS_${config}}" CMAKE_STATIC_LINKER_FLAGS_${config})
-        set(CMAKE_STATIC_LINKER_FLAGS_${config} "${CMAKE_STATIC_LINKER_FLAGS_${config}}" CACHE STRING "" FORCE)
-    endif()
-
 
     # Debug information
     add_link_options(/PDBALTPATH:%_PDB%)
@@ -157,9 +151,9 @@ function(z_cmake_utils_settings_shared)
         set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE}" CACHE STRING "" FORCE)
     endif()
 
-	#
-	# Resource compiler options
-	#
+    #
+    # Resource compiler options
+    #
 
     if(NOT CMAKE_RC_FLAGS MATCHES "(^| )[/-][Nn][Oo][Ll][Oo][Gg][Oo]( |$)")
         string(APPEND CMAKE_RC_FLAGS " /nologo")
