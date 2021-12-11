@@ -29,6 +29,9 @@ endif()
 # Compiler options
 #
 
+# Switch off precompiled headers, leads to LNK4206 or https://developercommunity.visualstudio.com/t/linkexe-stuck-on-github-when-using-compiler-option/1610957
+set(CMAKE_DISABLE_PRECOMPILE_HEADERS YES CACHE BOOL "" FORCE)
+
 # Debug information
 add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:/Z7>"
                     # cannot combine into one argument because CMake gets trailing backslash wrong
