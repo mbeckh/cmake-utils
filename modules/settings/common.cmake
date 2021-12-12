@@ -66,7 +66,7 @@ function(z_cmake_utils_settings_common)
 
     # Includes
     add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:/experimental:external;/external:W0>")
-    set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "/external:I " CACHE STRING "" FORCE)
+    set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "/external:I" CACHE STRING "" FORCE)
 
     # Debug information
     add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:$<IF:$<CONFIG:Debug>,/ZI,/Z7>;/FS>")
