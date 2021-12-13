@@ -59,7 +59,7 @@ function(z_cmake_utils_settings_common)
     #
 
     # Treat all non-local packages (e.g. in vcpkg) as third party code
-    if(CMAKE_BUILD_TYPE MATCHES "[Dd][Ee]?[Bb][Uu]?[Gg]" OR CMAKE_BUILD_TYPE MATCHES "[Ww][Ii][Tt][Hh][Dd][Ee][Bb][Ii][Nn][Ff][Oo]")
+    if((CMAKE_BUILD_TYPE MATCHES "[Dd][Ee]?[Bb][Uu]?[Gg]" OR CMAKE_BUILD_TYPE MATCHES "[Ww][Ii][Tt][Hh][Dd][Ee][Bb][Ii][Nn][Ff][Oo]") AND NOT CMU_DISABLE_DEBUG_INFORMATION)
         # Configurations matching Debug, Dbg, Debg, Dbug and WithDebInfo (case insensitive) are treated as debug
         set(CMAKE_VS_JUST_MY_CODE_DEBUGGING ON CACHE BOOL "")
     endif()
@@ -68,22 +68,23 @@ function(z_cmake_utils_settings_common)
     add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:/experimental:external;/external:W0>")
     set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "/external:I " CACHE STRING "" FORCE)
 
-    # Debug information
-    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:$<IF:$<CONFIG:Debug>,/ZI,/Z7>;/FS>")
+    if(NOT CMU_DISABLE_DEBUG_INFORMATION)
+        # Debug information
+        add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:$<IF:$<CONFIG:Debug>,/ZI,/Z7>;/FS>")
 
-    # Google Test Adapter requires full paths (which prohibits the use of /d1trimfile)
-    # OpenCppCoverage requires untrimmed paths to apply filtering
-    add_compile_options("$<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<OR:${gtest_targets}>>:/FC>"
-                        # cannot combine into one argument because CMake gets trailing backslash wrong
-                        "$<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<NOT:$<OR:$<CONFIG:Debug>,${gtest_targets}>>>:/d1trimfile:$<SHELL_PATH:$<TARGET_PROPERTY:SOURCE_DIR>/>>"
-                        "$<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<NOT:$<OR:$<CONFIG:Debug>,${gtest_targets}>>>:/d1trimfile:$<SHELL_PATH:$<TARGET_PROPERTY:BINARY_DIR>/>>")
+        # Google Test Adapter requires full paths (which prohibits the use of /d1trimfile)
+        # OpenCppCoverage requires untrimmed paths to apply filtering
+        add_compile_options("$<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<OR:${gtest_targets}>>:/FC>"
+                            # cannot combine into one argument because CMake gets trailing backslash wrong
+                            "$<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<NOT:$<OR:$<CONFIG:Debug>,${gtest_targets}>>>:/d1trimfile:$<SHELL_PATH:$<TARGET_PROPERTY:SOURCE_DIR>/>>"
+                            "$<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<NOT:$<OR:$<CONFIG:Debug>,${gtest_targets}>>>:/d1trimfile:$<SHELL_PATH:$<TARGET_PROPERTY:BINARY_DIR>/>>")
 
-
-    # Place program database in output folder using the default name, else single file compilation is broken in Visual Studio
-    # cf. https://developercommunity.visualstudio.com/t/CMake-single-file-compilation-broken-whe/1394819
-    # Not used in vcpkg which uses /Z7. Also do not interfere with PDB handling in port.
-    # Currently disabled because /Zi gives linker warnings because of parallel access to pdb in root directory
-    # cmake_language(DEFER DIRECTORY "${CMAKE_SOURCE_DIR}" CALL cmake_utils_for_each_target z_cmake_utils_set_compile_pdb)
+        # Place program database in output folder using the default name, else single file compilation is broken in Visual Studio
+        # cf. https://developercommunity.visualstudio.com/t/CMake-single-file-compilation-broken-whe/1394819
+        # Not used in vcpkg which uses /Z7. Also do not interfere with PDB handling in port.
+        # Currently disabled because /Zi gives linker warnings because of parallel access to pdb in root directory
+        # cmake_language(DEFER DIRECTORY "${CMAKE_SOURCE_DIR}" CALL cmake_utils_for_each_target z_cmake_utils_set_compile_pdb)
+    endif()
 
     #
     # Linker options
@@ -91,7 +92,11 @@ function(z_cmake_utils_settings_common)
 
     # Debug information
     # Google Test Adapter requires /DEBUG:FULL
-    add_link_options("/DEBUG:$<IF:$<OR:$<NOT:$<CONFIG:Debug>>,${gtest_targets}>,FULL,FASTLINK>")
+    if(CMU_DISABLE_DEBUG_INFORMATION)
+        add_link_options("/DEBUG:NONE")
+    else()
+        add_link_options("/DEBUG:$<IF:$<OR:$<NOT:$<CONFIG:Debug>>,${gtest_targets}>,FULL,FASTLINK>")
+    endif()
 endfunction()
 
 z_cmake_utils_settings_common()
