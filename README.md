@@ -120,5 +120,4 @@ Add one or more external tools within Visual Studio with the following settings:
     Set CMake variable `Python_EXECUTABLE` to file path if interpreter is not found automatically.
 
 ## License
-The code is released under the Apache License Version 2.0. Please see [LICENSE](LICENSE) for details and
-[NOTICE](NOTICE) for the required information when using llamalog in your own work.
+The code is released under the Apache License Version 2.0. Please see [LICENSE](LICENSE) for details.
