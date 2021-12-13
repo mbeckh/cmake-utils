@@ -37,6 +37,9 @@ Modules for building projects using [CMake](https://cmake.org/).
 
 -   Optional user overrides are read from `cmake-utils/UserSettings.cmake` and `${CMAKE_SOURCE_DIR}/cmake/UserSettings.cmake`.
 
+-   Setting CMake variable `CMU_DISABLE_DEBUG_INFORMATION` to `true` skips generation of debug information and PDB
+    to speed up builds when debug information is not required (e.g. in some CI scenarios).
+
 ## Changes to Build
 -   Enables CMake option `BUILD_TESTING` if a project is at the top level (`PROJECT_IS_TOP_LEVEL`).
 
@@ -120,5 +123,4 @@ Add one or more external tools within Visual Studio with the following settings:
     Set CMake variable `Python_EXECUTABLE` to file path if interpreter is not found automatically.
 
 ## License
-The code is released under the Apache License Version 2.0. Please see [LICENSE](LICENSE) for details and
-[NOTICE](NOTICE) for the required information when using llamalog in your own work.
+The code is released under the Apache License Version 2.0. Please see [LICENSE](LICENSE) for details.

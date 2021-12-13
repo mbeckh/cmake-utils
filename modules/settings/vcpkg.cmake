@@ -42,5 +42,5 @@ add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:/Z7>"
 # Linker options
 #
 
-# Debug information
+# Debug information (always added, does NOT evaluate CMU_DISABLE_DEBUG_INFORMATION because result might be cached and re-used by different builds)
 add_link_options(/DEBUG:FULL)
