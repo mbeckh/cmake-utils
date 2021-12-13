@@ -54,12 +54,14 @@ function(z_cmake_utils_settings_common)
     endforeach()
     list(JOIN gtest_targets "," gtest_targets)
 
+    string(TOUPPER "${CMAKE_BUILD_TYPE}" config)
+
     #
     # Compiler options
     #
 
     # Treat all non-local packages (e.g. in vcpkg) as third party code
-    if((CMAKE_BUILD_TYPE MATCHES "[Dd][Ee]?[Bb][Uu]?[Gg]" OR CMAKE_BUILD_TYPE MATCHES "[Ww][Ii][Tt][Hh][Dd][Ee][Bb][Ii][Nn][Ff][Oo]") AND NOT CMU_DISABLE_DEBUG_INFORMATION)
+    if((config MATCHES "DE?BU?G" OR CMAKE_BUILD_TYPE MATCHES "WITHDEBINFO") AND NOT CMU_DISABLE_DEBUG_INFORMATION AND NOT CMU_DISABLE_DEBUG_INFORMATION_${config})
         # Configurations matching Debug, Dbg, Debg, Dbug and WithDebInfo (case insensitive) are treated as debug
         set(CMAKE_VS_JUST_MY_CODE_DEBUGGING ON CACHE BOOL "")
     endif()
@@ -68,7 +70,7 @@ function(z_cmake_utils_settings_common)
     add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:/experimental:external;/external:W0>")
     set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "/external:I " CACHE STRING "" FORCE)
 
-    if(NOT CMU_DISABLE_DEBUG_INFORMATION)
+    if(NOT CMU_DISABLE_DEBUG_INFORMATION AND NOT CMU_DISABLE_DEBUG_INFORMATION_${config})
         # Debug information
         add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:$<IF:$<CONFIG:Debug>,/ZI,/Z7>;/FS>")
 
@@ -92,7 +94,7 @@ function(z_cmake_utils_settings_common)
 
     # Debug information
     # Google Test Adapter requires /DEBUG:FULL
-    if(CMU_DISABLE_DEBUG_INFORMATION)
+    if(CMU_DISABLE_DEBUG_INFORMATION OR CMU_DISABLE_DEBUG_INFORMATION_${config})
         add_link_options("/DEBUG:NONE")
     else()
         add_link_options("/DEBUG:$<IF:$<OR:$<NOT:$<CONFIG:Debug>>,${gtest_targets}>,FULL,FASTLINK>")

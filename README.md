@@ -37,8 +37,9 @@ Modules for building projects using [CMake](https://cmake.org/).
 
 -   Optional user overrides are read from `cmake-utils/UserSettings.cmake` and `${CMAKE_SOURCE_DIR}/cmake/UserSettings.cmake`.
 
--   Setting CMake variable `CMU_DISABLE_DEBUG_INFORMATION` to `true` skips generation of debug information and PDB
-    to speed up builds when debug information is not required (e.g. in some CI scenarios).
+-   Setting CMake variable `CMU_DISABLE_DEBUG_INFORMATION` or `CMU_DISABLE_DEBUG_INFORMATION_<Config>` to `true`
+    skips generation of debug information and PDB to speed up builds when debug information is not required
+    (e.g. in some CI scenarios).
 
 ## Changes to Build
 -   Enables CMake option `BUILD_TESTING` if a project is at the top level (`PROJECT_IS_TOP_LEVEL`).
