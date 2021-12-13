@@ -110,8 +110,8 @@ function(z_cmake_utils_settings_shared)
     # Warnings
     add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:/W4;/wd4373;$<$<CONFIG:Release>:/WX>>")
 
-    # Compiler behavior
-    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:/nologo;/bigobj;/diagnostics:caret;/utf-8>")
+    # Compiler behavior (/MP is required by CodeQL scanning on Github)
+    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:/nologo;/bigobj;/diagnostics:caret;/utf-8;/MP>")
 
     #
     # Linker options
