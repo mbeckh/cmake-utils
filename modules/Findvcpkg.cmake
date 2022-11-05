@@ -64,8 +64,13 @@ function(z_vcpkg_get_revision)
     set(vcpkg_REVISION "${revision}" PARENT_SCOPE)
 endfunction()
 
-if(NOT DEFINED vcpkg_ROOT AND DEFINED ENV{vcpkg_ROOT})
-    set(vcpkg_ROOT "$ENV{vcpkg_ROOT}")
+if(NOT DEFINED vcpkg_ROOT AND DEFINED ENV{VCPKG_ROOT})
+    set(vcpkg_ROOT "$ENV{VCPKG_ROOT}")
+endif()
+
+# Root on Github is stored in VCPKG_INSTALLATION_ROOT 
+if(NOT DEFINED vcpkg_ROOT AND DEFINED ENV{VCPKG_INSTALLATION_ROOT})
+    set(vcpkg_ROOT "$ENV{VCPKG_INSTALLATION_ROOT}")
 endif()
 
 if(DEFINED vcpkg_ROOT)
