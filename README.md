@@ -6,7 +6,7 @@ Modules for building projects using [CMake](https://cmake.org/).
 [![License](https://img.shields.io/github/license/mbeckh/cmake-utils?label=License&style=flat-square)](https://github.com/mbeckh/cmake-utils/blob/master/LICENSE)
 
 ## Features
--   Common build settings for Visual Studio 2019 v16.11 / MSVC 19.29.
+-   Common build settings for Visual Studio 2019 and 2022.
 
 -   Bootstrapping of [vcpkg](https://github.com/microsoft/vcpkg).
 

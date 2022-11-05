@@ -97,7 +97,10 @@ function(z_cmake_utils_settings_common)
     if(CMU_DISABLE_DEBUG_INFORMATION OR CMU_DISABLE_DEBUG_INFORMATION_${config})
         add_link_options("/DEBUG:NONE")
     else()
-        add_link_options("/DEBUG:$<IF:$<OR:$<NOT:$<CONFIG:Debug>>,${gtest_targets}>,FULL,FASTLINK>")
+        #add_link_options("/DEBUG:$<IF:$<OR:$<NOT:$<CONFIG:Debug>>,${gtest_targets}>,FULL,FASTLINK>")
+        # Fix for https://developercommunity.visualstudio.com/t/VS2022-linkexe-access-violation-when-us/10094721
+        # Also see https://devblogs.microsoft.com/cppblog/playground-games-and-turn-10-studios-see-18-2x-and-4-95x-link-time-improvements-respectively-on-visual-studio-2019/#comments for reasons for not using /DEBUG:FASTLINK
+        add_link_options("/DEBUG:FULL")
     endif()
 endfunction()
 
