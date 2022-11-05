@@ -25,7 +25,7 @@ jobs:
         key: vcpkg_installed-${{matrix.configuration}}-${{hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json', '!build/**')}}
 
     - name: Setup MSVC Environment
-      uses: mbeckh/msvc-dev-cmd@master
+      uses: mbeckh/msvc-dev-cmd@v1
 
     - name: Configure
       uses: ./configure
