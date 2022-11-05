@@ -53,7 +53,7 @@ include(FindPackageHandleStandardArgs)
 
 function(z_vcpkg_get_version)
     execute_process(COMMAND "${vcpkg_EXE}" version OUTPUT_VARIABLE out)
-    if(out MATCHES "Vcpkg package management program version [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-([0-9a-f]+)")
+    if(out MATCHES "[Vv]cpkg package management program version [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-([0-9a-f]+)")
         set(vcpkg_REVISION "${CMAKE_MATCH_1}" PARENT_SCOPE)
     endif()
 endfunction()
@@ -66,11 +66,6 @@ endfunction()
 
 if(NOT DEFINED vcpkg_ROOT AND DEFINED ENV{VCPKG_ROOT})
     set(vcpkg_ROOT "$ENV{VCPKG_ROOT}")
-endif()
-
-# Root on Github is stored in VCPKG_INSTALLATION_ROOT 
-if(NOT DEFINED vcpkg_ROOT AND DEFINED ENV{VCPKG_INSTALLATION_ROOT})
-    set(vcpkg_ROOT "$ENV{VCPKG_INSTALLATION_ROOT}")
 endif()
 
 if(DEFINED vcpkg_ROOT)
