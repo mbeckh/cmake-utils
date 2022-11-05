@@ -76,7 +76,7 @@ include("${CMAKE_SOURCE_DIR}/cmake/UserSettings.cmake" OPTIONAL NO_POLICY_SCOPE)
 
 # Fire up vcpkg if required
 if(EXISTS "${CMAKE_SOURCE_DIR}/vcpkg.json")
-    find_package(vcpkg MODULE)
+    find_package(vcpkg MODULE REQUIRED)
 endif()
 
 # Make check utils available
