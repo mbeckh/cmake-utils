@@ -97,9 +97,6 @@ jobs:
     needs: build
     
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-
     - name: Report
       uses: mbeckh/code-quality-actions/report@master
       with:
