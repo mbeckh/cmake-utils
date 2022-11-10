@@ -1,0 +1,104 @@
+name: Build
+
+on:
+  workflow_call:
+    inputs:
+      unity:
+        description: Use unity build in CMake.
+        default: true
+        type: boolean
+      extra-args:
+        description: Extra arguments for CMake configure.
+        type: string
+    secrets:
+      CODACY_PROJECT_API_TOKEN:
+        required: true
+
+jobs:
+  build:
+    name: Build and Analyze
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        configuration: [ Debug, Release ]
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Cache vcpkg
+      uses: actions/cache@v3
+      with:
+        path: build/${{matrix.configuration}}/vcpkg_installed
+        key: vcpkg_installed-${{matrix.configuration}}-${{hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json', '!build/**')}}
+
+    - name: Setup MSVC Environment
+      uses: mbeckh/msvc-dev-cmd@v1
+
+    - name: Configure
+      uses: mbeckh/cmake-utils/configure@v1
+      with:
+        build-root: build
+        binary-dir: build/${{matrix.configuration}}
+        configuration: ${{matrix.configuration}}
+        extra-args: ${{inputs.unity && '-D CMAKE_UNITY_BUILD:BOOL=ON -D CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON' || ''}} ${{inputs.extra-args}}
+
+    - name: Build
+      shell: cmd
+      working-directory: build/${{matrix.configuration}}
+      run: cmake --build .
+
+    - name: Test
+      if: matrix.configuration != 'Debug'
+      shell: cmd
+      working-directory: build/${{matrix.configuration}}
+      run: ctest --output-on-failure
+
+    - name: Coverage
+      if: matrix.configuration == 'Debug'
+      uses: mbeckh/code-quality-actions/coverage@v1
+      with:
+        binary-dir: build/${{matrix.configuration}}
+        codacy-token: ${{secrets.CODACY_PROJECT_API_TOKEN}}
+
+    - name: Codecov
+      if: matrix.configuration == 'Debug'
+      uses: codecov/codecov-action@v3
+      with:
+        files: build/${{matrix.configuration}}/coverage-*.xml
+        fail_ci_if_error: true
+        
+    - name: Analyze
+      shell: cmd
+      working-directory: build/${{matrix.configuration}}
+      run: cmake --build . --target clang-tidy
+
+    - name: Report
+      uses: mbeckh/code-quality-actions/report@v1
+      with:
+        mode: partial
+        binary-dir: build/${{matrix.configuration}}
+        codacy-token: ${{secrets.CODACY_PROJECT_API_TOKEN}}
+
+    - name: Save Logs
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{matrix.configuration}}-Logs
+        path: |
+            build/**/vcpkg-buildtrees/*/*.log
+            !build/**/vcpkg-buildtrees/detect_compiler
+            build/${{matrix.configuration}}/Testing/**/*.log
+            build/${{matrix.configuration}}/clang-tidy-*.log
+  
+  final:
+    name: Send Completion Message
+    runs-on: windows-latest
+    needs: build
+    
+    steps:
+    - name: Report
+      uses: mbeckh/code-quality-actions/report@v1
+      with:
+        mode: final
+        codacy-token: ${{secrets.CODACY_PROJECT_API_TOKEN}}

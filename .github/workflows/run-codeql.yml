@@ -1,0 +1,61 @@
+name: CodeQL
+
+on:
+  workflow_call:
+    inputs:
+      unity:
+        description: Use unity build in CMake.
+        default: true
+        type: boolean
+      extra-args:
+        description: Extra arguments for CMake configure.
+        type: string
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: windows-latest
+    permissions:
+      security-events: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Cache vcpkg
+      uses: actions/cache@v3
+      with:
+        path: build/Release/vcpkg_installed
+        key: vcpkg_installed-Release-${{hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json', '!build/**')}}
+
+    - name: Setup MSVC Environment
+      uses: mbeckh/msvc-dev-cmd@v1
+
+    - name: Configure
+      uses: mbeckh/cmake-utils/configure@v1
+      with:
+        build-root: build
+        binary-dir: build/Release
+        configuration: Release
+        extra-args: -D CMU_DISABLE_DEBUG_INFORMATION:BOOL=ON ${{inputs.unity && '-D CMAKE_UNITY_BUILD:BOOL=ON -D CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON' || ''}} ${{inputs.extra-args}}
+
+    - name: Initialize CodeQL
+      if: github.event_name != 'pull_request'
+      uses: github/codeql-action/init@v1
+      with:
+        languages: cpp
+        queries: security-and-quality
+
+    - name: Initialize CodeQL for Pull Request
+      if: github.event_name == 'pull_request'
+      uses: github/codeql-action/init@v1
+      with:
+        languages: cpp
+
+    - name: Build
+      shell: cmd
+      working-directory: build/Release
+      run: cmake --build .
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v1
