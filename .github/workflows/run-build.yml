@@ -36,7 +36,7 @@ jobs:
       uses: mbeckh/msvc-dev-cmd@v1
 
     - name: Configure
-      uses: mbeckh/cmake-utils/configure@master
+      uses: mbeckh/cmake-utils/configure@v1
       with:
         build-root: build
         binary-dir: build/${{matrix.configuration}}
@@ -56,7 +56,7 @@ jobs:
 
     - name: Coverage
       if: matrix.configuration == 'Debug'
-      uses: mbeckh/code-quality-actions/coverage@master
+      uses: mbeckh/code-quality-actions/coverage@v1
       with:
         binary-dir: build/${{matrix.configuration}}
         codacy-token: ${{secrets.CODACY_PROJECT_API_TOKEN}}
@@ -74,7 +74,7 @@ jobs:
       run: cmake --build . --target clang-tidy
 
     - name: Report
-      uses: mbeckh/code-quality-actions/report@master
+      uses: mbeckh/code-quality-actions/report@v1
       with:
         mode: partial
         binary-dir: build/${{matrix.configuration}}
@@ -98,7 +98,7 @@ jobs:
     
     steps:
     - name: Report
-      uses: mbeckh/code-quality-actions/report@master
+      uses: mbeckh/code-quality-actions/report@v1
       with:
         mode: final
         codacy-token: ${{secrets.CODACY_PROJECT_API_TOKEN}}
