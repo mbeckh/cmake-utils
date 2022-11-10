@@ -3,10 +3,6 @@ name: CodeQL
 on:
   workflow_call:
     inputs:
-      unity:
-        description: Use unity build in CMake.
-        default: true
-        type: boolean
       extra-args:
         description: Extra arguments for CMake configure.
         type: string
@@ -37,7 +33,7 @@ jobs:
         build-root: build
         binary-dir: build/Release
         configuration: Release
-        extra-args: -D CMU_DISABLE_DEBUG_INFORMATION:BOOL=ON ${{inputs.unity && '-D CMAKE_UNITY_BUILD:BOOL=ON -D CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON' || ''}} ${{inputs.extra-args}}
+        extra-args: -D CMU_DISABLE_DEBUG_INFORMATION:BOOL=ON -D CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON ${{inputs.extra-args}}
 
     - name: Initialize CodeQL
       if: github.event_name != 'pull_request'
