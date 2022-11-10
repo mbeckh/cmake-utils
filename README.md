@@ -69,7 +69,7 @@ header check.
 Example:
 ~~~yml
     - name: Configure
-      uses: mbeckh/cmake-utils/configure@master
+      uses: mbeckh/cmake-utils/configure@v1
       with:
         build-root: build
         binary-dir: build/Debug
