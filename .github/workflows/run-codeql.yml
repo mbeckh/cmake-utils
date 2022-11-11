@@ -33,7 +33,7 @@ jobs:
         build-root: ../build
         binary-dir: ../build/Release
         configuration: Release
-        extra-args: -D CMU_DISABLE_DEBUG_INFORMATION:BOOL=ON -D CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON ${{inputs.extra-args}}
+        extra-args: -D CMU_DISABLE_DEBUG_INFORMATION:BOOL=ON ${{inputs.extra-args}}
 
     - name: Initialize CodeQL
       if: github.event_name != 'pull_request'
