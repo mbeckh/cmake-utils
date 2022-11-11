@@ -1,4 +1,4 @@
-# Copyright 2021 Michael Beckh
+# Copyright 2021-2022 Michael Beckh
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,9 +19,6 @@
 if(vcpkg_FOUND)
     return()
 endif()
-
-# vcpkg revision
-set(vcpkg_INSTALL_REVISION "70033dbb31527fb3e69654731f540f59c87787f9" CACHE STRING "Revision of vcpkg if not using system binaries")
 
 #
 # Check and configure required settings
@@ -53,58 +50,79 @@ include(FindPackageHandleStandardArgs)
 
 function(z_vcpkg_get_version)
     execute_process(COMMAND "${vcpkg_EXE}" version OUTPUT_VARIABLE out)
-    if(out MATCHES "[Vv]cpkg package management program version [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-([0-9a-f]+)")
-        set(vcpkg_REVISION "${CMAKE_MATCH_1}" PARENT_SCOPE)
+    if(out MATCHES "[Vv]cpkg package management program version ([0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[0-9a-f]+)")
+        set(vcpkg_VERSION "${CMAKE_MATCH_1}" PARENT_SCOPE)
     endif()
 endfunction()
 
 function(z_vcpkg_get_revision)
-    file(READ "${vcpkg_ROOT}/.git/HEAD" revision)
+    execute_process(COMMAND "${GIT_EXECUTABLE}" "rev-parse" "HEAD" WORKING_DIRECTORY "${vcpkg_ROOT}" OUTPUT_VARIABLE revision)
     string(STRIP "${revision}" revision)
     set(vcpkg_REVISION "${revision}" PARENT_SCOPE)
 endfunction()
 
-if(NOT DEFINED vcpkg_ROOT AND DEFINED ENV{VCPKG_ROOT})
-    set(vcpkg_ROOT "$ENV{VCPKG_ROOT}")
-endif()
-
-if(DEFINED vcpkg_ROOT)
-    # Use system vcpkg
+function(z_vcpkg_bootstrap)
     find_program(vcpkg_EXE vcpkg PATHS "${vcpkg_ROOT}" NO_DEFAULT_PATH)
     if(vcpkg_EXE)
-        z_vcpkg_get_version()
-    elseif(EXISTS "${vcpkg_ROOT}/.git/HEAD")
-        # Fallback to revision because vcpkg can bootstrap its own executable
-        z_vcpkg_get_revision()
-        set(vcpkg_EXE "${vcpkg_ROOT}/vcpkg${CMAKE_EXECUTABLE_SUFFIX}")
-    endif()
-    find_package_handle_standard_args(vcpkg REQUIRED_VARS vcpkg_ROOT vcpkg_EXE vcpkg_REVISION VERSION_VAR vcpkg_REVISION)
-else()
-    set(vcpkg_ROOT "${BUILD_ROOT}/vcpkg")
-    if(EXISTS "${vcpkg_ROOT}/.git/HEAD")
-        z_vcpkg_get_revision()
-        if(vcpkg_INSTALL_REVISION STREQUAL vcpkg_REVISION)
-            find_package_handle_standard_args(vcpkg REQUIRED_VARS vcpkg_ROOT VERSION_VAR vcpkg_REVISION)
+        if(CMAKE_HOST_WIN32)
+            set(suffix "ps1")
         else()
-            find_package(Git REQUIRED)
-            if (Git_FOUND)
-                execute_process(COMMAND "${GIT_EXECUTABLE}" "fetch" WORKING_DIRECTORY "${vcpkg_ROOT}")
-                execute_process(COMMAND "${GIT_EXECUTABLE}" "checkout" "${vcpkg_INSTALL_REVISION}" WORKING_DIRECTORY "${vcpkg_ROOT}")
-                z_vcpkg_get_revision()
-            endif()
-            find_package_handle_standard_args(vcpkg REQUIRED_VARS vcpkg_ROOT Git_FOUND VERSION_VAR vcpkg_REVISION)
+            set(suffix "sh")
         endif()
+        if("${vcpkg_EXE}" IS_NEWER_THAN "${vcpkg_ROOT}/scripts/bootstrap.${suffix}")
+            set(vcpkg_EXE "${vcpkg_EXE}" PARENT_SCOPE)
+            return()
+        endif()
+    endif()
+    
+    message(STATUS "vcpkg: Updating executable")
+    if(CMAKE_HOST_WIN32)
+        set(suffix "bat")
     else()
-        find_package(Git REQUIRED)
-        if (Git_FOUND)
-            execute_process(COMMAND "${GIT_EXECUTABLE}" "clone" "--no-checkout" "https://github.com/microsoft/vcpkg.git" "${vcpkg_ROOT}")
-            execute_process(COMMAND "${GIT_EXECUTABLE}" "checkout" "--quiet" "${vcpkg_INSTALL_REVISION}" WORKING_DIRECTORY "${vcpkg_ROOT}")
-            z_vcpkg_get_revision()
+        set(suffix "sh")
+    endif()
+    find_program(bootstrap_vcpkg "bootstrap-vcpkg.${suffix}" PATHS "${vcpkg_ROOT}" REQUIRED NO_DEFAULT_PATH)
+    if(bootstrap_vcpkg)
+        execute_process(COMMAND "${bootstrap_vcpkg}" WORKING_DIRECTORY "${vcpkg_ROOT}")
+    endif()
+    find_program(vcpkg_EXE vcpkg PATHS "${vcpkg_ROOT}" REQUIRED NO_DEFAULT_PATH)
+    set(vcpkg_EXE "${vcpkg_EXE}" PARENT_SCOPE)
+endfunction()
+
+find_package(Git REQUIRED)
+
+if(NOT DEFINED vcpkg_ROOT)
+    if(DEFINED ENV{VCPKG_ROOT})
+        set(vcpkg_ROOT "$ENV{VCPKG_ROOT}")
+    elseif(Git_FOUND)
+        set(vcpkg_ROOT "${BUILD_ROOT}/vcpkg")
+        if(NOT DEFINED vcpkg_INSTALL_REVISION)
+            # default is to use latest version
+            set(vcpkg_INSTALL_REVISION "master")
         endif()
-        find_package_handle_standard_args(vcpkg REQUIRED_VARS vcpkg_ROOT Git_FOUND VERSION_VAR vcpkg_REVISION)
+        if(EXISTS "${vcpkg_ROOT}/.git")
+            z_vcpkg_get_revision()
+            if(NOT vcpkg_INSTALL_REVISION STREQUAL vcpkg_REVISION)
+                message(STATUS "vcpkg: Updating repository")
+                execute_process(COMMAND "${GIT_EXECUTABLE}" "fetch" "--quiet" WORKING_DIRECTORY "${vcpkg_ROOT}")
+                execute_process(COMMAND "${GIT_EXECUTABLE}" "checkout" "--quiet" "${vcpkg_INSTALL_REVISION}" WORKING_DIRECTORY "${vcpkg_ROOT}")
+            endif()
+        else()
+            message(STATUS "vcpkg: Updating repository")
+            execute_process(COMMAND "${GIT_EXECUTABLE}" "clone" "--quiet" "--no-checkout" "https://github.com/microsoft/vcpkg.git" "${vcpkg_ROOT}")
+            execute_process(COMMAND "${GIT_EXECUTABLE}" "checkout" "--quiet" "${vcpkg_INSTALL_REVISION}" WORKING_DIRECTORY "${vcpkg_ROOT}")
+        endif()
     endif()
 endif()
 
+z_vcpkg_bootstrap()
+
+if(vcpkg_EXE AND Git_FOUND)
+    z_vcpkg_get_version()
+    z_vcpkg_get_revision()
+    message(STATUS "vcpkg: revision ${vcpkg_REVISION}, tool ${vcpkg_VERSION}")
+endif()
+find_package_handle_standard_args(vcpkg REQUIRED_VARS vcpkg_ROOT vcpkg_EXE vcpkg_VERSION vcpkg_REVISION Git_FOUND VERSION_VAR vcpkg_REVISION)
 
 #
 # Configure vcpkg
