@@ -108,7 +108,7 @@ Add one or more external tools within Visual Studio with the following settings:
 ## System Requirements / Tested with
 -   Visual Studio 2019 v16.11 or newer.
 
--   CMake v3.21 or newer running on Microsoft Windows.
+-   CMake v3.22 or newer running on Microsoft Windows. v3.22 is required to support `-external:I` for system includes.
 
 -   clang 13.0.0 or newer is required for precompiled header analysis. Set environment variable `clang_ROOT` to folder 
     path if not found automatically.

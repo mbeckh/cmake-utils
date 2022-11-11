@@ -1,4 +1,4 @@
-# Copyright 2021 Michael Beckh
+# Copyright 2021-2022 Michael Beckh
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -67,8 +67,10 @@ function(z_cmake_utils_settings_common)
     endif()
 
     # Includes
-    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:/experimental:external;/external:W0>")
-    set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "/external:I " CACHE STRING "" FORCE)
+    if(CMAKE_VERSION VERSION_LESS 3.22)
+        # Check support for /external:I and /external:W0
+        message(FATAL_ERROR "cmake-utils require at least CMake 3.22.")
+    endif()
 
     if(NOT CMU_DISABLE_DEBUG_INFORMATION AND NOT CMU_DISABLE_DEBUG_INFORMATION_${config})
         # Debug information
