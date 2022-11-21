@@ -7,6 +7,10 @@ on:
         description: Extra arguments for CMake configure.
         type: string
 
+concurrency: 
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   analyze:
     name: Analyze
@@ -55,3 +59,12 @@ jobs:
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
+
+    - name: Save Logs
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: Logs
+        path: |
+            ../build/**/vcpkg-buildtrees/*/*.log
+            !../build/**/vcpkg-buildtrees/detect_compiler
