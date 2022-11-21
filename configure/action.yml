@@ -22,4 +22,5 @@ runs:
     - shell: cmd
       run: |
         nuget sources Add -Source "https://nuget.pkg.github.com/${{github.repository_owner}}/index.json" -StorePasswordInClearText -Name "GitHub" -UserName "${{github.repository_owner}}" -Password "${{github.token}}" -NonInteractive
+        nuget setapikey "${{github.token}}" -Source "https://nuget.pkg.github.com/${{github.repository_owner}}/index.json" -NonInteractive
         cmake -DCMAKE_BUILD_TYPE=${{inputs.configuration}} -DBUILD_ROOT="${{github.workspace}}/${{inputs.build-root}}" -DCMAKE_TOOLCHAIN_FILE="${{github.action_path}}/../Toolchain.cmake" -Dvcpkg_ROOT="%VCPKG_INSTALLATION_ROOT%" -DVCPKG_BINARY_SOURCES=clear;nuget,GitHub,readwrite -G Ninja ${{inputs.extra-args}} -S "${{inputs.source-dir}}" -B "${{inputs.binary-dir}}"
