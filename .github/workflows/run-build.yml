@@ -14,9 +14,76 @@ on:
       CODACY_PROJECT_API_TOKEN:
         required: true
 
+concurrency: 
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
-    name: Build and Analyze
+    name: Build
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        configuration: [ Debug, Release ]
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Cache vcpkg
+      uses: actions/cache@v3
+      with:
+        path: ../build/${{matrix.configuration}}/vcpkg_installed
+        key: vcpkg_installed-${{matrix.configuration}}-${{hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json')}}
+
+    - name: Setup MSVC Environment
+      uses: mbeckh/msvc-dev-cmd@v1
+
+    - name: Configure
+      uses: mbeckh/cmake-utils/configure@v1
+      with:
+        build-root: ../build
+        binary-dir: ../build/${{matrix.configuration}}
+        configuration: ${{matrix.configuration}}
+        extra-args: ${{inputs.unity && '-D CMAKE_UNITY_BUILD:BOOL=ON -D CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON' || ''}} ${{inputs.extra-args}}
+
+    - name: Build
+      shell: cmd
+      working-directory: ../build/${{matrix.configuration}}
+      run: cmake --build .
+
+    - name: Test
+      if: matrix.configuration != 'Debug'
+      shell: cmd
+      working-directory: ../build/${{matrix.configuration}}
+      run: ctest --output-on-failure
+
+    - name: Coverage
+      if: matrix.configuration == 'Debug'
+      uses: mbeckh/code-quality-actions/coverage@v1
+      with:
+        binary-dir: ../build/${{matrix.configuration}}
+        codacy-token: ${{secrets.CODACY_PROJECT_API_TOKEN}}
+
+    - name: Codecov
+      if: matrix.configuration == 'Debug'
+      uses: codecov/codecov-action@v3
+      with:
+        files: ../build/${{matrix.configuration}}/coverage-*.xml
+        fail_ci_if_error: true
+        
+    - name: Save Build Logs
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{matrix.configuration}}-Build-Logs
+        path: |
+            ../build/**/vcpkg-buildtrees/*/*.log
+            !../build/**/vcpkg-buildtrees/detect_compiler
+            ../build/${{matrix.configuration}}/Testing/**/*.log
+  
+  analyze:
+    name: Analyze
     runs-on: windows-latest
     strategy:
       matrix:
@@ -43,31 +110,6 @@ jobs:
         configuration: ${{matrix.configuration}}
         extra-args: ${{inputs.unity && '-D CMAKE_UNITY_BUILD:BOOL=ON -D CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON' || ''}} ${{inputs.extra-args}}
 
-    - name: Build
-      shell: cmd
-      working-directory: build/${{matrix.configuration}}
-      run: cmake --build .
-
-    - name: Test
-      if: matrix.configuration != 'Debug'
-      shell: cmd
-      working-directory: build/${{matrix.configuration}}
-      run: ctest --output-on-failure
-
-    - name: Coverage
-      if: matrix.configuration == 'Debug'
-      uses: mbeckh/code-quality-actions/coverage@v1
-      with:
-        binary-dir: build/${{matrix.configuration}}
-        codacy-token: ${{secrets.CODACY_PROJECT_API_TOKEN}}
-
-    - name: Codecov
-      if: matrix.configuration == 'Debug'
-      uses: codecov/codecov-action@v3
-      with:
-        files: build/${{matrix.configuration}}/coverage-*.xml
-        fail_ci_if_error: true
-        
     - name: Analyze
       shell: cmd
       working-directory: build/${{matrix.configuration}}
@@ -80,21 +122,20 @@ jobs:
         binary-dir: build/${{matrix.configuration}}
         codacy-token: ${{secrets.CODACY_PROJECT_API_TOKEN}}
 
-    - name: Save Logs
+    - name: Save Analyze Logs
       if: always()
       uses: actions/upload-artifact@v3
       with:
-        name: ${{matrix.configuration}}-Logs
+        name: ${{matrix.configuration}}-Analyze-Logs
         path: |
             build/**/vcpkg-buildtrees/*/*.log
             !build/**/vcpkg-buildtrees/detect_compiler
-            build/${{matrix.configuration}}/Testing/**/*.log
             build/${{matrix.configuration}}/clang-tidy-*.log
   
   final:
     name: Send Completion Message
     runs-on: windows-latest
-    needs: build
+    needs: analyze
     
     steps:
     - name: Report
