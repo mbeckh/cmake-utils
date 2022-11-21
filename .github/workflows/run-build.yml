@@ -33,8 +33,8 @@ jobs:
     - name: Cache vcpkg
       uses: actions/cache@v3
       with:
-        path: ../build/${{matrix.configuration}}/vcpkg_installed
-        key: vcpkg_installed-${{matrix.configuration}}-${{hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json')}}
+        path: build/${{matrix.configuration}}/vcpkg_installed
+        key: vcpkg_installed-${{matrix.configuration}}-${{hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json', '!build/**')}}
 
     - name: Setup MSVC Environment
       uses: mbeckh/msvc-dev-cmd@v1
@@ -42,34 +42,34 @@ jobs:
     - name: Configure
       uses: mbeckh/cmake-utils/configure@v1
       with:
-        build-root: ../build
-        binary-dir: ../build/${{matrix.configuration}}
+        build-root: build
+        binary-dir: build/${{matrix.configuration}}
         configuration: ${{matrix.configuration}}
         extra-args: ${{inputs.unity && '-D CMAKE_UNITY_BUILD:BOOL=ON -D CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON' || ''}} ${{inputs.extra-args}}
 
     - name: Build
       shell: cmd
-      working-directory: ../build/${{matrix.configuration}}
+      working-directory: build/${{matrix.configuration}}
       run: cmake --build .
 
     - name: Test
       if: matrix.configuration != 'Debug'
       shell: cmd
-      working-directory: ../build/${{matrix.configuration}}
+      working-directory: build/${{matrix.configuration}}
       run: ctest --output-on-failure
 
     - name: Coverage
       if: matrix.configuration == 'Debug'
       uses: mbeckh/code-quality-actions/coverage@v1
       with:
-        binary-dir: ../build/${{matrix.configuration}}
+        binary-dir: build/${{matrix.configuration}}
         codacy-token: ${{secrets.CODACY_PROJECT_API_TOKEN}}
 
     - name: Codecov
       if: matrix.configuration == 'Debug'
       uses: codecov/codecov-action@v3
       with:
-        files: ../build/${{matrix.configuration}}/coverage-*.xml
+        files: build/${{matrix.configuration}}/coverage-*.xml
         fail_ci_if_error: true
         
     - name: Save Build Logs
@@ -78,9 +78,9 @@ jobs:
       with:
         name: ${{matrix.configuration}}-Build-Logs
         path: |
-            ../build/**/vcpkg-buildtrees/*/*.log
-            !../build/**/vcpkg-buildtrees/detect_compiler
-            ../build/${{matrix.configuration}}/Testing/**/*.log
+            build/**/vcpkg-buildtrees/*/*.log
+            !build/**/vcpkg-buildtrees/detect_compiler
+            build/${{matrix.configuration}}/Testing/**/*.log
   
   analyze:
     name: Analyze
