@@ -4,23 +4,23 @@ on:
   push:
     branches: [ master, 'feature**' ]
     paths:
-      - .github/workflows/**
-      - !.github/workflows/run-**
-      - configure/**
-      - modules/**
-      - scripts/**
-      - test/**
-      - Toolchain.cmake
+      - '.github/workflows/**'
+      - '!.github/workflows/run-**'
+      - 'configure/**'
+      - 'modules/**'
+      - 'scripts/**'
+      - 'test/**'
+      - 'Toolchain.cmake'
   pull_request:
     branches: [ master ]
     paths:
-      - .github/workflows/**
-      - !.github/workflows/run-**
-      - configure/**
-      - modules/**
-      - scripts/**
-      - test/**
-      - Toolchain.cmake
+      - '.github/workflows/**'
+      - '!.github/workflows/run-**'
+      - 'configure/**'
+      - 'modules/**'
+      - 'scripts/**'
+      - 'test/**'
+      - 'Toolchain.cmake'
 
 jobs:
   build:
