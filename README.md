@@ -40,7 +40,10 @@ Modules for building projects using [CMake](https://cmake.org/).
 -   Setting CMake variable `CMU_DISABLE_DEBUG_INFORMATION` or `CMU_DISABLE_DEBUG_INFORMATION_<Config>` to `true`
     skips generation of debug information and PDB to speed up builds when debug information is not required
     (e.g. in some CI scenarios).
-
+    
+-   If CMake variable `CMU_DISABLE_CLANG_TOOLS` is set to `true`, configure will skip detection of clang. This can speed up
+    generation of CMake cache in some scenarios (e.g. slow detection of Python interpreter) if a plain build is sufficient.
+    
 ## Changes to Build
 -   Enables CMake option `BUILD_TESTING` if a project is at the top level (`PROJECT_IS_TOP_LEVEL`).
 
