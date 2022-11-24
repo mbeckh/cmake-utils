@@ -2,7 +2,7 @@
 Modules for building projects using [CMake](https://cmake.org/).
 
 [![Release](https://img.shields.io/github/v/release/mbeckh/cmake-utils?display_name=tag&sort=semver&label=Release&style=flat-square)](https://github.com/mbeckh/cmake-utils/releases/)
-[![Tests](https://img.shields.io/github/workflow/status/mbeckh/cmake-utils/test/master?label=Tests&logo=GitHub&style=flat-square)](https://github.com/mbeckh/cmake-utils/actions)
+[![Tests](https://img.shields.io/github/workflow/status/mbeckh/cmake-utils/Test/master?label=Tests&logo=GitHub&style=flat-square)](https://github.com/mbeckh/cmake-utils/actions)
 [![License](https://img.shields.io/github/license/mbeckh/cmake-utils?label=License&style=flat-square)](https://github.com/mbeckh/cmake-utils/blob/master/LICENSE)
 
 ## Features
