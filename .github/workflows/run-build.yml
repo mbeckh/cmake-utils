@@ -38,6 +38,8 @@ jobs:
 
     - name: Setup MSVC Environment
       uses: mbeckh/msvc-dev-cmd@v1
+      with:
+        toolset: 14.34
 
     - name: Configure
       uses: mbeckh/cmake-utils/configure@workflow
@@ -101,6 +103,8 @@ jobs:
 
     - name: Setup MSVC Environment
       uses: mbeckh/msvc-dev-cmd@v1
+      with:
+        toolset: 14.34
 
     - name: Configure
       uses: mbeckh/cmake-utils/configure@v1
