@@ -40,7 +40,7 @@ jobs:
       uses: mbeckh/msvc-dev-cmd@v1
 
     - name: Configure
-      uses: mbeckh/cmake-utils/configure@v1
+      uses: mbeckh/cmake-utils/configure@workflow
       with:
         build-root: build
         binary-dir: build/${{matrix.configuration}}
