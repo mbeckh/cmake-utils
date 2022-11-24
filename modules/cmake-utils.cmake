@@ -80,7 +80,7 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/vcpkg.json")
 endif()
 
 # Make check utils available
-if(NOT DEFINED CMU_CLANG_TOOLS OR CMU_CLANG_TOOLS)
+if(CMU_CLANG_TOOLS_DISABLED)
     find_package(ClangTools)
     find_package(clang-tidy)
     find_package(include-what-you-use)
