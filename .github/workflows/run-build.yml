@@ -45,7 +45,7 @@ jobs:
         build-root: build
         binary-dir: build/${{matrix.configuration}}
         configuration: ${{matrix.configuration}}
-        extra-args: ${{inputs.unity && '-D CMAKE_UNITY_BUILD:BOOL=ON -D CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON' || ''}} ${{inputs.extra-args}}
+        extra-args: ${{inputs.unity && '-D CMAKE_UNITY_BUILD:BOOL=ON -D CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON' || ''}} -D CMU_DISABLE_CLANG_TOOLS:BOOL=ON ${{inputs.extra-args}}
 
     - name: Build
       shell: cmd
