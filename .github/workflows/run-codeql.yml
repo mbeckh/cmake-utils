@@ -7,6 +7,10 @@ on:
         description: Extra arguments for CMake configure.
         type: string
 
+concurrency: 
+  group: ${{github.workflow}}-${{github.event_name}}-${{github.head_ref || github.ref}}
+  cancel-in-progress: true
+
 jobs:
   analyze:
     name: Analyze
@@ -26,6 +30,8 @@ jobs:
 
     - name: Setup MSVC Environment
       uses: mbeckh/msvc-dev-cmd@v1
+      with:
+        toolset: 14.34
 
     - name: Configure
       uses: mbeckh/cmake-utils/configure@v1
@@ -33,7 +39,7 @@ jobs:
         build-root: ../build
         binary-dir: ../build/Release
         configuration: Release
-        extra-args: -D CMU_DISABLE_DEBUG_INFORMATION:BOOL=ON ${{inputs.extra-args}}
+        extra-args: -D CMU_DISABLE_DEBUG_INFORMATION:BOOL=ON -D CMU_DISABLE_CLANG_TOOLS:BOOL=ON ${{inputs.extra-args}}
 
     - name: Initialize CodeQL
       if: github.event_name != 'pull_request'
@@ -55,3 +61,12 @@ jobs:
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
+
+    - name: Save Logs
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: Logs
+        path: |
+            ../build/**/vcpkg-buildtrees/*/*.log
+            !../build/**/vcpkg-buildtrees/detect_compiler
