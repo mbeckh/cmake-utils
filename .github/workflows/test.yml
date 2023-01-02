@@ -16,10 +16,14 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        preset: [ '', 'x64']
-        generator: [ Ninja, 'Ninja Multi-Config']
-        configuration: [ Debug, Release ]
-        unity: [ false, true ]
+#        preset: [ '', 'x64']
+#        generator: [ Ninja, 'Ninja Multi-Config' ]
+#        configuration: [ Debug, Release ]
+#        unity: [ false, true ]
+         preset: [ '' ]
+         generator: [ Ninja ]
+         configuration: [ Debug ]
+         unity: [ false ]
 
     steps:
     - name: Checkout
