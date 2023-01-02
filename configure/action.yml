@@ -28,7 +28,7 @@ runs:
         nuget setapikey "${{github.token}}" -Source "https://nuget.pkg.github.com/${{github.repository_owner}}/index.json" -NonInteractive
         cmake -DBUILD_ROOT:PATH="${{github.workspace}}/${{inputs.build-root}}" -DCMAKE_TOOLCHAIN_FILE:FILEPATH="${{github.action_path}}/../Toolchain.cmake" -Dvcpkg_ROOT:FILEPATH="%VCPKG_INSTALLATION_ROOT%" -DVCPKG_BINARY_SOURCES:STRING=clear;nuget,GitHub,readwrite ^
           ${{(inputs.generator || !inputs.preset) && format('-G "{0}"', inputs.generator || 'Ninja') || ''}} ^
-          ${{(inputs.configuration || !inputs.preset && (inputs.generator == 'Ninja' || !inputs.generator) && format('-DCMAKE_BUILD_TYPE:STRING={0}', inputs.configuration || 'Release') || ''}} ^
+          ${{(inputs.configuration || !inputs.preset && (inputs.generator == 'Ninja' || !inputs.generator)) && format('-DCMAKE_BUILD_TYPE:STRING={0}', inputs.configuration || 'Release') || ''}} ^
           ${{(inputs.configurations || !inputs.preset && inputs.generator == 'Ninja Multi-Config') && format('-DCMAKE_CONFIGURATION_TYPES:STRING={0}', inputs.configurations || 'Debug;Release') || ''}} ^
           ${{(inputs.source-dir || !inputs.preset) && format('-S "{0}"', inputs.source-dir || '.') || ''}} ^
           ${{(inputs.binary-dir || !inputs.preset) && format('-B "{0}"', inputs.binary-dir || '.') || ''}} ^
