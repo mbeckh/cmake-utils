@@ -54,7 +54,7 @@ jobs:
     - name: Test
       shell: cmd
       working-directory: build/cmake-utils
-      run: ctest --output-on-failure ${{matrix.generator == 'Ninja Multi-Config' && format('-C "{0}", matrix.configuration) || ''}}
+      run: ctest --output-on-failure ${{matrix.generator == 'Ninja Multi-Config' && format('-C "{0}"', matrix.configuration) || ''}}
 
     - name: Save Logs
       if: always()
