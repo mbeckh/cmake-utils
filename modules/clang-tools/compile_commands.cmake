@@ -38,6 +38,9 @@ if(CONFIG_SUBDIR)
     string(REGEX REPLACE "/$" "[/\\\\]" config_subdir_pattern "${CONFIG_SUBDIR}")
 endif()
 
+# compile_commands.json uses native paths
+cmake_path(NATIVE_PATH clang_EXE NORMALIZE clang_EXE)
+
 foreach(i RANGE ${count})
     math(EXPR index "${count} - ${i}")
     string(JSON command GET "${compile_commands}" ${index} "command")
