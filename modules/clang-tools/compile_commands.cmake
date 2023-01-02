@@ -54,7 +54,7 @@ foreach(i RANGE ${count})
     list(FILTER command EXCLUDE REGEX "^[/-](experimental:external|external:W[0-4])$")
     list(FILTER command EXCLUDE REGEX "^[/-](GL|MP|Z[Ii7]|Ob3|JMC)$")
     list(POP_FRONT command)
-    list(PREPEND command "${clang_EXE}" "--driver-mode=cl")
+    list(PREPEND command "\"${clang_EXE}\"" "--driver-mode=cl")
     list(INSERT command 2 "/clang:-fmsc-version=${MSVC_VERSION}"
                           "-D__clang_analyzer__"
                           "-D_CRT_USE_BUILTIN_OFFSETOF")
