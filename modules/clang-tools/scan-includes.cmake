@@ -92,7 +92,7 @@ foreach(i RANGE ${count})
                     RESULT_VARIABLE result
                     ERROR_VARIABLE results
                     OUTPUT_QUIET
-                    COMMAND_ECHO NONE)
+                    COMMAND_ECHO STDERR)
     if(result)
         message(FATAL_ERROR "Error ${result}:\n${results}")
     endif()
