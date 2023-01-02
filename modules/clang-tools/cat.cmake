@@ -1,4 +1,4 @@
-# Copyright 2021 Michael Beckh
+# Copyright 2021-2022 Michael Beckh
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,23 +18,26 @@
 #        [ -D TOOL ]
 #        [ -D COLOR=<color> | -D OUTPUT=<file> ]
 #        -D FILES=<file>;...
+#        [ -D FILES_DIR=<path> ]
 #        -P cat.cmake
 # Note: cmake -E cat Does not work: Stops on empty file as of CMake 3.20.0.
 #
-cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.25 FATAL_ERROR)
 
-if(NOT FILES)
-    message(FATAL_ERROR "No input files")
-endif()
+foreach(arg FILES)
+    if(NOT ${arg})
+        message(FATAL_ERROR "${arg} is missing or empty")
+    endif()
+endforeach()
 
 if(OUTPUT)
     if(COLOR)
-        message(FATAL_ERROR "Cannot use --output and --color at the same time")
+        message(FATAL_ERROR "Cannot use OUTPUT and COLOR at the same time")
     endif()
     file(REMOVE "${OUTPUT}")
 endif()
 
-if(COLOR STREQUAL cyan)
+if(COLOR STREQUAL "cyan")
     string(ASCII 27 esc)
     message("${esc}[96m")
 endif()
@@ -62,7 +65,7 @@ function(clang_tidy_unique var messages)
     set("${var}" "${result}" PARENT_SCOPE)
 endfunction()
 
-if(TOOL STREQUAL clang-tidy)
+if(TOOL STREQUAL "clang-tidy")
     unset(messages)
     foreach(file IN LISTS FILES)
         file(STRINGS "${file}" contents)
@@ -75,6 +78,32 @@ if(TOOL STREQUAL clang-tidy)
         file(WRITE "${OUTPUT}" "${contents}")
     else()
         message("${contents}")
+    endif()
+elseif(TOOL STREQUAL "iwyu")
+    unset(messages)
+    foreach(file IN LISTS FILES)
+        file(READ "${file}" contents)
+
+        # convert entries for files into items of a CMake list
+        string(REPLACE ";" "\\;" contents "${contents}")
+        string(REGEX REPLACE "\n---\n" "\n---;" contents "${contents}")
+        list(TRANSFORM contents STRIP)
+        list(REMOVE_ITEM contents "")
+
+        cmake_path(REMOVE_EXTENSION file LAST_ONLY)
+        cmake_path(RELATIVE_PATH file BASE_DIRECTORY "${FILES_DIR}")
+        list(APPEND messages "\n${file}:" "${contents}")
+    endforeach()
+
+    # Only keep first entry for files which have been processed more than once
+    list(REMOVE_DUPLICATES messages)
+    # Create contiguous output
+    list(JOIN messages "\n\n" messages)
+
+    if(OUTPUT)
+        file(APPEND "${OUTPUT}" "${messages}")
+    else()
+        message("${messages}")
     endif()
 else()
     foreach(file IN LISTS FILES)

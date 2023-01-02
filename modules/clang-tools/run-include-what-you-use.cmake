@@ -1,4 +1,4 @@
-# Copyright 2021 Michael Beckh
+# Copyright 2021-2022 Michael Beckh
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,53 +15,53 @@
 #
 # Run include-what-you-use for input adding --check_also for auxiliary includes.
 # Usage: cmake
-#        -D MSVC_VERSION=<version>
 #        -D Python_EXECUTABLE=<file>
 #        -D include-what-you-use_PY=<file>
 #        [ -D include-what-you-use_MAPPING_FILES=<file>;... ]
-#        -D TARGET=<name>
+#        -D COMPILE_COMMANDS_PATH=<path>
 #        -D FILES=<file>;...
-#        -D AUX_INCLUDES_FILES=<file>;...
 #        -D OUTPUT=<file>
 #        -P run-include-what-you-use.cmake
 #
-cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.25 FATAL_ERROR)
 
-if(NOT FILES)
-    message(FATAL_ERROR "No input files")
-endif()
-if(NOT OUTPUT)
-    message(FATAL_ERROR "No output file")
-endif()
-
-foreach(file aux_includes_file IN ZIP_LISTS FILES AUX_INCLUDES_FILES)
-    if(NOT EXISTS "${aux_includes_file}")
-        message(FATAL_ERROR "Include analysis missing: ${aux_includes_file}")
-    endif()
-    file(STRINGS "${aux_includes_file}" entries)
-    if(entries)
-        list(APPEND aux_includes "${entries}")
-    endif()
-    if(file MATCHES [[(^|[/\\])([^/\\]+)\.test\.[^/\\]+]])
-        list(APPEND aux_includes "*/${CMAKE_MATCH_2}.h*")
+foreach(arg Python_EXECUTABLE include-what-you-use_PY COMPILE_COMMANDS_PATH FILES OUTPUT)
+    if(NOT ${arg})
+        message(FATAL_ERROR "${arg} is missing or empty")
     endif()
 endforeach()
-list(SORT aux_includes CASE INSENSITIVE)
-list(REMOVE_DUPLICATES aux_includes)
 
-unset(options)
+include("${CMAKE_CURRENT_LIST_DIR}/../Regex.cmake")
 
-list(TRANSFORM include-what-you-use_MAPPING_FILES PREPEND "--mapping_file=")
+# Get all includes of file
+cmake_path(REPLACE_EXTENSION OUTPUT LAST_ONLY ".inc" OUTPUT_VARIABLE includes_file)
+file(STRINGS "${includes_file}" includes REGEX "U\\|")
+list(TRANSFORM includes REPLACE "^U\\|" "")
 
-list(TRANSFORM aux_includes PREPEND "--check_also=")
+# Remove all includes which are "main" includes of other source files"
+file(STRINGS "${COMPILE_COMMANDS_PATH}.sources" sources)
+foreach(source IN LISTS sources)
+    cmake_path(GET source STEM LAST_ONLY base_name)
+    string(REGEX REPLACE "([_.](unit|reg)?test)|(-inl)$" "" canonical_base_name "${base_name}")
+    regex_escape_pattern(base_name)
+    regex_escape_pattern(canonical_base_name)
 
+    list(FILTER includes EXCLUDE REGEX "(^|.+/)(${base_name}|${canonical_base_name})\\.(h|H|hpp|hxx|hh|inl)$")
+endforeach()
+
+list(SORT includes CASE INSENSITIVE)
+list(REMOVE_DUPLICATES includes)
+list(TRANSFORM includes PREPEND "--check_also=")
+
+# Options for additional mapping files
 if(include-what-you-use_MAPPING_FILES)
+    list(TRANSFORM include-what-you-use_MAPPING_FILES PREPEND "--mapping_file=")
     list(APPEND options "${include-what-you-use_MAPPING_FILES}")
 endif()
 list(APPEND options "--mapping_file=${CMAKE_CURRENT_LIST_DIR}/msvc.imp"
                     --verbose=2 --update_comments --quoted_includes_first --cxx17ns --max_line_length=256)
-if(aux_includes)
-    list(APPEND options "${aux_includes}")
+if(includes)
+    list(APPEND options "${includes}")
 endif()
 
 list(LENGTH options stop)
@@ -71,16 +71,17 @@ foreach(index RANGE 0 ${stop})
     list(INSERT options ${pos} -Xiwyu)
 endforeach()
 
-execute_process(COMMAND "${Python_EXECUTABLE}" "${include-what-you-use_PY}" -p ".clang-tools/${TARGET}" ${FILES} --
+execute_process(COMMAND "${Python_EXECUTABLE}" "${include-what-you-use_PY}" -p "${COMPILE_COMMANDS_PATH}" ${FILES} --
                         ${options}
-                        --driver-mode=cl "-fmsc-version=${MSVC_VERSION}"
-                        -Wno-unknown-attributes -Qunused-arguments
-                        -D__clang_analyzer__ -D__iwyu__ -D_CRT_USE_BUILTIN_OFFSETOF
+                        -Wno-unknown-attributes
                 RESULT_VARIABLE result
                 ERROR_VARIABLE error
-                OUTPUT_FILE "${OUTPUT}"
+                OUTPUT_VARIABLE output
                 COMMAND_ECHO NONE)
 # IWYU returns 1 as result when no errors happened
 if(NOT result EQUAL 0 AND NOT result EQUAL 1)
     message(FATAL_ERROR "Error ${result}:\n${error}")
 endif()
+
+string(REPLACE "\r" "" output "${output}")
+file(WRITE "${OUTPUT}" "${output}")

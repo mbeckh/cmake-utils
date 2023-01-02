@@ -43,10 +43,7 @@ function(z_cmake_utils_set_compile_pdb target)
         COMPILE_PDB_OUTPUT_DIRECTORY "$<TARGET_FILE_DIR:${target}>")
 endfunction()
 
-#
-# Function to keep global scope cleaner.
-#
-function(z_cmake_utils_settings_common)
+block()
     # Generator expression list for detecting dependency to Google Test
     set(gtest_targets "")
     foreach(target GTest::gtest GTest::gmock detours::gmock)
@@ -54,34 +51,38 @@ function(z_cmake_utils_settings_common)
     endforeach()
     list(JOIN gtest_targets "," gtest_targets)
 
-    string(TOUPPER "${CMAKE_BUILD_TYPE}" config)
+    set(debug "$<OR:$<AND:$<CONFIG:Debug>,$<NOT:$<BOOL:${CMU_DISABLE_DEBUG_INFORMATION_DEBUG}>>>,$<AND:$<CONFIG:RelWithDebInfo>,$<NOT:$<BOOL:${CMU_DISABLE_DEBUG_INFORMATION_RELWITHDEBINFO}>>>>")
 
     #
     # Compiler options
     #
 
     # Treat all non-local packages (e.g. in vcpkg) as third party code
-    if((config MATCHES "DE?BU?G" OR CMAKE_BUILD_TYPE MATCHES "WITHDEBINFO") AND NOT CMU_DISABLE_DEBUG_INFORMATION AND NOT CMU_DISABLE_DEBUG_INFORMATION_${config})
+    #if((config MATCHES "DE?BU?G" OR CMAKE_BUILD_TYPE MATCHES "WITHDEBINFO") AND NOT CMU_DISABLE_DEBUG_INFORMATION AND NOT CMU_DISABLE_DEBUG_INFORMATION_${config})
         # Configurations matching Debug, Dbg, Debg, Dbug and WithDebInfo (case insensitive) are treated as debug
-        set(CMAKE_VS_JUST_MY_CODE_DEBUGGING ON CACHE BOOL "")
+    #    set(CMAKE_VS_JUST_MY_CODE_DEBUGGING ON CACHE BOOL "")
+    #endif()
+    if(NOT CMU_DISABLE_DEBUG_INFORMATION)
+        set(CMAKE_VS_JUST_MY_CODE_DEBUGGING "$<IF:${debug},ON,OFF>" CACHE BOOL "")
     endif()
 
     # Includes
-    if(CMAKE_VERSION VERSION_LESS 3.22)
-        # Check support for /external:I and /external:W0
-        message(FATAL_ERROR "cmake-utils require at least CMake 3.22.")
-    endif()
-
-    if(NOT CMU_DISABLE_DEBUG_INFORMATION AND NOT CMU_DISABLE_DEBUG_INFORMATION_${config})
+    if(NOT CMU_DISABLE_DEBUG_INFORMATION)
         # Debug information
-        add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:$<IF:$<CONFIG:Debug>,/ZI,/Z7>;/FS>")
+        set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<AND:${debug},$<COMPILE_LANGUAGE:C,CXX>>:$<IF:$<CONFIG:Debug>,EditAndContinue,Embedded>>")
+        cmake_policy(GET CMP0141 msvc_debug_information_format)
+        if(msvc_debug_information_format STREQUAL NEW)
+            add_compile_options("$<$<AND:${debug},$<COMPILE_LANGUAGE:C,CXX>>:/FS>")
+        else()
+            add_compile_options("$<$<AND:${debug},$<COMPILE_LANGUAGE:C,CXX>>:$<IF:$<CONFIG:Debug>,/ZI,/Z7>;/FS>")
+        endif()
 
         # Google Test Adapter requires full paths (which prohibits the use of /d1trimfile)
         # OpenCppCoverage requires untrimmed paths to apply filtering
-        add_compile_options("$<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<OR:${gtest_targets}>>:/FC>"
+        add_compile_options("$<$<AND:${debug},$<COMPILE_LANGUAGE:C,CXX>,$<OR:${gtest_targets}>>:/FC>"
                             # cannot combine into one argument because CMake gets trailing backslash wrong
-                            "$<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<NOT:$<OR:$<CONFIG:Debug>,${gtest_targets}>>>:/d1trimfile:$<SHELL_PATH:$<TARGET_PROPERTY:SOURCE_DIR>/>>"
-                            "$<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<NOT:$<OR:$<CONFIG:Debug>,${gtest_targets}>>>:/d1trimfile:$<SHELL_PATH:$<TARGET_PROPERTY:BINARY_DIR>/>>")
+                            "$<$<AND:${debug},$<COMPILE_LANGUAGE:C,CXX>,$<NOT:$<OR:$<CONFIG:Debug>,${gtest_targets}>>>:/d1trimfile:$<SHELL_PATH:$<TARGET_PROPERTY:SOURCE_DIR>/>>"
+                            "$<$<AND:${debug},$<COMPILE_LANGUAGE:C,CXX>,$<NOT:$<OR:$<CONFIG:Debug>,${gtest_targets}>>>:/d1trimfile:$<SHELL_PATH:$<TARGET_PROPERTY:BINARY_DIR>/>>")
 
         # Place program database in output folder using the default name, else single file compilation is broken in Visual Studio
         # cf. https://developercommunity.visualstudio.com/t/CMake-single-file-compilation-broken-whe/1394819
@@ -96,14 +97,12 @@ function(z_cmake_utils_settings_common)
 
     # Debug information
     # Google Test Adapter requires /DEBUG:FULL
-    if(CMU_DISABLE_DEBUG_INFORMATION OR CMU_DISABLE_DEBUG_INFORMATION_${config})
+    if(CMU_DISABLE_DEBUG_INFORMATION)
         add_link_options("/DEBUG:NONE")
     else()
         #add_link_options("/DEBUG:$<IF:$<OR:$<NOT:$<CONFIG:Debug>>,${gtest_targets}>,FULL,FASTLINK>")
         # Fix for https://developercommunity.visualstudio.com/t/VS2022-linkexe-access-violation-when-us/10094721
         # Also see https://devblogs.microsoft.com/cppblog/playground-games-and-turn-10-studios-see-18-2x-and-4-95x-link-time-improvements-respectively-on-visual-studio-2019/#comments for reasons for not using /DEBUG:FASTLINK
-        add_link_options("/DEBUG:FULL")
+        add_link_options("/DEBUG:$<IF:${debug},FULL,NONE>")
     endif()
-endfunction()
-
-z_cmake_utils_settings_common()
+endblock()

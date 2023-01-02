@@ -1,0 +1,28 @@
+{
+  "version": 4,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 25
+  },
+  "configurePresets": [
+    {
+      "name": "x64",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "toolchainFile": "../Toolchain.cmake",
+      "binaryDir": "$env{BINARY_DIR}",
+      "cacheVariables": {
+        "BUILD_ROOT": {
+          "type": "PATH",
+          "value": "$env{BUILD_ROOT}"
+        }
+      },
+      "environment": {
+        "BINARY_DIR": "$env{BUILD_ROOT}/cmake-utils/${presetName}",
+        "CAExcludePath": "$env{BINARY_DIR}/vcpkg_installed;$env{INCLUDE}"
+      }
+    }
+  ]
+}

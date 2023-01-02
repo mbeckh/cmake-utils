@@ -32,13 +32,12 @@ if(NOT BUILD_ROOT)
     endif()
 endif()
 
-function(z_vcpkg_check_build_root_absolute)
+block()
     cmake_path(IS_ABSOLUTE BUILD_ROOT absolute)
     if(NOT absolute)
         message(FATAL_ERROR "BUILD_ROOT must be an absolute path: ${BUILD_ROOT}")
     endif()
-endfunction()
-z_vcpkg_check_build_root_absolute()
+endblock()
 
 set(BUILD_ROOT "${BUILD_ROOT}" CACHE PATH "Root output directory for all projects")
 
@@ -145,7 +144,8 @@ endif()
 
 set(VCPKG_OVERLAY_TRIPLETS "${CMAKE_CURRENT_LIST_DIR}/triplets" CACHE PATH "Additional triplets for vcpkg")
 
-function(z_vcpkg_add_tests)
+# Add tests
+block()
     if(PROJECT_IS_TOP_LEVEL AND BUILD_TESTING)
         file(READ "${CMAKE_SOURCE_DIR}/vcpkg.json" content)
         set(result "${VCPKG_MANIFEST_FEATURES}")
@@ -157,10 +157,10 @@ function(z_vcpkg_add_tests)
         endforeach()
         set(VCPKG_MANIFEST_FEATURES "${result}" PARENT_SCOPE)
     endif()
-endfunction()
-z_vcpkg_add_tests()
+endblock()
 
-function(z_vcpkg_set_install_options)
+# Set install options
+block()
     set(path "${CMAKE_BINARY_DIR}")
     while(TRUE)
         cmake_path(GET path PARENT_PATH parent)
@@ -179,8 +179,7 @@ function(z_vcpkg_set_install_options)
     endwhile()
 
     set(VCPKG_INSTALL_OPTIONS "--x-buildtrees-root=${project_root}/vcpkg-buildtrees;--x-packages-root=${project_root}/vcpkg-packages" CACHE STRING "Additional options for vcpkg")
-endfunction()
-z_vcpkg_set_install_options()
+endblock()
 
 # vcpkg does not yet allow setting the packages directory to a custom folder
 set(ENV{LOCALAPPDATA} "${BUILD_ROOT}/vcpkg-local-app-data")
@@ -233,7 +232,7 @@ function(z_vcpkg_add_path name list suffix)
         "${VCPKG_INSTALLED_DIR}/_local-${name}/${VCPKG_TARGET_TRIPLET}/debug${suffix}"
     )
     if(NOT DEFINED CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE MATCHES "^[Dd][Ee][Bb][Uu][Gg]$")
-        list(REVERSE vcpkg_paths) # Debug build: Put Debug paths before Release paths.
+        #list(REVERSE vcpkg_paths) # Debug build: Put Debug paths before Release paths.
     endif()
     if(VCPKG_PREFER_SYSTEM_LIBS)
         list(APPEND "${list}" "${vcpkg_paths}")
@@ -330,7 +329,7 @@ function(z_vcpkg_configure_local_package name)
     if(NOT name IN_LIST local)
         set_property(GLOBAL APPEND PROPERTY vcpkg_LOCAL_DEPENDENCY_NAMES "${name}")
         z_vcpkg_run("${name}" "${LOCAL_${name}_ROOT}")
-        add_subdirectory("${LOCAL_${name}_ROOT}" "${CMAKE_BINARY_DIR}/_local/${name}" EXCLUDE_FROM_ALL)
+        add_subdirectory("${LOCAL_${name}_ROOT}" "${CMAKE_BINARY_DIR}/_local/${name}" EXCLUDE_FROM_ALL SYSTEM)
         cmake_utils_for_each_target(z_vcpkg_configure_local_target DIRECTORY "${LOCAL_${name}_ROOT}")
         
         get_property(hook GLOBAL PROPERTY vcpkg_LOCAL_DEPENDENCY_HOOK)

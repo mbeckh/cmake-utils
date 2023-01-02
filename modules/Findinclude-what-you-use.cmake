@@ -1,4 +1,4 @@
-# Copyright 2021 Michael Beckh
+# Copyright 2021-2022 Michael Beckh
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -57,18 +57,17 @@ include_guard(GLOBAL)
 function(include_what_you_use #[[ <target> ... ]])
     clang_tools_run(iwyu NAME include-what-you-use
                     TARGETS ${ARGV}
+                    MAP_INCLUDES
+                    MAP_SOURCES
                     MAP_COMMAND "@CMAKE_COMMAND@"
                                 -D "MSVC_VERSION=@MSVC_VERSION@"
                                 -D "Python_EXECUTABLE=@Python_EXECUTABLE@"
                                 -D "include-what-you-use_PY=@include-what-you-use_PY@"
                                 -D "include-what-you-use_MAPPING_FILES=@include-what-you-use_IMP_STDLIB@"
-                                -D "TARGET=@target@"
+                                -D "COMPILE_COMMANDS_PATH=@target_compile_commands_path@"
                                 -D "FILES=@files@"
-                                -D "AUX_INCLUDES_FILES=@aux_includes_files@"
                                 -D "OUTPUT=@output@"
                                 -P "@CMAKE_CURRENT_FUNCTION_LIST_DIR@/clang-tools/run-include-what-you-use.cmake"
                     MAP_DEPENDS "@CMAKE_CURRENT_FUNCTION_LIST_DIR@/clang-tools/run-include-what-you-use.cmake"
-                                @include-what-you-use_IMP_STDLIB@
-                    MAP_EXTENSION iwyu
-                    WITH_AUX_INCLUDE)
+                                @include-what-you-use_IMP_STDLIB@)
 endfunction()
