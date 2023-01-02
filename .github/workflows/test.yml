@@ -70,3 +70,4 @@ jobs:
           !build/vcpkg-buildtrees/detect_compiler
           build/cmake-utils/Testing/**/*.log
           build/cmake-utils/**/clang-tidy-*.log
+          build/**/compile_commands.json
