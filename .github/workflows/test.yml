@@ -60,7 +60,7 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v3
       with:
-        name: ${matrix.preset || 'nopreset'}}-${{matrix.generator}}-${{matrix.configuration}}-${{matrix.unity && 'unity' || 'regular'}}-Logs
+        name: ${{matrix.preset || 'nopreset'}}-${{matrix.generator}}-${{matrix.configuration}}-${{matrix.unity && 'unity' || 'regular'}}-Logs
         path: |
           build/vcpkg-buildtrees/*/*.log
           !build/vcpkg-buildtrees/detect_compiler
