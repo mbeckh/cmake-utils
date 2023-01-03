@@ -87,7 +87,7 @@ foreach(i RANGE ${count})
                           /clang:-fshow-skipped-includes
                           /clang:-Wno-pragma-system-header-outside-header)
 
-    execute_process(COMMAND ${command}
+    execute_process(COMMAND "${command}"
                     WORKING_DIRECTORY "${directory}"
                     RESULT_VARIABLE result
                     ERROR_VARIABLE results
