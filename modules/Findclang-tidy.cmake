@@ -47,7 +47,7 @@ if(clang-tidy_EXE)
             mark_as_advanced(clang-tidy_PY)
         endif()
     endif()
-ndif()
+endif()
 mark_as_advanced(clang-tidy_EXE clang-tidy_ROOT)
 find_package_handle_standard_args(clang-tidy
                                   REQUIRED_VARS clang-tidy_EXE ClangTools_FOUND ${python_required}
