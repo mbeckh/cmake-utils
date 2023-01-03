@@ -41,7 +41,7 @@ jobs:
         build-root: build
         source-dir: test
         binary-dir: build/cmake-utils
-        generator: ${{matrix.multi-config && 'Ninja Multi-Config' || ''}}
+        generator: ${{matrix.multi-config && 'Ninja Multi-Config' || 'Ninja'}}
         configuration: ${{!matrix.multi-config && matrix.configuration || ''}}
         configurations: ${{matrix.multi-config && 'Debug;Release' || ''}}
         extra-args: ${{matrix.unity && '-D CMAKE_UNITY_BUILD:BOOL=ON -D CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON' || ''}}
