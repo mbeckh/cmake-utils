@@ -83,7 +83,7 @@ foreach(i RANGE ${count})
     list(TRANSFORM command REPLACE [[^(.+)$]] [["\1"]] REGEX [[ ]])
     
     list(TRANSFORM command REPLACE [[\\]] [[\\\\]])
-    list(TRANSFORM command REPLACE [["]] [[\\\\\\"]])
+    list(TRANSFORM command REPLACE [["]] [[\\"]])
    
     list(JOIN command " " command)
     string(JSON compile_commands SET "${compile_commands}" ${index} "command" "\"${command}\"")
