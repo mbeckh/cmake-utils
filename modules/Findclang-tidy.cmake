@@ -1,4 +1,4 @@
-# Copyright 2021-2022 Michael Beckh
+# Copyright 2021-2023 Michael Beckh
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,21 +36,11 @@ if(clang-tidy_EXE)
     z_clang_tidy_get_version()
     if(clang-tidy_VERSION)
         find_dependency(ClangTools)
-
-        # Python only required in unity build
-        if(CMAKE_UNITY_BUILD)
-            set(python_required clang-tidy_PY Python_FOUND)
-            find_program(clang-tidy_PY NAMES run-clang-tidy run-clang-tidy.py HINTS "${clang-tidy_ROOT}")
-            if(clang-tidy_PY)
-                find_dependency(Python COMPONENTS Interpreter)
-            endif()
-            mark_as_advanced(clang-tidy_PY)
-        endif()
     endif()
 endif()
 mark_as_advanced(clang-tidy_EXE clang-tidy_ROOT)
 find_package_handle_standard_args(clang-tidy
-                                  REQUIRED_VARS clang-tidy_EXE ClangTools_FOUND ${python_required}
+                                  REQUIRED_VARS clang-tidy_EXE ClangTools_FOUND
                                   VERSION_VAR clang-tidy_VERSION
                                   HANDLE_VERSION_RANGE)
 
@@ -87,7 +77,7 @@ function(z_clang_tidy_unity target #[[ OUTPUT <output> [ DEPENDS <dependencies> 
             if(depends)
                 message(STATUS "clang-tidy-${target}: Ignoring non-root and non-leaf config: ${relative}/.clang-tidy")
             else()
-                set(dst "${binary_dir}/CMakeFiles/${target}.dir/.clang-tidy")
+                set(dst "${target_binary_dir}/CMakeFiles/${target}.dir/.clang-tidy")
                 add_custom_command(OUTPUT "${dst}"
                                    COMMAND "${CMAKE_COMMAND}" -E copy "${src}" "${dst}"
                                    DEPENDS "${src}")
@@ -108,28 +98,23 @@ function(z_clang_tidy_unity target #[[ OUTPUT <output> [ DEPENDS <dependencies> 
     endif()
 
     add_custom_command(OUTPUT "${CMAKE_BINARY_DIR}/${arg_OUTPUT}"
-                       COMMAND "${CMAKE_COMMAND}" -E rm -f "${CMAKE_BINARY_DIR}/.clang-tools/${target}/${arg_OUTPUT}"
-                       COMMAND "${Python_EXECUTABLE}" "${clang-tidy_PY}"
-                                "-clang-tidy-binary=${clang-tidy_EXE}"
-                                -p "${CMAKE_BINARY_DIR}/.clang-tools/${target}/${config_subdir}"
-                                "-extra-arg=/clang:-MD"
-                                "-extra-arg=/clang:-MF@output@.d"
-                                "-extra-arg=/clang:-MT@output@"
-                                "-header-filter=.*"
-                                >> "${CMAKE_BINARY_DIR}/.clang-tools/${target}/${arg_OUTPUT}" || "${CMAKE_COMMAND}" -E true
-                       COMMAND powershell -ExecutionPolicy Bypass
-                               -File "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/remove-shell-colors.ps1"
-                               "${CMAKE_BINARY_DIR}/.clang-tools/${target}/${arg_OUTPUT}"
+                       COMMAND "${CMAKE_COMMAND}"
+                               -D "clang-tidy_EXE=${clang-tidy_EXE}"
+                               -D "COMPILE_COMMANDS_PATH=${CMAKE_BINARY_DIR}/.clang-tools/${target}/${config_subdir}"
+                               -D "INTERMEDIATE_FILE=${CMAKE_BINARY_DIR}/.clang-tools/${target}/${config_subdir}clang-tidy.tidy"
+                               -D "OUTPUT=${CMAKE_BINARY_DIR}/${arg_OUTPUT}"
+                               -P "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/run-clang-tidy.cmake"
                        COMMAND "${CMAKE_COMMAND}"
                                -D "TOOL=clang-tidy"
                                -D "OUTPUT=${CMAKE_BINARY_DIR}/${arg_OUTPUT}"
-                               -D "FILES=${CMAKE_BINARY_DIR}/.clang-tools/${target}/${arg_OUTPUT}"
+                               -D "FILES=${CMAKE_BINARY_DIR}/.clang-tools/${target}/${config_subdir}clang-tidy.tidy"
                                -P "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/cat.cmake"
                        DEPENDS ${arg_DEPENDS}
-                               "${CMAKE_BINARY_DIR}/.clang-tools/${target}/${config_subdir}compile_commands.json"
                                "${depends}"
-                               "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/remove-shell-colors.ps1"
+                               "${CMAKE_BINARY_DIR}/.clang-tools/${target}/${config_subdir}compile_commands.json"
+                               "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/run-clang-tidy.cmake"
                                "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/cat.cmake"
+                       DEPFILE "${CMAKE_BINARY_DIR}/.clang-tools/${target}/${config_subdir}clang-tidy.tidy.d"
                        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
                        COMMENT "clang-tidy (${target}): Analyzing"
                        JOB_POOL use_all_cpus

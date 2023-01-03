@@ -166,10 +166,10 @@ clang-tidy: tidy_error
 src/tidy_error\.h:.+\[modernize-avoid-c-arrays\]
 .+"$<CONFIG>".+// deliberate error.+
  +\^
-src/tidy_error_2\.h:.+\[modernize-avoid-c-arrays\]
+src/tidy_error_1\.cpp:.+\[modernize-avoid-c-arrays\]
 .+"$<CONFIG>".+// deliberate error.+
  +\^
-src/tidy_error_1\.cpp:.+\[modernize-avoid-c-arrays\]
+src/tidy_error_2\.h:.+\[modernize-avoid-c-arrays\]
 .+"$<CONFIG>".+// deliberate error.+
  +\^
 src/tidy_error_2\.cpp:.+\[modernize-avoid-c-arrays\]

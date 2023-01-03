@@ -127,12 +127,6 @@ function(z_clang_tools_deferred tool #[[ [ NAME <name> ] TARGETS <target> ... [ 
         cmake_utils_for_each_target(z_clang_tools_visit_target ARGS "${tool}" arg_TARGETS DIRECTORY "${CMAKE_SOURCE_DIR}" OUT arg_TARGETS)
     endif()
 
-    # Main target for tool
-    if(NOT TARGET "${tool}")
-        message(STATUS "Creating target: ${tool}")
-        add_custom_target("${tool}" COMMENT "${arg_NAME}")
-    endif()
-
     string(ASCII 27 esc)
 
     # Use sub-directory in case of multi-config
@@ -169,11 +163,18 @@ function(z_clang_tools_deferred tool #[[ [ NAME <name> ] TARGETS <target> ... [ 
 
         # Filter for unity builds
         get_target_property(target_unity "${target}" UNITY_BUILD)
+        if(target_unity AND NOT arg_UNITY)
+            message(STATUS "Not supported in unity build: ${tool}-${target}")
+            continue()
+        endif()
+
+        # Main target for tool
+        if(NOT TARGET "${tool}")
+            message(STATUS "Creating target: ${tool}")
+            add_custom_target("${tool}" COMMENT "${arg_NAME}")
+        endif()
+
         if(target_unity)
-            if(NOT arg_UNITY)
-                message(STATUS "Not supported in unity build: ${tool}-${target}")
-                continue()
-            endif()
             message(STATUS "Creating target: ${tool}-${target} (unity build)")
         else()
             message(STATUS "Creating target: ${tool}-${target}")

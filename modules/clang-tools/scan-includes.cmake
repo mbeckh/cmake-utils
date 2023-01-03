@@ -36,8 +36,14 @@ if(NOT FILES AND NOT PCH)
 endif()
 
 file(READ ".clang-tools/${TARGET}/${CONFIG_SUBDIR}compile_commands.json" compile_commands)
-string(JSON count LENGTH "${compile_commands}")
-math(EXPR count "${count} - 1")
+string(JSON last LENGTH "${compile_commands}")
+math(EXPR last "${last} - 1")
+
+if(last EQUAL -1)
+    # no files, empty output
+    file(WRITE "${OUTPUT}" "")
+    return()
+endif()
 
 set(default_system_include_path $ENV{INCLUDE})
 
@@ -51,7 +57,7 @@ endif()
 
 set(vcpkg_build_dir "${PROJECT_BINARY_DIR}/vcpkg_installed/")
 
-foreach(i RANGE ${count})
+foreach(i RANGE ${last})
     string(JSON file GET "${compile_commands}" ${i} "file")
 
     cmake_path(CONVERT "${file}" TO_CMAKE_PATH_LIST file)
