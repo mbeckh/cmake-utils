@@ -30,20 +30,27 @@ endfunction()
 
 find_program(clang-tidy_EXE clang-tidy)
 mark_as_advanced(clang-tidy_EXE)
+unset(python_required)
 if(clang-tidy_EXE)
     cmake_path(GET clang-tidy_EXE PARENT_PATH clang-tidy_ROOT)
-    find_program(clang-tidy_PY NAMES run-clang-tidy run-clang-tidy.py HINTS "${clang-tidy_ROOT}")
-    if(clang-tidy_PY)
-        z_clang_tidy_get_version()
-        if(clang-tidy_VERSION)
-            find_dependency(ClangTools)
-            find_dependency(Python COMPONENTS Interpreter)
+    z_clang_tidy_get_version()
+    if(clang-tidy_VERSION)
+        find_dependency(ClangTools)
+
+        # Python only required in unity build
+        if(CMAKE_UNITY_BUILD)
+            set(python_required clang-tidy_PY Python_FOUND)
+            find_program(clang-tidy_PY NAMES run-clang-tidy run-clang-tidy.py HINTS "${clang-tidy_ROOT}")
+            if(clang-tidy_PY)
+                find_dependency(Python COMPONENTS Interpreter)
+            endif()
+            mark_as_advanced(clang-tidy_PY)
         endif()
     endif()
-endif()
-mark_as_advanced(clang-tidy_EXE clang-tidy_PY clang-tidy_ROOT)
+ndif()
+mark_as_advanced(clang-tidy_EXE clang-tidy_ROOT)
 find_package_handle_standard_args(clang-tidy
-                                  REQUIRED_VARS clang-tidy_EXE clang-tidy_PY ClangTools_FOUND Python_FOUND
+                                  REQUIRED_VARS clang-tidy_EXE ClangTools_FOUND ${python_required}
                                   VERSION_VAR clang-tidy_VERSION
                                   HANDLE_VERSION_RANGE)
 
