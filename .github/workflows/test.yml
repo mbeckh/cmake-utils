@@ -16,14 +16,10 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-#        preset: [ '', 'x64']
-#        multi-config: [ '', 'multi' ]
-#        configuration: [ Debug, Release ]
-#        unity: [ '', 'unity' ]
-         preset: [ '' ]
-         multi-config: [ '' ]
-         configuration: [ Debug ]
-         unity: [ '' ]
+        preset: [ '', 'x64']
+        multi-config: [ '', 'multi' ]
+        configuration: [ Debug, Release ]
+        unity: [ '', 'unity' ]
 
     steps:
     - name: Checkout
