@@ -80,7 +80,7 @@ foreach(i RANGE ${count})
     endforeach()
 
     list(TRANSFORM command REPLACE [[\\]] [[\\\\]])
-    list(TRANSFORM command REPLACE [["]] [[\\\\\\"]])
+    list(TRANSFORM command REPLACE [["]] [[\\\"]])
     list(JOIN command " " command)
     string(JSON compile_commands SET "${compile_commands}" ${index} "command" "\"${command}\"")
 endforeach()
