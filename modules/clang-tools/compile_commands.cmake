@@ -57,7 +57,7 @@ foreach(i RANGE ${count})
     list(FILTER command EXCLUDE REGEX "^[/-](experimental:external|external:W[0-4])$")
     list(FILTER command EXCLUDE REGEX "^[/-](GL|MP|Z[Ii7]|Ob3|JMC)$")
     list(POP_FRONT command)
-    list(PREPEND command "\"${clang_EXE}\"" "--driver-mode=cl")
+    list(PREPEND command "${clang_EXE}" "--driver-mode=cl")
     list(INSERT command 2 "/clang:-fmsc-version=${MSVC_VERSION}"
                           "-D__clang_analyzer__"
                           "-D_CRT_USE_BUILTIN_OFFSETOF")
@@ -79,8 +79,12 @@ foreach(i RANGE ${count})
         endif()
     endforeach()
 
+    # separate_arguments removes quotes
+    list(TRANSFORM command REPLACE [[^(.+)$]] [["\1"]] REGEX [[ ]])
+    
     list(TRANSFORM command REPLACE [[\\]] [[\\\\]])
-    list(TRANSFORM command REPLACE [["]] [[\\\"]])
+    list(TRANSFORM command REPLACE [["]] [[\\\\\\"]])
+   
     list(JOIN command " " command)
     string(JSON compile_commands SET "${compile_commands}" ${index} "command" "\"${command}\"")
 endforeach()
