@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   build:
-    name: Test ${{matrix.preset || ''}}
+    name: Test
     runs-on: windows-latest
     strategy:
       matrix:
