@@ -2,7 +2,7 @@ name: Test
 
 on:
   push:
-    branches: [ master, 'feature**', 'multiconfig' ]
+    branches: [ master, 'feature**' ]
   pull_request:
     branches: [ master ]
 
