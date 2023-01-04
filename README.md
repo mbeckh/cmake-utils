@@ -144,9 +144,15 @@ and cache vcpkg artifacts to speed up the builds.
 
 -   `configuration` - The CMake build type for CMAKE_BUILD_TYPE (optional, defaults to `Release` if no preset is used).
 
--   `configurations` - The CMake configuration types for CMAKE_CONFIGURATION_TYPES (optional, defaults to `Debug;Release` if no preset is used and generator is Ninja Multi-Config).
+-   `configurations` - The CMake configuration types for CMAKE_CONFIGURATION_TYPES (optional, defaults to
+    `Debug;Release` if no preset is used and generator is Ninja Multi-Config).
 
 -   `extra-args` - Additional arguments which are passed to CMake, e.g. for setting CMake variables (optional).
+
+### Packages
+The action sets up package caching using NuGet on GitHub. If an error occurs when updating a package that is used by
+different repositories, it might be required to allow write access to this package for repositories other than the one
+that created the package in the first place.
 
 ## Visual Studio Integration
 Add one or more external tools within Visual Studio with the following settings:
