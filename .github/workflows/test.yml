@@ -20,6 +20,7 @@ jobs:
         multi-config: [ '', 'multi' ]
         configuration: [ Debug, Release ]
         unity: [ '', 'unity' ]
+      fail-fast: false
 
     steps:
     - name: Checkout

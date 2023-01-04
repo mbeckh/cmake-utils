@@ -72,15 +72,17 @@ string(REPLACE ";" "\\;" include "$ENV{INCLUDE}")
 get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 if(is_multi_config)
     set(config_subdir "$<CONFIG>/")
+    set(config "--config" "$<CONFIG>")
 else()
     unset(config_subdir)
+    unset(config)
 endif()
 
 #
 # Clean
 #
 add_test(NAME cmake-utils.common.clean
-         COMMAND "${CMAKE_COMMAND}" --build . --target clean)
+         COMMAND "${CMAKE_COMMAND}" --build . ${config} --target clean)
 set_tests_properties(cmake-utils.common.clean PROPERTIES
                      ENVIRONMENT "INCLUDE=${include}"
                      FIXTURES_SETUP clean)
@@ -90,7 +92,7 @@ set_tests_properties(cmake-utils.common.clean PROPERTIES
 #
 foreach(target clang-tidy iwyu pch)
     add_test(NAME cmake-utils.common.build-${target}
-             COMMAND "${CMAKE_COMMAND}" --build . --target ${target})
+             COMMAND "${CMAKE_COMMAND}" --build . ${config} --target ${target})
 
     set_tests_properties(cmake-utils.common.build-${target} PROPERTIES
                          DISABLED "$<AND:$<OR:$<STREQUAL:${target},iwyu>,$<STREQUAL:${target},pch>>,$<NOT:$<TARGET_EXISTS:${target}>>>"
@@ -114,7 +116,7 @@ foreach(target ok tidy_error include_error subdirectory subproject)
 endforeach()
 
 add_test(NAME cmake-utils.common.build-binaries
-         COMMAND "${CMAKE_COMMAND}" --build . --target all)
+         COMMAND "${CMAKE_COMMAND}" --build . ${config} --target all)
 set_tests_properties(cmake-utils.common.build-binaries PROPERTIES
                      ENVIRONMENT "INCLUDE=${include}"
                      DEPENDS "cmake-utils.common.build;${no_link_tests}"
@@ -145,7 +147,7 @@ set_tests_properties(cmake-utils.clang-tidy.logs PROPERTIES
 
 
 add_test(NAME cmake-utils.clang-tidy.ok
-         COMMAND "${CMAKE_COMMAND}" --build . --target clang-tidy-ok)
+         COMMAND "${CMAKE_COMMAND}" --build . ${config} --target clang-tidy-ok)
 
 set_tests_properties(cmake-utils.clang-tidy.ok PROPERTIES
                      ENVIRONMENT "INCLUDE=${include}"
@@ -158,7 +160,7 @@ $]])
 
 
 add_test(NAME cmake-utils.clang-tidy.tidy_error
-         COMMAND "${CMAKE_COMMAND}" --build . --target clang-tidy-tidy_error)
+         COMMAND "${CMAKE_COMMAND}" --build . ${config} --target clang-tidy-tidy_error)
 
 string(CONFIGURE [[
 ^\[1/1\] clang-tidy \(tidy_error\)
@@ -185,7 +187,7 @@ set_tests_properties(cmake-utils.clang-tidy.tidy_error PROPERTIES
 
 
 add_test(NAME cmake-utils.clang-tidy.include_error
-         COMMAND "${CMAKE_COMMAND}" --build . --target clang-tidy-include_error)
+         COMMAND "${CMAKE_COMMAND}" --build . ${config} --target clang-tidy-include_error)
 
 set_tests_properties(cmake-utils.clang-tidy.include_error PROPERTIES
                      ENVIRONMENT "INCLUDE=${include}"
@@ -198,7 +200,7 @@ $]])
 
 
 add_test(NAME cmake-utils.clang-tidy.subdirectory
-         COMMAND "${CMAKE_COMMAND}" --build . --target clang-tidy-subdirectory)
+         COMMAND "${CMAKE_COMMAND}" --build . ${config} --target clang-tidy-subdirectory)
 
 set_tests_properties(cmake-utils.clang-tidy.subdirectory PROPERTIES
                      ENVIRONMENT "INCLUDE=${include}"
@@ -211,7 +213,7 @@ $]])
 
 
 add_test(NAME cmake-utils.clang-tidy.subproject
-         COMMAND "${CMAKE_COMMAND}" --build . --target clang-tidy-subproject)
+         COMMAND "${CMAKE_COMMAND}" --build . ${config} --target clang-tidy-subproject)
 
 set_tests_properties(cmake-utils.clang-tidy.subproject PROPERTIES
                      ENVIRONMENT "INCLUDE=${include}"
@@ -242,7 +244,7 @@ set_tests_properties(cmake-utils.iwyu.logs PROPERTIES
 
 
 add_test(NAME cmake-utils.iwyu.ok
-         COMMAND "${CMAKE_COMMAND}" --build . --target iwyu-ok)
+         COMMAND "${CMAKE_COMMAND}" --build . ${config} --target iwyu-ok)
 set_tests_properties(cmake-utils.iwyu.ok PROPERTIES
                      DISABLED "$<NOT:$<TARGET_EXISTS:iwyu>>"
                      ENVIRONMENT "INCLUDE=${include}"
@@ -294,7 +296,7 @@ $]])
 
 
 add_test(NAME cmake-utils.iwyu.tidy_error
-         COMMAND "${CMAKE_COMMAND}" --build . --target iwyu-tidy_error)
+         COMMAND "${CMAKE_COMMAND}" --build . ${config} --target iwyu-tidy_error)
 set_tests_properties(cmake-utils.iwyu.tidy_error PROPERTIES
                      DISABLED "$<NOT:$<TARGET_EXISTS:iwyu>>"
                      ENVIRONMENT "INCLUDE=${include}"
@@ -345,7 +347,7 @@ $]])
 
 
 add_test(NAME cmake-utils.iwyu.include_error
-         COMMAND "${CMAKE_COMMAND}" --build . --target iwyu-include_error)
+         COMMAND "${CMAKE_COMMAND}" --build . ${config} --target iwyu-include_error)
 set_tests_properties(cmake-utils.iwyu.include_error PROPERTIES
                      DISABLED "$<NOT:$<TARGET_EXISTS:iwyu>>"
                      ENVIRONMENT "INCLUDE=${include}"
@@ -369,7 +371,7 @@ The full include-list for src/include_error\.cpp:
 $]])
 
 add_test(NAME cmake-utils.iwyu.subdirectory
-         COMMAND "${CMAKE_COMMAND}" --build . --target iwyu-subdirectory)
+         COMMAND "${CMAKE_COMMAND}" --build . ${config} --target iwyu-subdirectory)
 set_tests_properties(cmake-utils.iwyu.subdirectory PROPERTIES
                      DISABLED "$<NOT:$<TARGET_EXISTS:iwyu>>"
                      ENVIRONMENT "INCLUDE=${include}"
@@ -390,7 +392,7 @@ The full include-list for subdirectory/subdirectory.cpp:
 $]])
 
 add_test(NAME cmake-utils.iwyu.subproject
-         COMMAND "${CMAKE_COMMAND}" --build . --target iwyu-subproject)
+         COMMAND "${CMAKE_COMMAND}" --build . ${config} --target iwyu-subproject)
 set_tests_properties(cmake-utils.iwyu.subproject PROPERTIES
                      DISABLED "$<NOT:$<TARGET_EXISTS:iwyu>>"
                      ENVIRONMENT "INCLUDE=${include}"
@@ -440,7 +442,7 @@ endforeach()
 
 
 add_test(NAME cmake-utils.pch.ok
-         COMMAND "${CMAKE_COMMAND}" --build . --target pch-ok)
+         COMMAND "${CMAKE_COMMAND}" --build . ${config} --target pch-ok)
 set_tests_properties(cmake-utils.pch.ok PROPERTIES
                      DISABLED "$<NOT:$<TARGET_EXISTS:pch>>"
                      ENVIRONMENT "INCLUDE=${include}"
@@ -455,7 +457,7 @@ $]])
 
 
 add_test(NAME cmake-utils.pch.tidy_error
-         COMMAND "${CMAKE_COMMAND}" --build . --target pch-tidy_error)
+         COMMAND "${CMAKE_COMMAND}" --build . ${config} --target pch-tidy_error)
 set_tests_properties(cmake-utils.pch.tidy_error PROPERTIES
                      DISABLED "$<NOT:$<TARGET_EXISTS:pch>>"
                      ENVIRONMENT "INCLUDE=${include}"
@@ -470,7 +472,7 @@ $]])
 
 
 add_test(NAME cmake-utils.pch.include_error
-         COMMAND "${CMAKE_COMMAND}" --build . --target pch-include_error)
+         COMMAND "${CMAKE_COMMAND}" --build . ${config} --target pch-include_error)
 set_tests_properties(cmake-utils.pch.include_error PROPERTIES
                      DISABLED "$<NOT:$<TARGET_EXISTS:pch>>"
                      ENVIRONMENT "INCLUDE=${include}"
