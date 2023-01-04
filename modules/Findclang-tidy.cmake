@@ -68,6 +68,9 @@ function(z_clang_tidy_unity target #[[ OUTPUT <output> [ DEPENDS <dependencies> 
     get_target_property(target_source_dir "${target}" SOURCE_DIR)
     get_target_property(target_binary_dir "${target}" BINARY_DIR)
 
+    # Replace variables
+    z_clang_tools_configure("${arg_DEPENDS}" arg_DEPENDS)
+
     unset(depends)
     cmake_path(RELATIVE_PATH target_source_dir BASE_DIRECTORY "${PROJECT_SOURCE_DIR}" OUTPUT_VARIABLE relative)
     while(relative)
@@ -112,7 +115,6 @@ function(z_clang_tidy_unity target #[[ OUTPUT <output> [ DEPENDS <dependencies> 
                                "${depends}"
                                "${CMAKE_BINARY_DIR}/.clang-tools/${target}/${config_subdir}compile_commands.json"
                                "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/run-clang-tidy.cmake"
-                               "${clang-tidy_EXE}"
                                "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/cat.cmake"
                        DEPFILE "${CMAKE_BINARY_DIR}/.clang-tools/${target}/${config_subdir}clang-tidy.tidy.d"
                        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
