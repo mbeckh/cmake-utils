@@ -83,11 +83,13 @@ foreach(i RANGE ${last})
         # parse header instead of source because dumping includes does not work for includes added using -include
         string(REPLACE "cmake_pch.c${pch_extension_suffix}" "${CONFIG_SUBDIR}cmake_pch.h${pch_extension_suffix}" command "${command}")
     else()
+        # Arg 0 is command, 1 is driver-mode
         list(INSERT command 2 
                           /clang:-MD
                           "/clang:-MF${OUTPUT}.d"
                           "/clang:-MT${OUTPUT}")
     endif()
+    # Arg 0 is command, 1 is driver-mode
     list(INSERT command 2 /EP
                           /showIncludes
                           /clang:-fshow-skipped-includes

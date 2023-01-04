@@ -13,7 +13,7 @@
 # limitations under the License.
 
 #
-# Run clang-tidy for input adding --check_also for auxiliary includes.
+# Run clang-tidy for unity builds where source files are not known at configure time.
 # Usage: cmake
 #        -D clang-tidy_EXE=<file>
 #        -D COMPILE_COMMANDS_PATH=<path>

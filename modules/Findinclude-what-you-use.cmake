@@ -31,20 +31,16 @@ endfunction()
 find_program(include-what-you-use_EXE include-what-you-use)
 if(include-what-you-use_EXE)
     cmake_path(GET include-what-you-use_EXE PARENT_PATH include-what-you-use_ROOT)
-    find_program(include-what-you-use_PY iwyu_tool.py HINTS "${include-what-you-use_ROOT}")
-    if(include-what-you-use_PY)
-        find_file(include-what-you-use_IMP_STDLIB stl.c.headers.imp HINTS "${include-what-you-use_ROOT}" PATH_SUFFIXES include-what-you-use)
-        z_include_what_you_use_get_version()
+    find_file(include-what-you-use_IMP_STDLIB stl.c.headers.imp HINTS "${include-what-you-use_ROOT}" PATH_SUFFIXES include-what-you-use)
+    z_include_what_you_use_get_version()
 
-        if(include-what-you-use_VERSION)
-            find_dependency(ClangTools)
-            find_dependency(Python COMPONENTS Interpreter)
-        endif()
+    if(include-what-you-use_VERSION)
+        find_dependency(ClangTools)
     endif()
 endif()
-mark_as_advanced(include-what-you-use_EXE include-what-you-use_PY include-what-you-use_ROOT include-what-you-use_IMP_STDLIB)
+mark_as_advanced(include-what-you-use_EXE include-what-you-use_ROOT include-what-you-use_IMP_STDLIB)
 find_package_handle_standard_args(include-what-you-use
-                                  REQUIRED_VARS include-what-you-use_EXE include-what-you-use_PY include-what-you-use_IMP_STDLIB ClangTools_FOUND Python_FOUND
+                                  REQUIRED_VARS include-what-you-use_EXE include-what-you-use_IMP_STDLIB ClangTools_FOUND
                                   VERSION_VAR include-what-you-use_VERSION
                                   HANDLE_VERSION_RANGE)
 
@@ -60,14 +56,15 @@ function(include_what_you_use #[[ <target> ... ]])
                     MAP_INCLUDES
                     MAP_SOURCES
                     MAP_COMMAND "@CMAKE_COMMAND@"
-                                -D "MSVC_VERSION=@MSVC_VERSION@"
-                                -D "Python_EXECUTABLE=@Python_EXECUTABLE@"
-                                -D "include-what-you-use_PY=@include-what-you-use_PY@"
+                                -D "include-what-you-use_EXE=@include-what-you-use_EXE@"
                                 -D "include-what-you-use_MAPPING_FILES=@include-what-you-use_IMP_STDLIB@"
                                 -D "COMPILE_COMMANDS_PATH=@target_compile_commands_path@"
                                 -D "FILES=@files@"
                                 -D "OUTPUT=@output@"
                                 -P "@CMAKE_CURRENT_FUNCTION_LIST_DIR@/clang-tools/run-include-what-you-use.cmake"
                     MAP_DEPENDS "@CMAKE_CURRENT_FUNCTION_LIST_DIR@/clang-tools/run-include-what-you-use.cmake"
-                                @include-what-you-use_IMP_STDLIB@)
+                                "@include-what-you-use_EXE@"
+                                "@include-what-you-use_IMP_STDLIB@"
+                                "@CMAKE_CURRENT_FUNCTION_LIST_DIR@/clang-tools/msvc.imp"
+                                "@target_compile_commands_path@.sources")
 endfunction()

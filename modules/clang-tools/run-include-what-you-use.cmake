@@ -13,10 +13,9 @@
 # limitations under the License.
 
 #
-# Run include-what-you-use for input adding --check_also for auxiliary includes.
+# Run include-what-you-use for input adding --check_also for includes which have no main file
 # Usage: cmake
-#        -D Python_EXECUTABLE=<file>
-#        -D include-what-you-use_PY=<file>
+#        -D include-what-you-use_EXE=<file>
 #        [ -D include-what-you-use_MAPPING_FILES=<file>;... ]
 #        -D COMPILE_COMMANDS_PATH=<path>
 #        -D FILES=<file>;...
@@ -25,7 +24,7 @@
 #
 cmake_minimum_required(VERSION 3.25 FATAL_ERROR)
 
-foreach(arg Python_EXECUTABLE include-what-you-use_PY COMPILE_COMMANDS_PATH FILES OUTPUT)
+foreach(arg include-what-you-use_EXE COMPILE_COMMANDS_PATH FILES OUTPUT)
     if(NOT ${arg})
         message(FATAL_ERROR "${arg} is missing or empty")
     endif()
@@ -46,7 +45,7 @@ foreach(source IN LISTS sources)
     regex_escape_pattern(base_name)
     regex_escape_pattern(canonical_base_name)
 
-    list(FILTER includes EXCLUDE REGEX "(^|.+/)(${base_name}|${canonical_base_name})\\.(h|H|hpp|hxx|hh|inl)$")
+    list(FILTER includes EXCLUDE REGEX "(^|.+/)(${base_name}|${canonical_base_name})\\.(h|H|hpp|hxx|hh|HPP|inl)$")
 endforeach()
 
 list(SORT includes CASE INSENSITIVE)
@@ -66,22 +65,49 @@ endif()
 
 list(LENGTH options stop)
 math(EXPR stop "${stop} - 1")
-foreach(index RANGE 0 ${stop})
+foreach(index RANGE ${stop})
     math(EXPR pos "${index} * 2")
     list(INSERT options ${pos} -Xiwyu)
 endforeach()
 
-execute_process(COMMAND "${Python_EXECUTABLE}" "${include-what-you-use_PY}" -p "${COMPILE_COMMANDS_PATH}" ${FILES} --
-                        ${options}
-                        -Wno-unknown-attributes
-                RESULT_VARIABLE result
-                ERROR_VARIABLE error
-                OUTPUT_VARIABLE output
-                COMMAND_ECHO NONE)
-# IWYU returns 1 as result when no errors happened
-if(NOT result EQUAL 0 AND NOT result EQUAL 1)
-    message(FATAL_ERROR "Error ${result}:\n${error}")
-endif()
+file(READ "${COMPILE_COMMANDS_PATH}compile_commands.json" compile_commands)
+string(JSON last LENGTH "${compile_commands}")
+math(EXPR last "${last} - 1")
 
-string(REPLACE "\r" "" output "${output}")
-file(WRITE "${OUTPUT}" "${output}")
+file(REMOVE "${OUTPUT}")
+foreach(in_file IN LISTS FILES)
+    unset(processed)
+    if(last GREATER -1)
+        foreach(i RANGE ${last})
+            string(JSON file GET "${compile_commands}" ${i} "file")
+            if(in_file PATH_EQUAL file)
+                string(JSON command GET "${compile_commands}" ${i} "command")
+                string(JSON directory GET "${compile_commands}" ${i} "directory")
+
+                separate_arguments(command NATIVE_COMMAND "${command}")
+
+                # Replace call to clang with iwyu
+                list(POP_FRONT command)
+                list(PREPEND command "${include-what-you-use_EXE}")
+                # Arg 0 is command, 1 is driver-mode
+                list(INSERT command 2 "${options}")
+                execute_process(COMMAND ${command}
+                                WORKING_DIRECTORY "${directory}"
+                                RESULT_VARIABLE result
+                                ERROR_VARIABLE output
+                                OUTPUT_VARIABLE output)
+                # IWYU returns 1 as result when no errors happened
+                if(NOT result EQUAL 0 AND NOT result EQUAL 1)
+                    message(FATAL_ERROR "Error ${result}:\n${output}")
+                endif()
+
+                file(APPEND "${OUTPUT}" "${output}")
+                set(processed YES)
+                break()
+            endif()
+        endforeach()
+        if(NOT processed)
+            message(FATAL_ERROR "File ${in_file} not found in compilation database")
+        endif()
+    endif()
+endforeach()

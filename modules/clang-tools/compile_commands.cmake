@@ -59,25 +59,9 @@ foreach(i RANGE ${count})
     list(POP_FRONT command)
     list(PREPEND command "${clang_EXE}" "--driver-mode=cl")
     list(INSERT command 2 "/clang:-fmsc-version=${MSVC_VERSION}"
+                          "/clang:-Wno-unknown-attributes"
                           "-D__clang_analyzer__"
                           "-D_CRT_USE_BUILTIN_OFFSETOF")
-
-    list(LENGTH command arg_count)
-    foreach(j RANGE ${arg_count})
-        list(GET command ${j} arg)
-        if(arg MATCHES "^[/-]c$")
-            math(EXPR file_index "${j} + 1")
-            list(GET command "${file_index}" file)
-
-            #cmake_path(IS_PREFIX SOURCE_DIR "${file}" NORMALIZE is_prefix)
-            #if(is_prefix)
-            #    # PCH check is only use for a file in binary path and this check does not use DEPFILE
-            #    cmake_path(RELATIVE_PATH file BASE_DIRECTORY "${SOURCE_DIR}")
-            #    list(INSERT command ${j} "/clang:-MD" "/clang:-MF.clang-tools/${TARGET}-${TOOL}/${CONFIG_DIR}${file}.txt.d" "/clang:-MT.clang-tools/${TARGET}-${TOOL}/${CONFIG_DIR}${file}.txt")
-            #endif()
-            break()
-        endif()
-    endforeach()
 
     # separate_arguments removes quotes
     list(TRANSFORM command REPLACE [[^(.+)$]] [["\1"]] REGEX [[ ]])

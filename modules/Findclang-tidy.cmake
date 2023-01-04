@@ -30,7 +30,6 @@ endfunction()
 
 find_program(clang-tidy_EXE clang-tidy)
 mark_as_advanced(clang-tidy_EXE)
-unset(python_required)
 if(clang-tidy_EXE)
     cmake_path(GET clang-tidy_EXE PARENT_PATH clang-tidy_ROOT)
     z_clang_tidy_get_version()
@@ -113,6 +112,7 @@ function(z_clang_tidy_unity target #[[ OUTPUT <output> [ DEPENDS <dependencies> 
                                "${depends}"
                                "${CMAKE_BINARY_DIR}/.clang-tools/${target}/${config_subdir}compile_commands.json"
                                "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/run-clang-tidy.cmake"
+                               "${clang-tidy_EXE}"
                                "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/cat.cmake"
                        DEPFILE "${CMAKE_BINARY_DIR}/.clang-tools/${target}/${config_subdir}clang-tidy.tidy.d"
                        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
@@ -135,7 +135,8 @@ function(clang_tidy #[[ <target> ... ]])
                                 "--header-filter=.*"
                                 @files@
                                 $<ANGLE-R> "@output@" || "@CMAKE_COMMAND@" -E true
-                    MAP_DEPENDS ${depends}
+                    MAP_DEPENDS "@clang-tidy_EXE@"
+                                ${depends}
                     MAP_DEPFILE
                     MAP_EXTENSION tidy)
 endfunction()
