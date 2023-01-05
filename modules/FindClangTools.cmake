@@ -20,7 +20,7 @@
 
 include(FindPackageHandleStandardArgs)
 
-set(ClangTools_VERSION "0.0.3")
+set(ClangTools_VERSION "1.0.3")
 find_package_handle_standard_args(ClangTools
                                   REQUIRED_VARS ClangTools_VERSION
                                   VERSION_VAR ClangTools_VERSION
