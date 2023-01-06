@@ -12,28 +12,25 @@ runs:
       shell: cmd
       working-directory: ${{github.action_path}}
       run: |
-        path > old.path
-        set VCPKG_KEEP_ENV_VARS=PATH
         set > old.env
+        set VCPKG_KEEP_ENV_VARS=PATH
         %VCPKG_INSTALLATION_ROOT%\vcpkg.exe env set --overlay-triplets=${{github.action_path}}\modules\triplets --triplet ${{inputs.triplet}} > new.env
     - name: Detect Changes to Development Environment
       shell: bash
       working-directory: ${{github.action_path}}
       run: |
         echo "::group::Old Path"
-        cat old.path | grep ^PATH= | cut -d = -f 2- | tr ';' '\n'
+        cat $GITHUB_PATH
         echo "::endgroup::"
 
-        sort -t = -o old.env old.env
-        sort -t = -o new.env new.env
-        join -v 2 old.env new.env > dev.env
+        join -v 2 <(sort -t = old.env) <(sort -t = new.env) > dev.env
 
-        cat dev.env | grep -v ^PATH= >> $GITHUB_ENV
+        grep -v ^PATH= dev.env >> $GITHUB_ENV
         echo "::group::Development Environment"
-        cat dev.env | grep -v ^PATH=
+        grep -v ^PATH= dev.env
         echo "::endgroup::"
 
-        cat dev.env | grep ^PATH= | cut -d = -f 2- | tr ';' '\n' > $GITHUB_PATH
+        grep ^PATH= dev.env | cut -d = -f 2- | awk 'BEGIN{RS=FS=";"}!seen[$0]++' > $GITHUB_PATH
         echo "::group::New Path"
         cat $GITHUB_PATH
         echo "::endgroup::"
