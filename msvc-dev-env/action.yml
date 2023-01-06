@@ -20,6 +20,6 @@ runs:
       working-directory: ${{github.action_path}}
       run: |
         join -v 2 <(sort -t = old.env) <(sort -t = new.env) > dev.env
-
         grep -v ^PATH= dev.env >> $GITHUB_ENV
-        grep ^PATH= dev.env | cut -d = -f 2- | awk 'BEGIN{RS=FS="[;\n]";s="";printf "PATH="}!seen[tolower($0)]++{printf "%s%s",s,$0;s=";"}' >> $GITHUB_ENV
+        p=$(grep ^PATH= dev.env | cut -d = -f 2- | awk 'BEGIN{RS=FS="[;\n]";ORS=";"}!seen[tolower($0)]')
+        echo PATH=${p%;} >> $GITHUB_ENV
