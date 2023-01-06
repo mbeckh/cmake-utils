@@ -26,3 +26,6 @@ runs:
         echo "::group::Modified Environment Variables"
         cut -d = -f 1 dev.env
         echo "::endgroup::"
+        echo "::group::Debug"
+        cat dev.env
+        echo "::endgroup::"
