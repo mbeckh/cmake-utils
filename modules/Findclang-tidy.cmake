@@ -1,4 +1,4 @@
-# Copyright 2021 Michael Beckh
+# Copyright 2021-2023 Michael Beckh
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,18 +32,14 @@ find_program(clang-tidy_EXE clang-tidy)
 mark_as_advanced(clang-tidy_EXE)
 if(clang-tidy_EXE)
     cmake_path(GET clang-tidy_EXE PARENT_PATH clang-tidy_ROOT)
-    find_program(clang-tidy_PY NAMES run-clang-tidy run-clang-tidy.py HINTS "${clang-tidy_ROOT}")
-    if(clang-tidy_PY)
-        z_clang_tidy_get_version()
-        if(clang-tidy_VERSION)
-            find_dependency(ClangTools)
-            find_dependency(Python COMPONENTS Interpreter)
-        endif()
+    z_clang_tidy_get_version()
+    if(clang-tidy_VERSION)
+        find_dependency(ClangTools)
     endif()
 endif()
-mark_as_advanced(clang-tidy_EXE clang-tidy_PY clang-tidy_ROOT)
+mark_as_advanced(clang-tidy_EXE clang-tidy_ROOT)
 find_package_handle_standard_args(clang-tidy
-                                  REQUIRED_VARS clang-tidy_EXE clang-tidy_PY ClangTools_FOUND Python_FOUND
+                                  REQUIRED_VARS clang-tidy_EXE ClangTools_FOUND
                                   VERSION_VAR clang-tidy_VERSION
                                   HANDLE_VERSION_RANGE)
 
@@ -59,20 +55,31 @@ function(z_clang_tidy_unity target #[[ OUTPUT <output> [ DEPENDS <dependencies> 
         message(FATAL_ERROR "OUTPUT is missing for z_clang_tidy_unity")
     endif()
 
+    # Use sub-directory in case of multi-config
+    get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+    if(is_multi_config)
+        set(config_subdir "$<CONFIG>/")
+    else()
+        unset(config_subdir)
+    endif()
+
     set_property(TARGET "${target}" APPEND_STRING PROPERTY UNITY_BUILD_CODE_BEFORE_INCLUDE "// NOLINTNEXTLINE(bugprone-suspicious-include)")
 
-    get_target_property(source_dir "${target}" SOURCE_DIR)
-    get_target_property(binary_dir "${target}" BINARY_DIR)
+    get_target_property(target_source_dir "${target}" SOURCE_DIR)
+    get_target_property(target_binary_dir "${target}" BINARY_DIR)
+
+    # Replace variables
+    z_clang_tools_configure("${arg_DEPENDS}" arg_DEPENDS)
 
     unset(depends)
-    cmake_path(RELATIVE_PATH source_dir BASE_DIRECTORY "${PROJECT_SOURCE_DIR}" OUTPUT_VARIABLE relative)
+    cmake_path(RELATIVE_PATH target_source_dir BASE_DIRECTORY "${PROJECT_SOURCE_DIR}" OUTPUT_VARIABLE relative)
     while(relative)
         set(src "${PROJECT_SOURCE_DIR}/${relative}/.clang-tidy")
         if(EXISTS "${src}")
             if(depends)
                 message(STATUS "clang-tidy-${target}: Ignoring non-root and non-leaf config: ${relative}/.clang-tidy")
             else()
-                set(dst "${binary_dir}/CMakeFiles/${target}.dir/.clang-tidy")
+                set(dst "${target_binary_dir}/CMakeFiles/${target}.dir/.clang-tidy")
                 add_custom_command(OUTPUT "${dst}"
                                    COMMAND "${CMAKE_COMMAND}" -E copy "${src}" "${dst}"
                                    DEPENDS "${src}")
@@ -85,7 +92,7 @@ function(z_clang_tidy_unity target #[[ OUTPUT <output> [ DEPENDS <dependencies> 
     # Make .clang-tidy config available to generated source files
     set(src "${PROJECT_SOURCE_DIR}/.clang-tidy")
     if(EXISTS "${src}")
-        set(dst "${binary_dir}/CMakeFiles/.clang-tidy")
+        set(dst "${target_binary_dir}/CMakeFiles/.clang-tidy")
         add_custom_command(OUTPUT "${dst}"
                            COMMAND "${CMAKE_COMMAND}" -E copy "${src}" "${dst}"
                            DEPENDS "${src}")
@@ -93,27 +100,23 @@ function(z_clang_tidy_unity target #[[ OUTPUT <output> [ DEPENDS <dependencies> 
     endif()
 
     add_custom_command(OUTPUT "${CMAKE_BINARY_DIR}/${arg_OUTPUT}"
-                       COMMAND "${CMAKE_COMMAND}" -E rm -f "${CMAKE_BINARY_DIR}/.clang-tools/${arg_OUTPUT}"
-                       COMMAND "${Python_EXECUTABLE}" "${clang-tidy_PY}"
-                                "-clang-tidy-binary=${clang-tidy_EXE}"
-                                -p "${CMAKE_BINARY_DIR}/.clang-tools/${target}"
-                                "-extra-arg=-fmsc-version=${MSVC_VERSION}"
-                                "-extra-arg=-Qunused-arguments"
-                                "-header-filter=.*"
-                                >> "${CMAKE_BINARY_DIR}/.clang-tools/${arg_OUTPUT}" || "${CMAKE_COMMAND}" -E true
-                       COMMAND powershell -ExecutionPolicy Bypass
-                               -File "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/remove-shell-colors.ps1"
-                               "${CMAKE_BINARY_DIR}/.clang-tools/${arg_OUTPUT}"
+                       COMMAND "${CMAKE_COMMAND}"
+                               -D "clang-tidy_EXE=${clang-tidy_EXE}"
+                               -D "COMPILE_COMMANDS_PATH=${CMAKE_BINARY_DIR}/.clang-tools/${target}/${config_subdir}"
+                               -D "INTERMEDIATE_FILE=${CMAKE_BINARY_DIR}/.clang-tools/${target}/${config_subdir}clang-tidy.tidy"
+                               -D "OUTPUT=${CMAKE_BINARY_DIR}/${arg_OUTPUT}"
+                               -P "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/run-clang-tidy.cmake"
                        COMMAND "${CMAKE_COMMAND}"
                                -D "TOOL=clang-tidy"
                                -D "OUTPUT=${CMAKE_BINARY_DIR}/${arg_OUTPUT}"
-                               -D "FILES=${CMAKE_BINARY_DIR}/.clang-tools/${arg_OUTPUT}"
+                               -D "FILES=${CMAKE_BINARY_DIR}/.clang-tools/${target}/${config_subdir}clang-tidy.tidy"
                                -P "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/cat.cmake"
                        DEPENDS ${arg_DEPENDS}
-                               "clang-tools-compile_commands-${target}"
                                "${depends}"
-                               "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/remove-shell-colors.ps1"
+                               "${CMAKE_BINARY_DIR}/.clang-tools/${target}/${config_subdir}compile_commands.json"
+                               "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/run-clang-tidy.cmake"
                                "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/cat.cmake"
+                       DEPFILE "${CMAKE_BINARY_DIR}/.clang-tools/${target}/${config_subdir}clang-tidy.tidy.d"
                        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
                        COMMENT "clang-tidy (${target}): Analyzing"
                        JOB_POOL use_all_cpus
@@ -127,12 +130,15 @@ function(clang_tidy #[[ <target> ... ]])
                     TARGETS ${ARGV}
                     UNITY z_clang_tidy_unity
                     MAP_COMMAND "@clang-tidy_EXE@"
-                                -p ".clang-tools/@target@"
-                                "--extra-arg=-fmsc-version=@MSVC_VERSION@"
-                                "--extra-arg=-Qunused-arguments"
+                                -p "@target_compile_commands_path@"
+                                "--extra-arg=/clang:-MD"
+                                "--extra-arg=/clang:-MF@output@.d"
+                                "--extra-arg=/clang:-MT@output@"
                                 "--header-filter=.*"
                                 @files@
-                                > "@output@" || "@CMAKE_COMMAND@" -E true
-                    MAP_DEPENDS ${depends}
+                                $<ANGLE-R> "@output@" || "@CMAKE_COMMAND@" -E true
+                    MAP_DEPENDS "@clang-tidy_EXE@"
+                                ${depends}
+                    MAP_DEPFILE
                     MAP_EXTENSION tidy)
 endfunction()

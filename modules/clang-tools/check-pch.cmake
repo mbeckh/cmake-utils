@@ -1,4 +1,4 @@
-# Copyright 2021 Michael Beckh
+# Copyright 2021-2022 Michael Beckh
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,21 +16,25 @@
 # Calculate obsolete and missing includes for precompiled headers.
 # Usage: cmake
 #        -D TARGET=<name>
+#        -D CONFIG_SUBDIR=<if_multiconfig_name_and_slash_else_empty>
 #        -D FILES=<file>;...
 #        -D PCH_FILES=<file>;...
 #        -D OUTPUT=<file>
 #        -P check-pch.cmake
 #
-cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.25 FATAL_ERROR)
 
-if(NOT FILES)
-    message(FATAL_ERROR "No input files")
-endif()
+foreach(arg TARGET FILES PCH_FILES OUTPUT)
+    if(NOT ${arg})
+        message(FATAL_ERROR "${arg} is missing or empty")
+    endif()
+endforeach()
 
 foreach(file IN LISTS FILES)
-    file(STRINGS "${file}" entries)
+    file(STRINGS "${file}" entries REGEX "S\\|")
+    list(TRANSFORM entries REPLACE "^S\\|" "")
     if(entries)
-        if(file MATCHES "/.clang-tools/${TARGET}/cmake_pch.si$")
+        if(file MATCHES "/\\.clang-tools/${TARGET}/${CONFIG_SUBDIR}cmake_pch\\.inc$")
             list(APPEND pch "${entries}")
         else()
             list(APPEND includes "${entries}")

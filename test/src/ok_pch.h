@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Michael Beckh
+Copyright 2021-2023 Michael Beckh
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,3 +17,5 @@ limitations under the License.
 
 #include <cstddef>  // system include in all_ok.cpp
 #include <cstdint>  // system include in all_ok.h
+#include <fmt/core.h>
+#include "tidy_error.h"

@@ -1,4 +1,4 @@
-# Copyright 2021 Michael Beckh
+# Copyright 2021-2022 Michael Beckh
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -53,15 +53,13 @@ function(cmake_utils_for_each_target _cu_fet_command #[[ ARGS <args> ... DIRECTO
     endforeach()
 endfunction()
 
-function(z_cmake_utils_add_to_module_path)
+block()
     list(FIND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}" index)
     if(index EQUAL -1)
         list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
         set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" CACHE STRING "" FORCE)
     endif()
-endfunction()
-
-z_cmake_utils_add_to_module_path()
+endblock()
 
 # Inject common build settings
 include("${CMAKE_CURRENT_LIST_DIR}/settings/common.cmake")

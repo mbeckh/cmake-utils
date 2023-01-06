@@ -2,7 +2,7 @@
 Modules for building projects using [CMake](https://cmake.org/).
 
 [![Release](https://img.shields.io/github/v/release/mbeckh/cmake-utils?display_name=tag&sort=semver&label=Release&style=flat-square)](https://github.com/mbeckh/cmake-utils/releases/)
-[![Tests](https://img.shields.io/github/workflow/status/mbeckh/cmake-utils/Test/master?label=Tests&logo=GitHub&style=flat-square)](https://github.com/mbeckh/cmake-utils/actions)
+[![Tests](https://img.shields.io/github/actions/workflow/status/mbeckh/cmake-utils/test.yml?branch=master&label=Tests&logo=GitHub&style=flat-square)](https://github.com/mbeckh/cmake-utils/actions)
 [![License](https://img.shields.io/github/license/mbeckh/cmake-utils?label=License&style=flat-square)](https://github.com/mbeckh/cmake-utils/blob/master/LICENSE)
 
 ## Features
@@ -12,8 +12,12 @@ Modules for building projects using [CMake](https://cmake.org/).
 
 -   Supports vcpkg registries and vcpkg binary caching.
 
--   Use local source of vcpkg library instead of version from repository. This allows working in two projects in parallel, e.g.
-    a library and a user of this library, without lengthy round trips to update the vcpkg repository.
+-   Supports CMake generators `Ninja` and `Ninja Multi-Config` 
+
+-   Allow use of local source for vcpkg library instead of version from repository. This allows working in two projects
+    in parallel, e.g. a library and a user of this library, without lengthy round trips to update the vcpkg repository.
+    For a local source, the library directory is added to the consuming project using `add_subdirectory` and setting
+    the directory's `SYSTEM` property.
 
 -   Run checks using [clang-tidy](https://clang.llvm.org/extra/clang-tidy/) and
     [include-what-you-use](https://include-what-you-use.org/).
@@ -24,7 +28,8 @@ Modules for building projects using [CMake](https://cmake.org/).
 
 -   [Script](#visual-studio-integration) for running single file compilation, clang-tidy, include-what-you-use and
     the precompiled header check from within Visual Studio. Single file compilation is provided as an alternative to
-    the built-in feature of Visual Studio which fails with an error message if a precompiled header is used.
+    the built-in feature of Visual Studio 2019 which fails with an error message if a precompiled header is used.
+    Single file compilation seems to work in Visual Studio 2022, so this feature might be removed in the future.
 
 -   [GitHub action](#github-action) for bootstrapping cmake-utils.
 
@@ -32,8 +37,8 @@ Modules for building projects using [CMake](https://cmake.org/).
 -   Set environment CMake variable `BUILD_ROOT` to the path of an output folder. A subfolder will be created therein 
     for every project.
 
--   Supply the file [`Toolchain.cmake`](Toolchain.cmake) to CMake using `-DCMAKE_TOOLCHAIN_FILE=<path>/cmake-utils/Toolchain.cmake`.
-    Everything else will configure itself, e.g. if vcpkg.json is found.
+-   Supply the file [`Toolchain.cmake`](Toolchain.cmake) to CMake using `-DCMAKE_TOOLCHAIN_FILE:FILEPATH=<path>/cmake-utils/Toolchain.cmake`.
+    Everything else will configure itself, e.g. if `vcpkg.json` is found.
 
 -   Optional user overrides are read from `cmake-utils/UserSettings.cmake` and `${CMAKE_SOURCE_DIR}/cmake/UserSettings.cmake`.
 
@@ -41,10 +46,64 @@ Modules for building projects using [CMake](https://cmake.org/).
     skips generation of debug information and PDB to speed up builds when debug information is not required
     (e.g. in some CI scenarios).
     
--   If CMake variable `CMU_DISABLE_CLANG_TOOLS` is set to `true`, configure will skip detection of clang. This can speed up
-    generation of CMake cache in some scenarios (e.g. slow detection of Python interpreter) if a plain build is sufficient.
+-   If CMake variable `CMU_DISABLE_CLANG_TOOLS` is set to `true`, configure will skip detection of clang but retain
+    common build settings and vcpkg integration. This can speed up generation of CMake cache in some scenarios if a
+    plain build is sufficient.
     
 ## Changes to Build
+-   Sets common build options for both local projects and libraries built by vcpkg.
+    -   Postfix `d` for debug executable.
+
+    -   Common preprocessor macros `UNICODE=1`, `_UNICODE=1`, `WIN32=1`, `_WINDOWS=1`, `WINVER=0x0A00`, `_WIN32_WINNT=0x0A00` and either `_DEBUG=1` or `NDEBUG=1`.
+
+    -   Multi-threaded static MSVC runtime library in release or debug flavor (`/MT`, `/MTd`).
+
+    -   Enable interprocedural optimization (aka link-time code generation) by default for all configurations but Debug (`/Gy`, `/LTCG`).
+
+    -   Just my code debugging for configurations Debug and RelWithDebInfo (`/JMC`); never enabled for packages built by vcpkg.
+
+    -   Debugging information for edit and continue (`/ZI`) for configurations Debug and RelWithDebInfo, embedded (`/Z7`) for all other configurations and for all packages built by vcpkg (all configurations).
+
+    -   Additional compiler options
+        -   Optimization
+            -   `/Od` (Debug configuration only) - switch off optimizations for debug builds
+            -   `/O2` (all configurations but Debug) - generate fast code
+            -   `/Ob3` (all configurations but Debug) - aggressive inlining
+
+        -   Code generation
+            -   `/EHsc` - enable C++ exceptions, C is `nothrow`.
+            -   `/GR-` - disable runtime type identification (RTTI).
+            -   `/Gw` (all configurations but Debug) - whole-program global data optimzation.
+            -   `/RTC1`  (Debug configuration only) - enable runtime checks.
+
+        -   Language
+            -   `/permissive-` - better standards conformance.
+            -   `/Zc:inline` (all configurations but Debug) - remove unreferenced functions.
+
+        -   Miscellaneous
+            -   `/bigobj` - high number of sections in object files required by tests and LTCG.
+            -   `/FC` (Debug configuration and only if linking with googletest libraries ) - full paths required for linking to source in test errors.
+            -   `/FS` (configurations Debug and RelWithDebInfo only) - required to prevent errors during build.
+            -   `/MP` - required by CodeQL scanning on GitHub.
+            -   `/utf-8` - standard character set for source and runtime.
+
+        -   Diagnostics
+            -   `/diagnostics:caret` - show location of errors and warnings.
+            -   `/sdl` - more security warnings.
+            -   `/W4` - better code quality.
+            -   `/wd4373` - disable a legacy warning in valid C++ code which exists for pre 2008 versions of MSVC.
+            -   `/WX` (all configurations but Debug) - treat warnings as errors.
+
+    -   Additional linker options
+        -   `/CGTHREADS` (if using interprocedural optimization) - use all available CPUs.
+        -   `/DEBUG:NONE` (if no debugging information is generated)
+        -   `/DEBUG:FULL` (whenever debugging information is generated) - FULL is faster than FASTLINK.
+        -   `/INCREMENTAL` (Debug configuration only) - speed up linking.
+        -   `/INCREMENTAL:NO` (all configurations but Debug) - keep binary size small.
+        -   `/OPT:REF` (all configurations but Debug) - remove unreferenced functions and data.
+        -   `/OPT:ICF` (all configurations but Debug) - identical COMDAT folding.
+        -   `/WX` (all configurations but Debug) - treat warnings as errors.
+
 -   Enables CMake option `BUILD_TESTING` if a project is at the top level (`PROJECT_IS_TOP_LEVEL`).
 
 -   Setup vcpkg toolchain automatically, if `vcpkg.json` if present in the project root folder.
@@ -83,17 +142,28 @@ The [test workflow](.github/workflow/test.yml) includes additional steps for con
 and cache vcpkg artifacts to speed up the builds.
 
 ### Inputs for `configure`
--   `source-dir` - The CMake source directory (optional, defaults to GitHub workspace directory).
-
 -   `build-root` - The path to the root build directory - relative to GitHub workspace - which includes the vcpkg 
     build folder (optional, defaults to GitHub workspace directory).
 
--   `binary-dir` - The CMake binary directory (optional, defaults to GitHub workspace directory).
-    default: .
+-   `preset` - The CMake configure preset (optional) .
 
--   `configuration` - The CMake build type (optional, defaults to `Release`).
+-   `source-dir` - The CMake source directory (optional, defaults to GitHub workspace directory if no preset is used).
+
+-   `binary-dir` - The CMake binary directory (optional, defaults to GitHub workspace directory if no preset is used).
+
+-   `generator` - The CMake generator (optional, defaults to Ninja if no preset is used).
+
+-   `configuration` - The CMake build type for CMAKE_BUILD_TYPE (optional, defaults to `Release` if no preset is used).
+
+-   `configurations` - The CMake configuration types for CMAKE_CONFIGURATION_TYPES (optional, defaults to
+    `Debug;Release` if no preset is used and generator is Ninja Multi-Config).
 
 -   `extra-args` - Additional arguments which are passed to CMake, e.g. for setting CMake variables (optional).
+
+### Packages
+The action sets up package caching using NuGet on GitHub. If an error occurs when updating a package that is used by
+different repositories, it might be required to allow write access to this package for repositories other than the one
+that created the package in the first place.
 
 ## Visual Studio Integration
 Add one or more external tools within Visual Studio with the following settings:
@@ -101,7 +171,7 @@ Add one or more external tools within Visual Studio with the following settings:
 
 -   Arguments: `<tool> "$(ItemPath)" "<vcvars>" [ "<cmake>" ]` with
     -   `tool` set to either `compile`, `clang-tidy`, `iwyu` or `pch`, `compile` runs a build for a single file (which is broken in MSVC as of v16.11 when using precompiled headers).
-    -   `vcvars` set to the full path of a batch script to set the build environment, e.g. `C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat` and
+    -   `vcvars` set to the full path of a batch script to set the build environment, e.g. `C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat` and
     -   `cmake` optionally set to the full file path of `cmake.exe`. If `cmake` is not provided, `cmake.exe` from the current path is used.
 
 -   Initial Directory: `$(SolutionDir)`.
@@ -111,20 +181,18 @@ Add one or more external tools within Visual Studio with the following settings:
 ## System Requirements / Tested with
 -   Visual Studio 2019 v16.11 or newer.
 
--   CMake v3.22 or newer running on Microsoft Windows. v3.22 is required to support `-external:I` for system includes.
+-   CMake v3.25 or newer running on Microsoft Windows.
 
 -   clang 13.0.0 or newer is required for precompiled header analysis. Set environment variable `clang_ROOT` to folder 
     path if not found automatically.
 
 -   clang-tidy 13.0.0 or newer. Set environment variable `clang-tidy_ROOT` to folder path if not found
-    automatically. Script `run-clang-tidy.py` is expected in the same path.
+    automatically.
 
 -   include-what-you-use executable 0.16 or newer. Set environment variable `include-what-you-use_ROOT` to folder path
-    if not found automatically. `iwyu_tool.py` is expected in the same path as well as the configuration file
-    `stl.c.headers.imp`.
+    if not found automatically. `stl.c.headers.imp` is expected in the same path.
 
--   Running clang-tidy (required only for unity builds, but always checked) and include-what-you-use requires Python.
-    Set CMake variable `Python_EXECUTABLE` to file path if interpreter is not found automatically.
+-   Visual Studio integration requires the use of a CMakePresets file which sets the environment variable `BINARY_DIR`.
 
 ## License
 The code is released under the Apache License Version 2.0. Please see [LICENSE](LICENSE) for details.

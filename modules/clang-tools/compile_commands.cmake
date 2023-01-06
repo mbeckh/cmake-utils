@@ -1,4 +1,4 @@
-# Copyright 2021 Michael Beckh
+# Copyright 2021-2023 Michael Beckh
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,31 +14,63 @@
 
 #
 # Remove MSVC-only flags from compile_commands.json which are not understood by clang's MSVC driver.
-# Usage: cmake -P compile_commands.cmake
+# Usage: cmake
+#        -D TARGET=<name>
+#        -D CONFIG_SUBDIR=<if_multiconfig_name_and_slash_else_empty>
+#        -D clang_EXE=<path>
+#        -D MSVC_VERSION=<version>
+#        -P compile_commands.cmake
 #
-cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.25 FATAL_ERROR)
+
+foreach(arg TARGET clang_EXE clang_EXE MSVC_VERSION)
+    if(NOT ${arg})
+        message(FATAL_ERROR "${arg} is missing or empty")
+    endif()
+endforeach()
 
 file(READ "compile_commands.json" compile_commands)
 string(JSON count LENGTH "${compile_commands}")
 math(EXPR count "${count} - 1")
 set(changed NO)
 
+if(CONFIG_SUBDIR)
+    string(REGEX REPLACE "/$" "[/\\\\]" config_subdir_pattern "${CONFIG_SUBDIR}")
+endif()
+
+# compile_commands.json uses native paths
+cmake_path(NATIVE_PATH clang_EXE NORMALIZE clang_EXE)
+
 foreach(i RANGE ${count})
     math(EXPR index "${count} - ${i}")
     string(JSON command GET "${compile_commands}" ${index} "command")
 
-    if(NOT command MATCHES " [/-]Fo([^/\\\\]+[/\\\\])*CMakeFiles[/\\\\]${TARGET}\\.dir[/\\\\]")
-        # entry belongs to a different target 
+    if(NOT command MATCHES " [/-]Fo([^/\\\\]+[/\\\\])*CMakeFiles[/\\\\]${TARGET}\\.dir[/\\\\]${config_subdir_pattern}")
+        # entry belongs to a different target or config
         string(JSON compile_commands REMOVE "${compile_commands}" ${index})
         continue()
     endif()
-    string(REGEX REPLACE "(^| )[/-]external:I " " /clang:-isystem" command "${command}")
+
+    string(REGEX REPLACE "(^| )[/-]external:I ?" " /clang:-isystem" command "${command}")
     separate_arguments(command NATIVE_COMMAND "${command}")
     list(FILTER command EXCLUDE REGEX "^[/-](Y[cu]|FI|Fp|d1trimfile:).*$")
     list(FILTER command EXCLUDE REGEX "^[/-](experimental:external|external:W[0-4])$")
+    list(FILTER command EXCLUDE REGEX "^[/-](GL|MP|Z[Ii7]|Ob3|JMC)$")
+    list(POP_FRONT command)
+    list(PREPEND command "${clang_EXE}" "--driver-mode=cl")
+    list(INSERT command 2 "/clang:-fmsc-version=${MSVC_VERSION}"
+                          "/clang:-Wno-unknown-attributes"
+                          "-D__clang_analyzer__"
+                          "-D_CRT_USE_BUILTIN_OFFSETOF")
+
+    # separate_arguments removes quotes
+    list(TRANSFORM command REPLACE [[^(.+)$]] [["\1"]] REGEX [[ ]])
+    
     list(TRANSFORM command REPLACE [[\\]] [[\\\\]])
+    list(TRANSFORM command REPLACE [["]] [[\\"]])
+   
     list(JOIN command " " command)
     string(JSON compile_commands SET "${compile_commands}" ${index} "command" "\"${command}\"")
 endforeach()
 
-file(WRITE ".clang-tools/${TARGET}/compile_commands.json" "${compile_commands}")
+file(WRITE ".clang-tools/${TARGET}/${CONFIG_SUBDIR}compile_commands.json" "${compile_commands}")

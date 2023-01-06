@@ -1,4 +1,4 @@
-# Copyright 2021 Michael Beckh
+# Copyright 2021-2023 Michael Beckh
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,10 +20,7 @@
 
 include(ProcessorCount)
 
-#
-# Function to keep global scope cleaner.
-#
-function(z_cmake_utils_settings_shared)
+block()
     # Safe guard against unintended use
     get_property(try_compile GLOBAL PROPERTY IN_TRY_COMPILE)
     if(try_compile)
@@ -45,7 +42,7 @@ function(z_cmake_utils_settings_shared)
     # Unicode for Windows 10
     add_compile_definitions(UNICODE=1 _UNICODE=1
                             WIN32=1 _WINDOWS=1
-                            "$<$<CONFIG:Debug>:_DEBUG=1>" "$<$<CONFIG:Release>:NDEBUG=1>"
+                            "$<$<CONFIG:Debug>:_DEBUG=1>" "$<$<NOT:$<CONFIG:Debug>>:NDEBUG=1>"
                             WINVER=0x0A00 _WIN32_WINNT=0x0A00)
 
     ProcessorCount(cpu_count)
@@ -74,7 +71,7 @@ function(z_cmake_utils_settings_shared)
     #
     # Remove conflicting default compiler and linker flags
     #
-    foreach(suffix "" "_DEBUG" "_RELEASE")
+    foreach(suffix "" "_DEBUG" "_RELEASE" "_RELWITHDEBINFO" "_MINSIZEREL")
         foreach(language C CXX)
             if(CMAKE_${language}_FLAGS${suffix})
                 string(REGEX REPLACE "(^| )[/-]((D(WIN32|_WINDOWS|_?UNICODE|[_N]DEBUG|WINVER|_WIN32_WINNT)(=[^ ]*)?)|bigobj|GR-?|EH([sc]|sc)|M[DT]d?|O[12dgistxy]|Ob[0-9]|RTC1|utf-8|w|W[0-4]|Z[7iI])($| )" " " flags "${CMAKE_${language}_FLAGS${suffix}}")
@@ -99,16 +96,16 @@ function(z_cmake_utils_settings_shared)
     #
 
     # Language 
-    add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:/EHsc;/GR-;/permissive-;$<$<CONFIG:Release>:/Zc:inline>>")
+    add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:/EHsc;/GR-;/permissive-;$<$<NOT:$<CONFIG:Debug>>:/Zc:inline>>")
 
     # Optimizations
-    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:$<$<CONFIG:Debug>:/Od>;$<$<CONFIG:Release>:/Gw;/O2;/Ob3>>")
+    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:$<$<CONFIG:Debug>:/Od>;$<$<NOT:$<CONFIG:Debug>>:/Gw;/O2;/Ob3>>")
 
     # Checks
     add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:$<$<CONFIG:Debug>:/RTC1>;/sdl>")
 
     # Warnings
-    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:/W4;/wd4373;$<$<CONFIG:Release>:/WX>>")
+    add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:/W4;/wd4373;$<$<NOT:$<CONFIG:Debug>>:/WX>>")
 
     # Compiler behavior (/MP is required by CodeQL scanning on Github)
     add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:/nologo;/bigobj;/diagnostics:caret;/utf-8;/MP>")
@@ -118,7 +115,7 @@ function(z_cmake_utils_settings_shared)
     #
 
     # Optimization
-    add_link_options("$<$<CONFIG:Release>:/OPT:ICF;/OPT:REF>")
+    add_link_options("$<$<NOT:$<CONFIG:Debug>>:/OPT:ICF;/OPT:REF>")
 
     if(NOT DEFINED CMAKE_INTERPROCEDURAL_OPTIMIZATION AND NOT DEFINED CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE)
         set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON CACHE BOOL "")
@@ -126,9 +123,9 @@ function(z_cmake_utils_settings_shared)
     string(TOUPPER "${CMAKE_BUILD_TYPE}" config)
     if(cpu_count)
         add_link_options("$<$<OR:$<BOOL:$<TARGET_PROPERTY:INTERPROCEDURAL_OPTIMIZATION>>,$<BOOL:$<TARGET_PROPERTY:INTERPROCEDURAL_OPTIMIZATION_$<UPPER_CASE:$<CONFIG>>>>>:/CGTHREADS:${cpu_count}>")
-        if(CMAKE_INTERPROCEDURAL_OPTIMIZATION OR CMAKE_INTERPROCEDURAL_OPTIMIZATION_${config})
+        #if(1 OR CMAKE_INTERPROCEDURAL_OPTIMIZATION) # OR CMAKE_INTERPROCEDURAL_OPTIMIZATION_${config})
             set(CMAKE_JOB_POOL_LINK "use_all_cpus" CACHE STRING "")
-        endif()
+        #endif()
     endif()
 
     # Debug information
@@ -136,7 +133,7 @@ function(z_cmake_utils_settings_shared)
 
     # Linker behavior
     # LTCG adds /INCREMENTAL switch automatically
-    add_link_options(/NOLOGO "$<$<NOT:$<OR:$<BOOL:$<TARGET_PROPERTY:INTERPROCEDURAL_OPTIMIZATION>>,$<BOOL:$<TARGET_PROPERTY:INTERPROCEDURAL_OPTIMIZATION_$<UPPER_CASE:$<CONFIG>>>>>>:/INCREMENTAL$<$<CONFIG:Release>::NO>>")
+    add_link_options(/NOLOGO "$<$<NOT:$<OR:$<BOOL:$<TARGET_PROPERTY:INTERPROCEDURAL_OPTIMIZATION>>,$<BOOL:$<TARGET_PROPERTY:INTERPROCEDURAL_OPTIMIZATION_$<UPPER_CASE:$<CONFIG>>>>>>:/INCREMENTAL$<$<NOT:$<CONFIG:Debug>>::NO>>")
     if(NOT CMAKE_STATIC_LINKER_FLAGS MATCHES "(^| )[/-][Nn][Oo][Ll][Oo][Gg][Oo]( |$)")
         string(APPEND CMAKE_STATIC_LINKER_FLAGS " /NOLOGO")
         string(STRIP "${CMAKE_STATIC_LINKER_FLAGS}" CMAKE_STATIC_LINKER_FLAGS)
@@ -144,7 +141,7 @@ function(z_cmake_utils_settings_shared)
     endif()
 
     # Warnings
-    add_link_options("$<$<CONFIG:Release>:/WX>")
+    add_link_options("$<$<NOT:$<CONFIG:Debug>>:/WX>")
     if(NOT CMAKE_STATIC_LINKER_FLAGS_RELEASE MATCHES "(^| )[/-]WX( |$)")
         string(APPEND CMAKE_STATIC_LINKER_FLAGS_RELEASE " /WX")
         string(STRIP "${CMAKE_STATIC_LINKER_FLAGS_RELEASE}" CMAKE_STATIC_LINKER_FLAGS_RELEASE)
@@ -160,6 +157,4 @@ function(z_cmake_utils_settings_shared)
         string(STRIP "${CMAKE_RC_FLAGS}" CMAKE_RC_FLAGS)
         set(CMAKE_RC_FLAGS "${CMAKE_RC_FLAGS}" CACHE STRING "" FORCE)
     endif()
-endfunction()
-
-z_cmake_utils_settings_shared()
+endblock()

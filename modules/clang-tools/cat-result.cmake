@@ -1,4 +1,4 @@
-# Copyright 2021 Michael Beckh
+# Copyright 2021-2022 Michael Beckh
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,11 +20,13 @@
 #        .D FILES=<file>;...
 #        -P cat-result.cmake
 #
-cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.25 FATAL_ERROR)
 
-if(NOT FILES)
-    message(FATAL_ERROR "No input files")
-endif()
+foreach(arg TOOL SOURCE_DIR FILES)
+    if(NOT ${arg})
+        message(FATAL_ERROR "${arg} is missing or empty")
+    endif()
+endforeach()
 
 #https://en.wikipedia.org/wiki/ANSI_escape_code
 string(ASCII 27 esc)
@@ -37,7 +39,7 @@ set(fmt_rule "${esc}[95m")
 foreach(input IN LISTS FILES)
     file(STRINGS "${input}" content)
 
-    if(TOOL STREQUAL iwyu OR TOOL STREQUAL pch)
+    if(TOOL STREQUAL "iwyu" OR TOOL STREQUAL "pch")
         foreach(line IN LISTS content)
             if(line MATCHES "^(\\()(.+)( has correct.*)$")
                 cmake_path(RELATIVE_PATH CMAKE_MATCH_2 BASE_DIRECTORY "${SOURCE_DIR}" OUTPUT_VARIABLE path)
@@ -48,15 +50,17 @@ foreach(input IN LISTS FILES)
             elseif(line MATCHES "^(The full include-list for )(.+)(:)$")
                 cmake_path(RELATIVE_PATH CMAKE_MATCH_2 BASE_DIRECTORY "${SOURCE_DIR}" OUTPUT_VARIABLE path)
                 message("${fmt_text}${CMAKE_MATCH_1}${fmt_error}${path}${fmt_text}${CMAKE_MATCH_3}${fmt_off}")
+            elseif(line MATCHES "^(.+):$")
+                message("${fmt_ok}${CMAKE_MATCH_1}:${fmt_off}")
             else()
                 message("${line}")
             endif()
         endforeach()
-    elseif(TOOL STREQUAL clang-tidy)
+    elseif(TOOL STREQUAL "clang-tidy")
         foreach(line IN LISTS content)
-            if(line MATCHES "^([^ ].*:[0-9]+:[0-9]+)(: .*)(\\[.+\\])$")
-                cmake_path(RELATIVE_PATH CMAKE_MATCH_1 BASE_DIRECTORY "${SOURCE_DIR}" OUTPUT_VARIABLE path)
-                message("${fmt_error}${path}${fmt_text}${CMAKE_MATCH_2}${fmt_rule}${CMAKE_MATCH_3}${fmt_off}")
+            if(line MATCHES "^([^ ].?[^:]*:[0-9]+:[0-9]+)(: .*)(\\[.+\\])$")
+                cmake_path(RELATIVE_PATH CMAKE_MATCH_1 BASE_DIRECTORY "${SOURCE_DIR}" OUTPUT_VARIABLE path_and_location)
+                message("${fmt_error}${path_and_location}${fmt_text}${CMAKE_MATCH_2}${fmt_rule}${CMAKE_MATCH_3}${fmt_off}")
             else()
                 message("${line}")
             endif()

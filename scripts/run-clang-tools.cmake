@@ -1,4 +1,4 @@
-# Copyright 2021 Michael Beckh
+# Copyright 2021-2023 Michael Beckh
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,96 +26,137 @@
 #        -D FILE=<file>
 #        -P run-clang-tools.cmake
 #
-cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
-
-cmake_path(RELATIVE_PATH FILE BASE_DIRECTORY "${CMAKE_SOURCE_DIR}" OUTPUT_VARIABLE file_in_solution)
-cmake_path(GET FILE PARENT_PATH solution_dir)
-cmake_path(GET FILE ROOT_PATH root_path)
-while(NOT solution_dir STREQUAL root_path AND NOT EXISTS "${solution_dir}/CMakeSettings.json")
-    cmake_path(GET solution_dir PARENT_PATH solution_dir)
-endwhile()
-
-if(NOT EXISTS "${solution_dir}/CMakeSettings.json")
-    message(FATAL_ERROR "CMake project not found containing ${CMAKE_BINARY_DIR}")
-endif()
-cmake_path(RELATIVE_PATH FILE BASE_DIRECTORY "${solution_dir}" OUTPUT_VARIABLE file)
-
-file(READ "${solution_dir}/CMakeSettings.json" settings)
-
-#
-# Get first Debug configuration
-#
-string(JSON count LENGTH "${settings}" "configurations")
-math(EXPR last_configuration "${count} - 1")
-foreach(index RANGE ${last_configuration})
-    string(JSON configurationName GET "${settings}" configurations ${index} "name")
-    string(JSON configurationType GET "${settings}" configurations ${index} "configurationType")
-    if(NOT build_root OR configurationType STREQUAL Debug)
-        string(JSON build_root GET "${settings}" configurations ${index} "buildRoot")
-        if(configurationType STREQUAL Debug)
-            break()
-        endif()
+cmake_minimum_required(VERSION 3.25 FATAL_ERROR)
+foreach(arg TOOL FILE)
+    if(NOT ${arg})
+        message(FATAL_ERROR "${arg} is missing or empty")
     endif()
 endforeach()
 
 #
-# Get build path
+# Get location of presets file
 #
-function(replace_variables str)
-    set(result "${${str}}")
+cmake_path(CONVERT "${FILE}" TO_CMAKE_PATH_LIST FILE NORMALIZE)
+cmake_path(RELATIVE_PATH FILE BASE_DIRECTORY "${CMAKE_SOURCE_DIR}" OUTPUT_VARIABLE file_in_solution)
+cmake_path(GET FILE PARENT_PATH source_dir)
 
-    string(REGEX MATCHALL [[\${[^}]+}]] variables "${result}")
-    if(variables)
-        string(JSON count LENGTH "${settings}" environments)
-        math(EXPR lastEnvironment "${count} - 1")
+while(1)
+    if(EXISTS "${source_dir}/CMakePresets.json")
+        set(presets_path "${source_dir}")
     endif()
-    
-    foreach(variable IN LISTS variables)
-        string(REGEX MATCH [[\${(([^.}]+)\.)?([^.}]+)}]] parts "${variable}")
-        set(prefix "${CMAKE_MATCH_2}")
-        set(name "${CMAKE_MATCH_3}")
+    if(EXISTS "${source_dir}/CMakeUserPresets.json")
+        set(user_presets_path "${source_dir}")
+    endif()
+    if(source_dir PATH_EQUAL CMAKE_SOURCE_DIR OR (NOT "${presets_path}" STREQUAL "" AND NOT "${user_presets_path}" STREQUAL ""))
+        break()
+    endif()
+    cmake_path(GET source_dir PARENT_PATH source_dir)
+endwhile()
+if(user_presets_path)
+    set(source_dir "${user_presets_path}")
+elseif(presets_path)
+    set(source_dir "${presets_path}")
+else()
+    cmake_path(GET FILE PARENT_PATH source_dir)
+    message(FATAL_ERROR "CMakePresets not found containing ${source_dir}")
+endif()
+cmake_path(RELATIVE_PATH FILE BASE_DIRECTORY "${source_dir}" OUTPUT_VARIABLE file)
 
-        unset(found)
-        if(prefix)
-            foreach(index RANGE ${lastEnvironment})
-                string(JSON namespace ERROR_VARIABLE error GET "${settings}" environments ${index} namespace)
-                if((prefix STREQUAL "env" AND NOT namespace) OR prefix STREQUAL namespace)
-                    string(JSON value GET "${settings}" environments ${index} "${name}")
-                    replace_variables(value)
-                    string(REPLACE "${variable}" "${value}" result "${result}")
-                    set(found YES)
-                    break()
-                endif()
-            endforeach()
-        elseif(name STREQUAL "name")
-            string(REPLACE "${variable}" "${configurationName}" result "${result}")
-            set(found YES)
-        elseif(name STREQUAL "projectDirName")
-            cmake_path(GET solution_dir FILENAME project_dir_name)
-            string(REPLACE "${variable}" "${project_dir_name}" result "${result}")
-            set(found YES)
+#
+# List presets
+#
+execute_process(COMMAND "${CMAKE_COMMAND}" --list-presets
+                WORKING_DIRECTORY "${source_dir}"
+                RESULT_VARIABLE result
+                ERROR_VARIABLE error
+                OUTPUT_VARIABLE configure_presets
+                COMMAND_ECHO NONE)
+if(NOT result EQUAL 0)
+    message(FATAL_ERROR "Error ${result}:\n${error}")
+endif()
+
+execute_process(COMMAND "${CMAKE_COMMAND}" --build --list-presets
+                WORKING_DIRECTORY "${source_dir}"
+                RESULT_VARIABLE result
+                ERROR_VARIABLE error
+                OUTPUT_VARIABLE build_presets
+                COMMAND_ECHO NONE)
+if(NOT result EQUAL 0)
+    message(FATAL_ERROR "Error ${result}:\n${error}")
+endif()
+
+#
+# Get first configure preset with "debug", "dbug". "debg" or "dbg" in its name, first preset if debug preset not found
+#
+include("${CMAKE_CURRENT_LIST_DIR}/../modules/Regex.cmake")
+
+foreach(type configure build)
+    string(REPLACE ";" "\\;" ${type}_presets "${${type}_presets}")
+    string(REPLACE "\n" ";" ${type}_presets "${${type}_presets}")
+    list(FILTER ${type}_presets INCLUDE REGEX "^ +\".+\"")
+    list(TRANSFORM ${type}_presets REPLACE "^ +\"(.+)\".*$" "\\1")
+
+    if(type STREQUAL "configure")
+        set(filtered_presets "${configure_presets}")
+        #list(FILTER filtered_presets INCLUDE REGEX "[Dd][Ee]?[Bb][Uu]?[Gg]")
+        list(FILTER filtered_presets INCLUDE REGEX "multi")
+        if(filtered_presets)
+            set(configure_presets "${filtered_presets}")
         endif()
-        if(NOT found)
-            message(FATAL_ERROR "Unknown replacement: ${parts} in ${${str}}")
+        if(NOT configure_presets)
+            message(FATAL_ERROR "No configure presets found in ${source_dir}")
         endif()
-    endforeach()
+    else()
+        regex_escape_pattern(configure_preset OUT configure_preset_pattern)
+        list(FILTER build_presets INCLUDE REGEX "^${configure_preset_pattern}")
 
-    set("${str}" "${result}" PARENT_SCOPE)
-endfunction()
+        set(filtered_presets "${build_presets}")
+        list(FILTER filtered_presets INCLUDE REGEX "[Dd][Ee]?[Bb][Uu]?[Gg]")
+        if(filtered_presets)
+            set(build_presets "${filtered_presets}")
+        endif()
+        if(NOT build_presets)
+            message(FATAL_ERROR "No build presets matching ${configure_preset} found in ${source_dir}")
+        endif()
+    endif()
 
-replace_variables(build_root)
+    list(GET ${type}_presets 0 ${type}_preset)
+endforeach()
+
+#
+# Get BINARY_DIR of preset
+#
+execute_process(COMMAND "${CMAKE_COMMAND}" --preset "${configure_preset}" -N
+                WORKING_DIRECTORY "${source_dir}"
+                RESULT_VARIABLE result
+                ERROR_VARIABLE error
+                OUTPUT_VARIABLE variables
+                COMMAND_ECHO NONE)
+if(NOT result EQUAL 0)
+    message(FATAL_ERROR "Error ${result}:\n${error}")
+endif()
+
+string(REPLACE ";" "\\;" variables "${variables}")
+string(REPLACE "\n" ";" variables "${variables}")
+list(FILTER variables INCLUDE REGEX "^ +BINARY_DIR=\".+\"$")
+if(NOT variables)
+    message(FATAL_ERROR "BUILD_ROOT not found in preset ${configure_preset} of ${source_dir}")
+endif()
+
+list(TRANSFORM variables REPLACE "^ +BINARY_DIR=\"(.+)\"$" "\\1")
+list(GET variables 0 binary_dir)
+
+message("Using configuration ${configure_preset} with binary dir ${binary_dir} and build ${build_preset}")
 
 #
 # Get target
 #
-include("${CMAKE_CURRENT_LIST_DIR}/../modules/Regex.cmake")
-
-file(READ "${build_root}/compile_commands.json" compile_commands)
+file(READ "${binary_dir}/compile_commands.json" compile_commands)
 string(JSON count LENGTH "${compile_commands}")
 math(EXPR last_file "${count} - 1")
 
-function(find_target FILE file)
-    cmake_path(NORMAL_PATH FILE OUTPUT_VARIABLE input_file_path)
+function(find_target input_file_path file)
+    cmake_path(NORMAL_PATH input_file_path)
     string(TOLOWER "${input_file_path}" lower_input_file_path)
     foreach(index RANGE ${last_file})
         string(JSON file_path GET "${compile_commands}" ${index} "file")
@@ -136,11 +177,28 @@ function(find_target FILE file)
                 cmake_path(NATIVE_PATH relative_file relative_file_native)
                 regex_escape_pattern(parent_native OUT parent_pattern)
                 regex_escape_pattern(relative_file_native OUT file_pattern)
-                string(REGEX MATCH " /Fo(${parent_pattern}CMakeFiles\\\\(.+)\\.dir\\\\${file_pattern}\\.obj) " match "${command}")
+
+                string(REGEX MATCH "-DCMAKE_INTDIR=\\\\\"(.+)\\\\\" " match "${command}")
                 if(match)
-                    set(target "${CMAKE_MATCH_2}" PARENT_SCOPE)
-                    set(object "${CMAKE_MATCH_1}" PARENT_SCOPE)
-                    break()
+                    # Multi-Config
+                    set(config "${CMAKE_MATCH_1}")
+                    regex_escape_pattern(config OUT config_pattern)
+                    string(REGEX MATCH " /Fo(${parent_pattern}CMakeFiles\\\\(.+)\\.dir\\\\${config_pattern}\\\\${file_pattern}\\.obj) " match "${command}")
+                    if(match)
+                        set(config_subdir "${config}/" PARENT_SCOPE)
+                        set(object "${CMAKE_MATCH_1}" PARENT_SCOPE)
+                        set(target "${CMAKE_MATCH_2}" PARENT_SCOPE)
+                        break()
+                    endif()
+                else()
+                    # Non-Multi-Config
+                    string(REGEX MATCH " /Fo(${parent_pattern}CMakeFiles\\\\(.+)\\.dir\\\\${file_pattern}\\.obj) " match "${command}")
+                    if(match)
+                        unset(config_subdir PARENT_SCOPE)
+                        set(object "${CMAKE_MATCH_1}" PARENT_SCOPE)
+                        set(target "${CMAKE_MATCH_2}" PARENT_SCOPE)
+                        break()
+                    endif()
                 endif()
                 if(NOT parent_folder)
                     break()
@@ -160,12 +218,12 @@ if(NOT target)
     cmake_path(GET FILE FILENAME filename)
     unset(seen)
     list(APPEND seen "${filename}")
-    foreach(extension "cpp" "c" "cc" "cxx" "c++" "C")
+    foreach(extension "cpp" "c" "cc" "cxx" "c++" "C" "CPP" "cppm" "ixx" "M" "m" "mm" "mpp")
         cmake_path(REPLACE_EXTENSION filename LAST_ONLY "${extension}")
         if(NOT filename IN_LIST seen)
-            file(GLOB_RECURSE glob LIST_DIRECTORIES false RELATIVE "${solution_dir}" "${filename}")
+            file(GLOB_RECURSE glob LIST_DIRECTORIES false RELATIVE "${source_dir}" "${filename}")
             foreach(entry IN LISTS glob)
-                cmake_path(ABSOLUTE_PATH entry BASE_DIRECTORY "${solution_dir}" OUTPUT_VARIABLE entry_path)
+                cmake_path(ABSOLUTE_PATH entry BASE_DIRECTORY "${source_dir}" OUTPUT_VARIABLE entry_path)
                 cmake_path(NATIVE_PATH entry_path entry_path)
                 find_target("${entry_path}" "${entry}")
                 if(target)
@@ -180,7 +238,7 @@ if(NOT target)
         endif()
     endforeach()
     if(NOT target)
-        message(FATAL_ERROR "${file} not found in compile_commands.json")
+        message(FATAL_ERROR "${file} not found in compile_commands.json (${configure_preset})")
     endif()
 endif()
 
@@ -191,24 +249,23 @@ endif()
 if(TOOL STREQUAL "compile")
     set(result_file "${object}")
 elseif(TOOL STREQUAL "clang-tidy")
-    set(result_file ".clang-tools/${target}/${file}.tidy")
+    set(result_file ".clang-tools/${target}/${config_subdir}${file}.tidy")
 elseif(TOOL STREQUAL "iwyu")
-    set(result_file ".clang-tools/${target}/${file}.iwyu")
+    set(result_file ".clang-tools/${target}/${config_subdir}${file}.iwyu")
 elseif(TOOL STREQUAL "pch")
-    set(result_file "./pch-${target}.log")
+    set(result_file "./${config_subdir}pch-${target}.log")
 else()
     message(FATAL_ERROR "Unknown tool: ${TOOL}")
 endif()
 
-execute_process(COMMAND "${CMAKE_COMMAND}" --build . --target "${result_file}"
-                WORKING_DIRECTORY "${build_root}"
+execute_process(COMMAND "${CMAKE_COMMAND}" --build --preset "${build_preset}" --target "${result_file}"
+                WORKING_DIRECTORY "${source_dir}"
                 RESULTS_VARIABLE results
                 OUTPUT_VARIABLE output
                 ERROR_VARIABLE output
-                COMMAND_ECHO NONE
-                )
+                COMMAND_ECHO NONE)
 
-message(">------ ${file_in_solution} (${target}, ${configurationName}) - ${build_root} ------\n")
+message(">------ ${file_in_solution} (${target}, ${build_preset}) - ${binary_dir} ------\n")
 if(results)
     message("Result ${results}:\n${output}")
     message(FATAL_ERROR "Error running build: ${result_file}")
@@ -220,14 +277,14 @@ if(TOOL STREQUAL "compile")
 endif()
 
 #
-# Post-process output
+# Post-process output (in format for Visual Studio)
 #
 
-file(READ "${build_root}/${result_file}" output)
+file(READ "${binary_dir}/${result_file}" output)
 string(REPLACE ";" "\\;" output "${output}")
 string(REPLACE "\n" ";" output "${output}")
 unset(result)
-if(TOOL STREQUAL clang-tidy)
+if(TOOL STREQUAL "clang-tidy")
     foreach(line IN LISTS output)
         string(REGEX MATCH "^([^ ].+):([0-9]+):([0-9]+): ([^ ]+): (.+) \\[(.+)\\]$" parts "${line}")
         if(parts)
@@ -237,7 +294,7 @@ if(TOOL STREQUAL clang-tidy)
         string(REPLACE ";" "\\;" line "${line}")
         list(APPEND result "${line}")
     endforeach()
-elseif(TOOL STREQUAL iwyu OR TOOL STREQUAL pch)
+elseif(TOOL STREQUAL "iwyu" OR TOOL STREQUAL "pch")
     foreach(line IN LISTS output)
         string(REGEX MATCH "^([^ ].+)( should.+$)" parts "${line}")
         if(parts)

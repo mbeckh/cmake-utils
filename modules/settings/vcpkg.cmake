@@ -1,4 +1,4 @@
-# Copyright 2021 Michael Beckh
+# Copyright 2021-2022 Michael Beckh
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,22 +25,28 @@ if(NOT MSVC)
     return()
 endif()
 
-#
-# Compiler options
-#
+block()
+    #
+    # Compiler options
+    #
 
-# Switch off precompiled headers, leads to LNK4206 or https://developercommunity.visualstudio.com/t/linkexe-stuck-on-github-when-using-compiler-option/1610957
-set(CMAKE_DISABLE_PRECOMPILE_HEADERS YES CACHE BOOL "" FORCE)
+    # Switch off precompiled headers, leads to LNK4206 or https://developercommunity.visualstudio.com/t/linkexe-stuck-on-github-when-using-compiler-option/1610957
+    set(CMAKE_DISABLE_PRECOMPILE_HEADERS YES CACHE BOOL "" FORCE)
 
-# Debug information
-add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:/Z7>"
-                    # cannot combine into one argument because CMake gets trailing backslash wrong
-                    "$<$<COMPILE_LANGUAGE:C,CXX>:/d1trimfile:$<SHELL_PATH:$<TARGET_PROPERTY:SOURCE_DIR>/>>"
-                    "$<$<COMPILE_LANGUAGE:C,CXX>:/d1trimfile:$<SHELL_PATH:$<TARGET_PROPERTY:BINARY_DIR>/>>")
+    # Debug information
+    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<COMPILE_LANGUAGE:C,CXX>:Embedded>")
+    cmake_policy(GET CMP0141 msvc_debug_information_format)
+    if(NOT msvc_debug_information_format STREQUAL NEW)
+        add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:/Z7>")
+    endif()
+    add_compile_options(# cannot combine into one argument because CMake gets trailing backslash wrong
+                        "$<$<COMPILE_LANGUAGE:C,CXX>:/d1trimfile:$<SHELL_PATH:$<TARGET_PROPERTY:SOURCE_DIR>/>>"
+                        "$<$<COMPILE_LANGUAGE:C,CXX>:/d1trimfile:$<SHELL_PATH:$<TARGET_PROPERTY:BINARY_DIR>/>>")
 
-#
-# Linker options
-#
+    #
+    # Linker options
+    #
 
-# Debug information (always added, does NOT evaluate CMU_DISABLE_DEBUG_INFORMATION because result might be cached and re-used by different builds)
-add_link_options(/DEBUG:FULL)
+    # Debug information (always added, does NOT evaluate CMU_DISABLE_DEBUG_INFORMATION because result might be cached and re-used by different builds)
+    add_link_options(/DEBUG:FULL)
+endblock()

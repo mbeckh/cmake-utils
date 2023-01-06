@@ -3,25 +3,11 @@ name: Test
 on:
   push:
     branches: [ master, 'feature**' ]
-    paths:
-      - '.github/workflows/test.yml'
-      - 'configure/**'
-      - 'modules/**'
-      - 'scripts/**'
-      - 'test/**'
-      - 'Toolchain.cmake'
   pull_request:
     branches: [ master ]
-    paths:
-      - '.github/workflows/test.yml'
-      - 'configure/**'
-      - 'modules/**'
-      - 'scripts/**'
-      - 'test/**'
-      - 'Toolchain.cmake'
 
 concurrency: 
-  group: ${{github.workflow}}-${{github.event_name}}-${{github.head_ref || github.ref}}
+  group: ${{format('{0}-{1}-{2}', github.workflow, github.event_name, github.head_ref || github.ref)}}
   cancel-in-progress: true
 
 jobs:
@@ -30,17 +16,21 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
+        preset: [ '', 'x64']
+        multi-config: [ '', 'multi' ]
         configuration: [ Debug, Release ]
+        unity: [ '', 'unity' ]
+      fail-fast: false
 
     steps:
     - name: Checkout
       uses: actions/checkout@v3
 
     - name: Cache vcpkg
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
-        path: build/${{matrix.configuration}}/vcpkg_installed
-        key: vcpkg_installed-${{matrix.configuration}}-${{hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json', '!build/**')}}
+        path: build/vcpkg_installed
+        key: vcpkg_installed-${{matrix.preset || 'nopreset'}}-${{matrix.multi-config || 'single'}}-${{matrix.configuration}}-${{matrix.unity || 'regular'}}-${{hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json', '!build/**')}}
 
     - name: Setup MSVC Environment
       uses: mbeckh/msvc-dev-cmd@v1
@@ -48,28 +38,32 @@ jobs:
     - name: Configure
       uses: ./configure
       with:
-        source-dir: test
+        preset: ${{matrix.preset}}
         build-root: build
-        binary-dir: build/${{matrix.configuration}}
-        configuration: ${{matrix.configuration}}
+        source-dir: test
+        binary-dir: build/cmake-utils
+        generator: ${{matrix.multi-config && 'Ninja Multi-Config' || 'Ninja'}}
+        configuration: ${{!matrix.multi-config && matrix.configuration || ''}}
+        configurations: ${{matrix.multi-config && 'Debug;Release' || ''}}
+        extra-args: ${{matrix.unity && '-D CMAKE_UNITY_BUILD:BOOL=ON -D CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON' || ''}}
         
     - name: Build
       shell: cmd
-      working-directory: build/${{matrix.configuration}}
-      run: cmake --build .
+      working-directory: build/cmake-utils
+      run: cmake --build . ${{matrix.multi-config && format('--config "{0}"', matrix.configuration) || ''}}
 
     - name: Test
       shell: cmd
-      working-directory: build/${{matrix.configuration}}
-      run: ctest --output-on-failure
+      working-directory: build/cmake-utils
+      run: ctest --output-on-failure ${{matrix.multi-config && format('-C "{0}"', matrix.configuration) || ''}}
 
     - name: Save Logs
       if: always()
       uses: actions/upload-artifact@v3
       with:
-        name: ${{matrix.configuration}}-Logs
+        name: ${{matrix.preset || 'nopreset'}}-${{matrix.multi-config || 'single'}}-${{matrix.configuration}}-${{matrix.unity || 'regular'}}-Logs
         path: |
-          build/**/vcpkg-buildtrees/*/*.log
-          !build/**/vcpkg-buildtrees/detect_compiler
-          build/${{matrix.configuration}}/Testing/**/*.log
-          build/${{matrix.configuration}}/clang-tidy-*.log
+          build/vcpkg-buildtrees/*/*.log
+          !build/vcpkg-buildtrees/detect_compiler
+          build/cmake-utils/Testing/**/*.log
+          build/cmake-utils/**/clang-tidy-*.log

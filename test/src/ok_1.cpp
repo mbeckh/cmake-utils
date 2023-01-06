@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Michael Beckh
+Copyright 2021-2023 Michael Beckh
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+#include <fmt/core.h> // check that vcpkg works
 #include "cmake-utils/ok_2.h"  // auxiliary include
 
 int ok_1() {
@@ -21,5 +22,6 @@ int ok_1() {
 }
 
 int main(int, char**) {
+	fmt::print("ok"); // use fmt
 	return 0;
 }
