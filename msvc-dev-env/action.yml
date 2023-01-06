@@ -19,18 +19,7 @@ runs:
       shell: bash
       working-directory: ${{github.action_path}}
       run: |
-        echo "::group::Old Path"
-        cat $GITHUB_PATH
-        echo "::endgroup::"
-
         join -v 2 <(sort -t = old.env) <(sort -t = new.env) > dev.env
 
         grep -v ^PATH= dev.env >> $GITHUB_ENV
-        echo "::group::Development Environment"
-        grep -v ^PATH= dev.env
-        echo "::endgroup::"
-
-        grep ^PATH= dev.env | cut -d = -f 2- | awk 'BEGIN{RS=FS=";"}!seen[$0]++' > $GITHUB_PATH
-        echo "::group::New Path"
-        cat $GITHUB_PATH
-        echo "::endgroup::"
+        grep ^PATH= dev.env | cut -d = -f 2- | awk 'BEGIN{RS=FS="[;\n]";s="";printf "PATH="}!seen[tolower($0)]++{printf "%s%s",s,$0;s=";"}' >> $GITHUB_ENV
