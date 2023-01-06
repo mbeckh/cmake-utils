@@ -13,7 +13,7 @@ runs:
       working-directory: ${{github.action_path}}
       run: |
         set > old.env
-        set VCPKG_KEEP_ENV_VARS=PATH
+        set VCPKG_KEEP_ENV_VARS=PATH;Path
         %VCPKG_INSTALLATION_ROOT%\vcpkg.exe env set --overlay-triplets=${{github.action_path}}\modules\triplets --triplet ${{inputs.triplet}} > new.env
     - name: Detect Changes to Development Environment
       shell: bash
@@ -23,9 +23,9 @@ runs:
         sort -t = old.env
         echo "::endgroup::"
         echo "::group::Debug new.env"
-        sort -t = new.env
+        awk 'BEGIN{FS="="}!seen[tolower($1)]' new.env | sort -f -t =
         echo "::endgroup::"
-        join -j 1 -t = -v 2 <(sort -t = old.env) <(sort -t = new.env) > dev.env
+        join -i -j 1 -t = -v 2 <(sort -f -t = old.env) <(awk 'BEGIN{FS="="}!seen[tolower($1)]' new.env | sort -f -t =) > dev.env
         echo "::group::Debug dev.env"
         cat dev.env
         echo "::endgroup::"
