@@ -23,3 +23,6 @@ runs:
         grep -v ^PATH= dev.env >> $GITHUB_ENV
         p=$(grep ^PATH= dev.env | cut -d = -f 2- | awk 'BEGIN{RS=FS="[;\n]";ORS=";"}!seen[tolower($0)]')
         echo PATH=${p%;} >> $GITHUB_ENV
+        echo "::group::Modified Environment Variables"
+        cut -d = -f 1 dev.env
+        echo "::endgroup::"
