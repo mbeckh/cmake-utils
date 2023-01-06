@@ -1,0 +1,29 @@
+name: MSVC Development Environment
+author: Michael Beckh
+description: Set environment variables for a MSVC development environment.
+runs:
+  using: composite
+  steps:
+    - name: Configure Development Environment
+      shell: cmd
+      working-directory: ${{github.action_path}}
+      # empty PATH results in error in vcpkg caused by a "null" variable
+      run: |
+        set "PATH= "
+        set > old.env
+        %VCPKG_INSTALLATION_ROOT%\vcpkg.exe env set > new.env
+    - name: Detect Changes to Development Environment
+      shell: bash
+      working-directory: ${{github.action_path}}
+      run: |
+        sort -t "=" -o old.env old.env
+        sort -t "=" -o new.env new.env
+        join -v 2 old.env new.env > dev.env
+        cat dev.env | grep -v ^PATH= >> $GITHUB_ENV
+        cat dev.env | grep ^PATH= >> $GITHUB_PATH
+        echo "::group::Environment"
+        cat dev.env | grep -v ^PATH=
+        echo "::endgroup::"
+        echo "::group::Add to path"
+        cat dev.env | grep ^PATH=
+        echo "::endgroup::"
