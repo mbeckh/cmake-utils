@@ -18,7 +18,7 @@ runs:
     - name: Detect Changes to Development Environment
       shell: bash
       working-directory: ${{github.action_path}}
-      # new.env may contain multiple entries for PATH with different case
+      # new.env may contain multiple entries for PATH with different case (https://github.com/microsoft/vcpkg-tool/pull/840)
       run: |
         echo "::group::Debug old.env"
         sort -t = -k 1,1 old.env
@@ -31,8 +31,8 @@ runs:
         cat dev.env
         echo "::endgroup::"
         grep -v ^PATH= dev.env >> $GITHUB_ENV
-        p=$(grep ^PATH= dev.env | cut -d = -f 2- | awk 'BEGIN{RS=FS="[;\n]";ORS=";"}!seen[tolower($0)]')
-        echo PATH=${p%;} >> $GITHUB_ENV
+        p=$(grep -i ^PATH= dev.env | cut -d = -f 2- | awk 'BEGIN{RS=FS="[;\n]";ORS=";"}!seen[tolower($0)]')
+        echo $(grep -i -o ^PATH= dev.env)=${p%;} >> $GITHUB_ENV
         echo VCPKG_KEEP_ENV_VARS=PATH >> $GITHUB_ENV
         echo "::group::Modified Environment Variables"
         cut -d = -f 1 dev.env
