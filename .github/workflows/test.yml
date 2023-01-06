@@ -30,10 +30,10 @@ jobs:
       uses: actions/cache@v3
       with:
         path: build/vcpkg_installed
-        key: vcpkg_installed-${{matrix.preset || 'nopreset'}}-${{matrix.multi-config || 'single'}}-${{matrix.configuration}}-${{matrix.unity || 'regular'}}-${{hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json', '!build/**')}}
+        key: vcpkg_installed-${{hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json', '!build/**')}}
 
     - name: Setup MSVC Environment
-      uses: mbeckh/msvc-dev-cmd@v1
+      uses: ./msvc-dev-env
 
     - name: Configure
       uses: ./configure
