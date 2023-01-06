@@ -123,7 +123,8 @@ Modules for building projects using [CMake](https://cmake.org/).
 -   Creates targets `clang-tidy-<target>`, `iwyu-<target>` and `pch-<target>` to run the respective checks on a single
     target.
 
-## GitHub Action
+## GitHub Actions
+### `configure` - Configure a Build
 Configures CMake for generator Ninja adding the cmake-utils toolchain. This adds bootstrapping of vcpkg, sets common
 compiler settings for MSVC and adds auto-generated targets for clang-tidy, include-what-you-use and the precompiled 
 header check.
@@ -141,7 +142,7 @@ Example:
 The [test workflow](.github/workflow/test.yml) includes additional steps for configuring the MSVC build environment
 and cache vcpkg artifacts to speed up the builds.
 
-### Inputs for `configure`
+#### Inputs for `configure`
 -   `build-root` - The path to the root build directory - relative to GitHub workspace - which includes the vcpkg 
     build folder (optional, defaults to GitHub workspace directory).
 
@@ -160,10 +161,23 @@ and cache vcpkg artifacts to speed up the builds.
 
 -   `extra-args` - Additional arguments which are passed to CMake, e.g. for setting CMake variables (optional).
 
-### Packages
+#### Packages
 The action sets up package caching using NuGet on GitHub. If an error occurs when updating a package that is used by
 different repositories, it might be required to allow write access to this package for repositories other than the one
 that created the package in the first place.
+
+### `msvc-dev-env` - Set-up MSVC Development Environment
+Sets environment variables for MSVC using `vcpkg env`. The action enables pass-through of `PATH` environmen variable
+using `VCPKG_KEEP_ENV_VARS`.
+
+Example:
+~~~yml
+    - name: Set-up MSVC Environment
+      uses: mbeckh/cmake-utils/msvc-dev-env@v1
+~~~
+
+#### Inputs for `msvc-dev-env`
+-   `triplet` - The vcpkg triplet to configure the build (optional, defaults to `x64-windows-static`).
 
 ## Visual Studio Integration
 Add one or more external tools within Visual Studio with the following settings:
