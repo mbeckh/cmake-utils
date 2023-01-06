@@ -1,29 +1,39 @@
 name: MSVC Development Environment
 author: Michael Beckh
 description: Set environment variables for a MSVC development environment.
+inputs:
+  triplet:
+    description: The root build directory (optional, defaults to x64-windows-static)
+    default: x64-windows-static
 runs:
   using: composite
   steps:
     - name: Configure Development Environment
       shell: cmd
       working-directory: ${{github.action_path}}
-      # empty PATH results in error in vcpkg caused by a "null" variable
       run: |
-        set "PATH= "
+        path > old.path
+        set VCPKG_KEEP_ENV_VARS=PATH
         set > old.env
-        %VCPKG_INSTALLATION_ROOT%\vcpkg.exe env set > new.env
+        %VCPKG_INSTALLATION_ROOT%\vcpkg.exe env set --overlay-triplets=${{github.action_path}}\modules\triplets --triplet ${{inputs.triplet}} > new.env
     - name: Detect Changes to Development Environment
       shell: bash
       working-directory: ${{github.action_path}}
       run: |
-        sort -t "=" -o old.env old.env
-        sort -t "=" -o new.env new.env
+        echo "::group::Old Path"
+        echo $GITHUB_PATH
+        echo "::endgroup::"
+
+        sort -t = -o old.env old.env
+        sort -t = -o new.env new.env
         join -v 2 old.env new.env > dev.env
+
         cat dev.env | grep -v ^PATH= >> $GITHUB_ENV
-        cat dev.env | grep ^PATH= >> $GITHUB_PATH
-        echo "::group::Environment"
+        echo "::group::Development Environment"
         cat dev.env | grep -v ^PATH=
         echo "::endgroup::"
-        echo "::group::Add to path"
-        cat dev.env | grep ^PATH=
+
+        cat dev.env | grep ^PATH= | cut -d = -f 2-| tr ';' '\n' '> $GITHUB_PATH
+        echo "::group::New Path"
+        cat $GITHUB_PATH
         echo "::endgroup::"
