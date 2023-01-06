@@ -21,18 +21,18 @@ runs:
       # new.env may contain multiple entries for PATH with different case (https://github.com/microsoft/vcpkg-tool/pull/840)
       run: |
         echo "::group::Debug old.env"
-        sort -t = -k 1,1 old.env
+        sort -f old.env
         echo "::endgroup::"
         echo "::group::Debug new.env"
-        awk 'BEGIN{FS="="}!seen[toupper($1)]' new.env | sort -f -t = -k 1,1
+        awk 'BEGIN{FS="="}!seen[toupper($1)]++' new.env | sort -f
         echo "::endgroup::"
-        join -i -j 1 -t = -v 2 <(sort -f -t = -k 1,1 old.env) <(awk 'BEGIN{FS="="}!seen[toupper($1)]' new.env | sort -f -t = -k 1,1) > dev.env
+        join -v 2 -t '' -i <(sort -f old.env) <(awk 'BEGIN{FS="="}!seen[toupper($1)]++' new.env | sort -f) > dev.env
         echo "::group::Debug dev.env"
         cat dev.env
         echo "::endgroup::"
-        grep -v ^PATH= dev.env >> $GITHUB_ENV
-        p=$(grep -i ^PATH= dev.env | cut -d = -f 2- | awk 'BEGIN{RS=FS="[;\n]";ORS=";"}!seen[tolower($0)]')
-        echo $(grep -i -o ^PATH= dev.env)=${p%;} >> $GITHUB_ENV
+        grep -v -i ^PATH= dev.env >> $GITHUB_ENV
+        p=$(grep -i ^PATH= dev.env | cut -d = -f 2- | awk 'BEGIN{RS=FS="[;\n]";ORS=";"}!seen[tolower($0)]++')
+        echo $(grep -o -i ^PATH= dev.env)=${p%;} >> $GITHUB_ENV
         echo VCPKG_KEEP_ENV_VARS=PATH >> $GITHUB_ENV
         echo "::group::Modified Environment Variables"
         cut -d = -f 1 dev.env
