@@ -14,13 +14,21 @@ runs:
       run: |
         set VCPKG_KEEP_ENV_VARS=PATH;Path
         set > old.env
-        %VCPKG_INSTALLATION_ROOT%\vcpkg.exe env set --overlay-triplets=${{github.action_path}}\modules\triplets --triplet ${{inputs.triplet}} > new.env
+        %VCPKG_INSTALLATION_ROOT%\vcpkg.exe env set --overlay-triplets=${{github.action_path}}\modules\triplets --triplet ${{format('{0}', inputs.triplet)}} > new.env
     - name: Detect Changes to Development Environment
       shell: bash
       working-directory: ${{github.action_path}}
       # new.env may contain multiple entries for PATH with different case (https://github.com/microsoft/vcpkg-tool/pull/840)
       run: |
-        join -v 2 -t '' -i <(sort -f old.env) <(awk 'BEGIN{FS="="}!seen[toupper($1)]++' new.env | sort -f) > dev.env
+        sort -f old.env -o old.env
+        awk 'BEGIN{FS="="}!seen[toupper($1)]++' new.env | sort -f -o new.env
+        echo "::group::OLD"
+        cat old.env
+        echo "::endgroup::"
+        echo "::group::NEW"
+        cat new.env
+        echo "::endgroup::"
+        join -v 2 -t '' -i old.env new.env > dev.env
         grep -v -i ^PATH= dev.env >> $GITHUB_ENV
         p=$(grep -i ^PATH= dev.env | cut -d = -f 2- | awk 'BEGIN{RS=FS="[;\n]";ORS=";"}!seen[tolower($0)]++')
         n=$(grep -o -i ^PATH= dev.env)

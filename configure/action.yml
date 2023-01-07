@@ -22,17 +22,19 @@ inputs:
 runs:
   using: composite
   steps:
-    - shell: cmd
+    - name: Configure NuGet
+      shell: cmd
       run: |
-        nuget sources Add -Source "https://nuget.pkg.github.com/${{github.repository_owner}}/index.json" -StorePasswordInClearText -Name "GitHub" -UserName "${{github.repository_owner}}" -Password "${{github.token}}" -NonInteractive
-        nuget setapikey "${{github.token}}" -Source "https://nuget.pkg.github.com/${{github.repository_owner}}/index.json" -NonInteractive
-    - shell: cmd
+        nuget sources Add -Source "https://nuget.pkg.github.com/${{format('{0}', github.repository_owner)}}/index.json" -StorePasswordInClearText -Name "GitHub" -UserName "${{format('{0}', github.repository_owner)}}" -Password "${{github.token}}" -NonInteractive
+        nuget setapikey "${{github.token}}" -Source "https://nuget.pkg.github.com/${{format('{0}', github.repository_owner)}}/index.json" -NonInteractive
+    - name: Configure Build
+      shell: cmd
       run: |
-        cmake -DBUILD_ROOT:PATH="${{github.workspace}}/${{inputs.build-root}}" -DCMAKE_TOOLCHAIN_FILE:FILEPATH="${{github.action_path}}/../Toolchain.cmake" -Dvcpkg_ROOT:FILEPATH="%VCPKG_INSTALLATION_ROOT%" -DVCPKG_BINARY_SOURCES:STRING=clear;nuget,GitHub,readwrite ^
+        cmake -DBUILD_ROOT:PATH="${{format('{0}/{1}', github.workspace, inputs.build-root)}}" -DCMAKE_TOOLCHAIN_FILE:FILEPATH="${{github.action_path}}/../Toolchain.cmake" -Dvcpkg_ROOT:FILEPATH="%VCPKG_INSTALLATION_ROOT%" -DVCPKG_BINARY_SOURCES:STRING=clear;nuget,GitHub,readwrite ^
           ${{inputs.preset && format('--preset "{0}"', inputs.preset) || ''}} ^
           ${{(inputs.generator || !inputs.preset) && format('-G "{0}"', inputs.generator || 'Ninja') || ''}} ^
           ${{(inputs.configuration || !inputs.preset && (inputs.generator == 'Ninja' || !inputs.generator)) && format('-DCMAKE_BUILD_TYPE:STRING={0}', inputs.configuration || 'Release') || ''}} ^
           ${{(inputs.configurations || !inputs.preset && inputs.generator == 'Ninja Multi-Config') && format('-DCMAKE_CONFIGURATION_TYPES:STRING={0}', inputs.configurations || 'Debug;Release') || ''}} ^
           ${{(inputs.source-dir || !inputs.preset) && format('-S "{0}"', inputs.source-dir || '.') || ''}} ^
           ${{(inputs.binary-dir || !inputs.preset) && format('-B "{0}"', inputs.binary-dir || '.') || ''}} ^
-          ${{inputs.extra-args}}
+          ${{format('{0}', inputs.extra-args)}}

@@ -2,7 +2,7 @@ name: Test
 
 on:
   push:
-    branches: [ master, 'feature**' ]
+    branches: [ master, 'feature**', 'build-job' ]
   pull_request:
     branches: [ master ]
 
@@ -12,6 +12,7 @@ concurrency:
 
 jobs:
   build:
+    if: 1 == 0
     name: Test
     runs-on: windows-latest
     strategy:
@@ -67,3 +68,10 @@ jobs:
           !build/vcpkg-buildtrees/detect_compiler
           build/cmake-utils/Testing/**/*.log
           build/cmake-utils/**/clang-tidy-*.log
+
+  build-workflow:
+    name: Build Workflow
+    uses: ./.github/workflows/run-build.yml
+    with:
+      extra-args: -S test
+    secrets: inherit
