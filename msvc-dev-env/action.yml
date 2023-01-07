@@ -16,7 +16,7 @@ runs:
       run: |
         for /f "usebackq delims=<" %%p in (`vswhere -latest -property installationPath -format value`) do set CMU_VS_ROOT=%%p
         set > old.env
-        "%CMU_VS_ROOT%\VC\Auxiliary\Build\vcvarsall.bat" %CMU_INPUTS_ARCH%
+        call "%CMU_VS_ROOT%\VC\Auxiliary\Build\vcvarsall.bat" %CMU_INPUTS_ARCH%
         echo "::notice::Visual Studio found at "%CMU_VS_ROOT%"
         dir
         set > new.env
