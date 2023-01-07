@@ -40,11 +40,11 @@ jobs:
 
     - name: Setup MSVC Environment
       # FIXME when done
-      uses: mbeckh/cmake-utils/msvc-dev-env@${{github.sha}}
+      uses: mbeckh/cmake-utils/msvc-dev-env@build-job
 
     - name: Configure
       # FIXME when done
-      uses: mbeckh/cmake-utils/configure@${{github.sha}}
+      uses: mbeckh/cmake-utils/configure@build-job
       with:
         build-root: build
         binary-dir: build/bin
