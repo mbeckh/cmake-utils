@@ -13,7 +13,7 @@ runs:
       working-directory: ${{github.action_path}}
       env:
         CMU_INPUTS_ARCH: ${{inputs.arch == 'x64' && 'amd64' || inputs.arch}}
-     run: |
+      run: |
         rem Configure Development Environment
         for /f "usebackq delims=<" %%p in (`vswhere -latest -property installationPath -format value`) do set CMU_VS_ROOT=%%p
         echo Visual Studio Path: %CMU_VS_ROOT%
