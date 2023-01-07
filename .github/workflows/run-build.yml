@@ -34,7 +34,7 @@ jobs:
     - name: Setup MSVC Environment
       uses: mbeckh/cmake-utils/msvc-dev-env@build-job
       with:
-        foo: foo-bar
+        triplet: x64-windows-static
 
   configure:
     name: Configure
