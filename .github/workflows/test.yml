@@ -73,5 +73,5 @@ jobs:
     name: Build Workflow
     uses: ./.github/workflows/run-build.yml
     with:
-      extra-args: -S test
+      source-dir: test
     secrets: inherit
