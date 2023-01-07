@@ -101,7 +101,7 @@ jobs:
 
     - name: Setup MSVC Environment
       # FIXME when done
-      uses: mbeckh/cmake-utils/msvc-dev-env@${{github.sha}}
+      uses: mbeckh/cmake-utils/msvc-dev-env@build-job
 
     - name: Build
       shell: cmd
@@ -174,7 +174,7 @@ jobs:
 
     - name: Setup MSVC Environment
       # FIXME when done
-      uses: mbeckh/cmake-utils/msvc-dev-env@${{github.sha}}
+      uses: mbeckh/cmake-utils/msvc-dev-env@build-job
 
     - name: Analyze
       shell: cmd
