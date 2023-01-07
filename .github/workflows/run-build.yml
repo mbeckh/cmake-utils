@@ -72,7 +72,7 @@ jobs:
       uses: actions/cache/save@v3
       with:
         path: build/bin/vcpkg_installed
-        key: ${{!steps.cache-vcpkg.outputs.cache-primary-key}}
+        key: ${{steps.cache-vcpkg.outputs.cache-primary-key}}
 
     - name: Cache CMake
       if: ${{always() && !steps.cache-cmake.outputs.cache-hit}}
@@ -81,7 +81,7 @@ jobs:
         path: |
           build/bin
           !build/bin/vcpkg_installed/**
-        key: ${{!steps.cache-cmake.outputs.cache-primary-key}}
+        key: ${{steps.cache-cmake.outputs.cache-primary-key}}
 
     - name: Cache Source
       uses: actions/cache/save@v3
@@ -128,7 +128,7 @@ jobs:
         key: cmu-vcpkg_installed-${{hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json', '!build/**')}}
 
     - name: Check Cache
-      if: ${{steps.cache-vcpkg.outputs.cache-hit}}
+      if: ${{!steps.cache-vcpkg.outputs.cache-hit}}
       run: exit 1
 
     - name: Setup MSVC Environment
