@@ -49,7 +49,7 @@ jobs:
         build-root: build
         binary-dir: build/bin
         generator: Ninja Multi-Config
-        extra-args: ${{inputs.unity && '-D CMAKE_UNITY_BUILD:BOOL=ON || ''}} ${{!inputs.pch && -D CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON' || ''}} ${{format('{0}', inputs.extra-args)}}
+        extra-args: ${{inputs.unity && '-D CMAKE_UNITY_BUILD:BOOL=ON' || ''}} ${{!inputs.pch && '-D CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON' || ''}} ${{format('{0}', inputs.extra-args)}}
 
     - name: Cache vcpkg
       if: always()
