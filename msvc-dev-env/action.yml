@@ -17,9 +17,9 @@ runs:
         rem Configure Development Environment
         for /f "usebackq delims=<" %%p in (`vswhere -latest -property installationPath -format value`) do set CMU_VS_ROOT=%%p
         set > old.env
-        echo "::group::%CMU_VS_ROOT%\VC\Auxiliary\Build\vcvarsall.bat %CMU_INPUTS_ARCH%"
+        echo ::group::"%CMU_VS_ROOT%\VC\Auxiliary\Build\vcvarsall.bat" %CMU_INPUTS_ARCH%
         call "%CMU_VS_ROOT%\VC\Auxiliary\Build\vcvarsall.bat" %CMU_INPUTS_ARCH%
-        echo "::endgroup::"
+        echo ::endgroup::
         set > new.env
 
     - name: Detect Changes to Development Environment
