@@ -2,13 +2,48 @@ name: MSVC Development Environment
 author: Michael Beckh
 description: Set environment variables for a MSVC development environment.
 inputs:
-  triplet:
-    description: The root build directory (optional, defaults to x64-windows-static)
-    default: x64-windows-static
+  arch:
+    description: The architecture (optional, defaults to amd64 aka x64)
+    default: amd64
 runs:
   using: composite
   steps:
     - name: Configure Development Environment
+      shell: cmd
+      env:
+        CMU_INPUTS_ARCH: ${{inputs.arch == 'x64' && 'amd64' || inputs.arch}}
+      working-directory: ${{github.action_path}}
+      run: |
+        for /f "usebackq delims=<" %p in (`vswhere -latest -property installationPath -format value`) do set CMU_VS_ROOT=%p
+        set > old.env
+        "%CMU_VS_ROOT%\VC\Auxiliary\Build\vcvarsall.bat" %CMU_INPUTS_ARCH%
+        set > new.env
+    
+    - name: Detect Changes to Development Environment
+      shell: bash
+      working-directory: ${{github.action_path}}
+      run: |
+        echo "::group::OLD"
+        cat old.env
+        echo "::endgroup::"
+        echo "::group::NEW"
+        cat new.env
+        echo "::endgroup::"
+        special='(EXTERNAL_)?INCLUDE|LIB(PATH)?|PATH'
+        join -v 2 -t '' -i <(sort -f old.env) <(sort -f new.env) | \
+        tee >(egrep -v -i "^($special)=" > dev.env) | \
+        egrep -i "^($special)=" | while read -r line; do
+          value=$(echo ${line#*=} | awk 'BEGIN{RS=FS="[;\n]";ORS=";"}!seen[tolower($0)]++')
+          echo ${line%%=*}=${value%;}
+        done >> dev.env
+        
+        echo "::group::Modified Environment Variables"
+        #cut -d = -f 1 dev.env
+        cat dev.env
+        echo "::endgroup::"
+        cat dev.env >> $GITHUB_ENV
+    - name: Configure Development Environment
+      if: 1==2
       shell: cmd
       working-directory: ${{github.action_path}}
       run: |
@@ -16,6 +51,7 @@ runs:
         set > old.env
         %VCPKG_INSTALLATION_ROOT%\vcpkg.exe env set --overlay-triplets=${{github.action_path}}\modules\triplets --triplet ${{format('{0}', inputs.triplet)}} > new.env
     - name: Detect Changes to Development Environment
+      if: 1==2
       shell: bash
       working-directory: ${{github.action_path}}
       # new.env may contain multiple entries for PATH with different case (https://github.com/microsoft/vcpkg-tool/pull/840)
