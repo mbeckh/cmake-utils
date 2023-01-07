@@ -31,7 +31,7 @@ Modules for building projects using [CMake](https://cmake.org/).
     the built-in feature of Visual Studio 2019 which fails with an error message if a precompiled header is used.
     Single file compilation seems to work in Visual Studio 2022, so this feature might be removed in the future.
 
--   [GitHub action](#github-action) for bootstrapping cmake-utils.
+-   [GitHub actions](#github-actions) for setting MSVC build environment and bootstrapping cmake-utils.
 
 ## Usage
 -   Set environment CMake variable `BUILD_ROOT` to the path of an output folder. A subfolder will be created therein 
@@ -167,8 +167,7 @@ different repositories, it might be required to allow write access to this packa
 that created the package in the first place.
 
 ### `msvc-dev-env` - Set-up MSVC Development Environment
-Sets environment variables for MSVC using `vcpkg env`. The action enables pass-through of `PATH` environmen variable
-using `VCPKG_KEEP_ENV_VARS`.
+Sets environment variables for MSVC.
 
 Example:
 ~~~yml
@@ -177,7 +176,7 @@ Example:
 ~~~
 
 #### Inputs for `msvc-dev-env`
--   `triplet` - The vcpkg triplet to configure the build (optional, defaults to `x64-windows-static`).
+-   `arch` - The CPU architecture for the build (optional, defaults to `amd64` aka `x64`).
 
 ## Visual Studio Integration
 Add one or more external tools within Visual Studio with the following settings:
