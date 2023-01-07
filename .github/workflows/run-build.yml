@@ -74,6 +74,7 @@ jobs:
       matrix:
         configuration: [ Debug, Release ]
 
+    steps:
     - name: Checkout
       uses: actions/checkout@v3
 
@@ -216,4 +217,5 @@ jobs:
     
     steps:
     - name: Remove CMake Cache
+      shell: bash
       run: curl -X DELETE -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{github.token}}" ${{format('{0}/repos/{1}/actions/caches?key=cmu-cmake-{2}', github.api_url, github.repository, github.sha)}}
