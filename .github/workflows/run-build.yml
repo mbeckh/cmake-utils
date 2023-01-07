@@ -127,7 +127,7 @@ jobs:
       with:
         binary-dir: build/bin
         #command: ctest --output-on-failure -C Debug
-        command: build/bin/ok.exe
+        command: build/bin/Debug/ok.exe
         codacy-token: ${{secrets.CODACY_PROJECT_API_TOKEN}}
 
     - name: Codecov
