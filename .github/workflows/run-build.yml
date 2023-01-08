@@ -90,32 +90,22 @@ jobs:
         path: build/bin/vcpkg_installed
         key: ${{steps.vcpkg-restore.outputs.cache-primary-key}}
 
-    - name: Cache Source
-      uses: actions/cache/save@v3
-      with:
-        path: |
-          *
-          !build
-          !.git
-          .git/*
-          !.git/hooks
-          !.git/objects
-        key: cmu-source-${{github.workflow}}-${{github.run_number}}
-
     - name: Cache Build Environment
       uses: actions/cache/save@v3
       with:
         path: |
+          *
+          !.git
+          .git/*
+          !.git/hooks
+          !.git/objects
+          !build
           build/bin/*
           !build/bin/vcpkg_installed
           !build/bin/vcpkg-buildtrees
           !build/bin/vcpkg-packages
         key: cmu-build-${{github.workflow}}-${{github.run_number}}
 
-    - name: Force Fail for Debugging
-      shell: cmd
-      run: exit 1
-      
   build:
     name: Build
     runs-on: windows-latest
@@ -132,17 +122,18 @@ jobs:
       uses: actions/cache/restore@v3
       with:
         path: |
-          .
-          !build/**
-          build/bin
-          !build/bin/vcpkg_installed/**
+          *
+          !.git
+          .git/*
+          !.git/hooks
+          !.git/objects
+          !build
+          build/bin/*
+          !build/bin/vcpkg_installed
+          !build/bin/vcpkg-buildtrees
+          !build/bin/vcpkg-packages
         key: cmu-build-${{github.workflow}}-${{github.run_number}}
  
- 
-    - name: Build Environment
-      shell: bash
-      run: find .
-      
     - name: Restore vcpkg
       id: vcpkg-restore
       if: steps.build-restore.outputs.cache-hit
@@ -150,11 +141,6 @@ jobs:
       with:
         path: build/bin/vcpkg_installed
         key: cmu-vcpkg_installed-${{hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json', '!build/**')}}
-
-    - name: vcpkg
-      shell: bash
-      working-directory: build/bin/vcpkg_installed
-      run: find .
 
     - name: Fail on Cache Errors
       if: ${{!steps.vcpkg-restore.outputs.cache-hit}}
@@ -193,7 +179,7 @@ jobs:
         fail_ci_if_error: true
         
     - name: Save Build Logs
-      if: always()
+      if: ${{always()}}
       uses: actions/upload-artifact@v3
       with:
         name: ${{matrix.configuration}}-Build-Logs
@@ -218,10 +204,16 @@ jobs:
       uses: actions/cache/restore@v3
       with:
         path: |
-          .
-          !build/**
-          build/bin
-          !build/bin/vcpkg_installed/**
+          *
+          !.git
+          .git/*
+          !.git/hooks
+          !.git/objects
+          !build
+          build/bin/*
+          !build/bin/vcpkg_installed
+          !build/bin/vcpkg-buildtrees
+          !build/bin/vcpkg-packages
         key: cmu-build-${{github.workflow}}-${{github.run_number}}
 
     - name: Restore vcpkg
@@ -253,7 +245,7 @@ jobs:
         codacy-token: ${{secrets.CODACY_PROJECT_API_TOKEN}}
 
     - name: Save Analyze Logs
-      if: always()
+      if: ${{always()}}
       uses: actions/upload-artifact@v3
       with:
         name: ${{matrix.configuration}}-Analyze-Logs
@@ -275,7 +267,7 @@ jobs:
         codacy-token: ${{secrets.CODACY_PROJECT_API_TOKEN}}
 
   cleanup:
-    name: Remove Source and Build Environment Cache
+    name: Remove Build Environment Cache
     if: ${{always()}}
     runs-on: ubuntu-latest
     needs: [ build, analyze ]
@@ -283,16 +275,7 @@ jobs:
       actions: write
     
     steps:
-    - name: Remove Source Cache
-      if: ${{always()}}
-      shell: bash
-      env:
-        GITHUB_TOKEN: ${{github.token}}
-      run: |
-        curl -X DELETE -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches?key=cmu-source-$GITHUB_WORKFLOW-$GITHUB_RUN_NUMBER"
-    
     - name: Remove Build Environment Cache
-      if: ${{always()}}
       shell: bash
       env:
         GITHUB_TOKEN: ${{github.token}}
