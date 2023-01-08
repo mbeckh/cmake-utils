@@ -33,7 +33,7 @@ runs:
     - name: Configure Build
       shell: cmd
       env:
-        INPUT_BUILD_ROOT: ${{inputs.build-root)}}
+        INPUT_BUILD_ROOT: ${{inputs.build-root}}
         INPUT_PRESET: ${{inputs.preset}}
         INPUT_GENERATOR: ${{(inputs.generator || !inputs.preset) && (inputs.generator || 'Ninja') || ''}}
         INPUT_CONFIGURATION: ${{((inputs.configuration || !inputs.preset) && (inputs.generator == 'Ninja' || !inputs.generator)) && (inputs.configuration || 'Release') || ''}}
