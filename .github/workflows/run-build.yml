@@ -76,8 +76,9 @@ jobs:
       env:
         GITHUB_TOKEN: ${{github.token}}
       run: |
+        echo "::notice title=Updated vcpkg::old=${{steps.vcpkg-cache.outputs.hash}}, new=${{hashFiles('build/bin/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}"
         curl -X DELETE -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches?key=${{steps.vcpkg-restore.outputs.cache-primary-key}}&ref=$GITHUB_REF"
-        echo updated=1 >> $GITHUB_OUTPUT
+        echo "updated=1" >> $GITHUB_OUTPUT
 
     - name: Cache vcpkg
       if: ${{always() && (!steps.vcpkg-restore.outputs.cache-hit || steps.vcpkg-check.outputs.updated)}}
@@ -268,4 +269,4 @@ jobs:
       env:
         GITHUB_TOKEN: ${{github.token}}
       run: |
-        curl -X DELETE -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches?key=cmu-build-$GITHUB_WORKFLOW-$GITHUB-RUN-NUMBER"
+        curl -X DELETE -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches?key=cmu-build-$GITHUB_WORKFLOW-$GITHUB_RUN_NUMBER"
