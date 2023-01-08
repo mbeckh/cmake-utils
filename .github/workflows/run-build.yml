@@ -120,6 +120,7 @@ jobs:
         path: |
             build/bin/vcpkg-buildtrees/*/*.log
             !build/bin/vcpkg-buildtrees/detect_compiler/**
+        if-no-files-found: ignore
 
   build-and-test:
     name: Build and Test
@@ -168,17 +169,23 @@ jobs:
     - name: Build
       shell: cmd
       working-directory: build/bin
+      env:
+        INPUT_BUILD_ARGS: ${{inputs.build-args}}
       run: cmake --build . --config ${{matrix.configuration}} %INPUT_BUILD_ARGS%
 
     - name: Test
       if: matrix.configuration != 'Debug'
       shell: cmd
       working-directory: build/bin
+      env:
+        INPUT_TEST_ARGS: ${{inputs.test-args}}
       run: ctest --output-on-failure -C ${{matrix.configuration}} %INPUT_TEST_ARGS%
 
     - name: Coverage
       if: matrix.configuration == 'Debug'
       uses: mbeckh/code-quality-actions/coverage@v1
+      env:
+        INPUT_TEST_ARGS: ${{inputs.test-args}}
       with:
         source-dir: ${{inputs.source-dir}}
         binary-dir: build/bin
@@ -198,6 +205,7 @@ jobs:
       with:
         name: ${{matrix.configuration}}-Test-Logs
         path: build/bin/Testing/**/*.log
+        if-no-files-found: ignore
   
   analyze:
     name: Analyze
@@ -261,6 +269,7 @@ jobs:
       with:
         name: ${{matrix.configuration}}-Analyze-Logs
         path: build/bin/${{matrix.configuration}}/clang-tidy-*.log
+        if-no-files-found: ignore
   
   completion:
     name: Send Completion Message
