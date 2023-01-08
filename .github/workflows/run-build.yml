@@ -117,7 +117,12 @@ jobs:
           build/bin
           !build/bin/vcpkg_installed/**
         key: cmu-build-${{github.workflow}}-${{github.run_number}}
-
+ 
+ 
+    - name: Build Environment
+      shell: bash
+      run: find .
+      
     - name: Restore vcpkg
       id: vcpkg-restore
       if: steps.build-restore.outputs.cache-hit
@@ -126,7 +131,12 @@ jobs:
         path: build/bin/vcpkg_installed
         key: cmu-vcpkg_installed-${{hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json', '!build/**')}}
 
-    - name: Check Cache
+    - name: vcpkg
+      shell: bash
+      working-directory: build/bin/vcpkg_installed
+      run: find .
+
+    - name: Fail on Cache Errors
       if: ${{!steps.vcpkg-restore.outputs.cache-hit}}
       run: exit 1
 
@@ -202,7 +212,7 @@ jobs:
         path: build/bin/vcpkg_installed
         key: cmu-vcpkg_installed-${{hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json', '!build/**')}}
 
-    - name: Check Cache
+    - name: Fail on Cache Errors
       if: ${{!steps.vcpkg-restore.outputs.cache-hit}}
       run: exit 1
 
