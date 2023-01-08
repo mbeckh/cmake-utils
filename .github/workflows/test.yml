@@ -7,7 +7,7 @@ on:
     branches: [ master ]
 
 concurrency: 
-  group: ${{format('{0}-{1}-{2}', github.workflow, github.event_name, github.head_ref || github.ref)}}
+  group: ${{github.workflow}}-${{github.event_name}}-${{github.ref}}
   cancel-in-progress: true
 
 jobs:
@@ -46,7 +46,7 @@ jobs:
         generator: ${{matrix.multi-config && 'Ninja Multi-Config' || 'Ninja'}}
         configuration: ${{!matrix.multi-config && matrix.configuration || ''}}
         configurations: ${{matrix.multi-config && 'Debug;Release' || ''}}
-        extra-args: ${{matrix.unity && '-D CMAKE_UNITY_BUILD:BOOL=ON -D CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON' || ''}}
+        extra-args: ${{matrix.unity && '-D "CMAKE_UNITY_BUILD:BOOL=ON" -D "CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON"' || ''}}
         
     - name: Build
       shell: cmd
@@ -64,8 +64,8 @@ jobs:
       with:
         name: ${{matrix.preset || 'nopreset'}}-${{matrix.multi-config || 'single'}}-${{matrix.configuration}}-${{matrix.unity || 'regular'}}-Logs
         path: |
-          build/vcpkg-buildtrees/*/*.log
-          !build/vcpkg-buildtrees/detect_compiler
+          build/cmake-utils/vcpkg-buildtrees/*/*.log
+          !build/cmake-utils/vcpkg-buildtrees/detect_compiler
           build/cmake-utils/Testing/**/*.log
           build/cmake-utils/**/clang-tidy-*.log
 
@@ -74,4 +74,5 @@ jobs:
     uses: ./.github/workflows/run-build.yml
     with:
       source-dir: test
+      test-args: --tests-regex "cmake-utils\.run\.ok"
     secrets: inherit
