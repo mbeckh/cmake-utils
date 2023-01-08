@@ -3,14 +3,14 @@ author: Michael Beckh
 description: Configure a project using CMake and cmake-utils.
 inputs:
   build-root:
-    description: The root build directory (optional, defaults to github.workspace)
+    description: The root build directory (optional, defaults to working directory)
     default: .
   preset:
-    description: Use the specified CMake configure preset (optional)
+    description: Use the specified CMake configure preset (optional, default is to use no preset)
   source-dir:
-    description: The CMake source directory (optional, defaults to github.workspace if no preset is used)
+    description: The CMake source directory (optional, defaults to working directory if no preset is used)
   binary-dir:
-    description: The CMake binary directory (optional, defaults to github.workspace if no preset is used)
+    description: The CMake binary directory (optional, defaults to working directory if no preset is used)
   generator:
     description: The CMake generator (optional, defaults to Ninja if no preset is used)
   configuration:
