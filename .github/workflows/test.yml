@@ -74,5 +74,5 @@ jobs:
     uses: ./.github/workflows/run-build.yml
     with:
       source-dir: test
-      test-args: --tests-regex "cmake-utils\.run\.ok"
+      test-args: --label-exclude "^Build$"
     secrets: inherit
