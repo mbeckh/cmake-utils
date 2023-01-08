@@ -39,10 +39,10 @@ runs:
         INPUT_CONFIGURATION: ${{((inputs.configuration || !inputs.preset) && (inputs.generator == 'Ninja' || !inputs.generator)) && (inputs.configuration || 'Release') || ''}}
         INPUT_CONFIGURATIONS: ${{(inputs.configurations || !inputs.preset && inputs.generator == 'Ninja Multi-Config') && (inputs.configurations || 'Debug;Release') || ''}}
         INPUT_SOURCE_DIR: ${{(inputs.source-dir || !inputs.preset) && (inputs.source-dir || '.') || ''}}
-        INPUT_BINARY_DIR: ${{(inputs.bibnary-dir || !inputs.preset) && (inputs.bibnary-dir || '.') || ''}}
+        INPUT_BINARY_DIR: ${{(inputs.binary-dir || !inputs.preset) && (inputs.binary-dir || '.') || ''}}
         INPUT_EXTRA_ARGS: ${{inputs.extra-args}}
       run: |
-        rem Confire Build
+        rem Configure Build
         cmake ${{env.INPUT_PRESET && '--preset "%INPUT_PRESET%"' || ''}} -DBUILD_ROOT:PATH="%GITHUB_WORKSPACE%/%INPUT_BUILD_ROOT%" -DCMAKE_TOOLCHAIN_FILE:FILEPATH="%GITHUB_ACTION_PATH%/../Toolchain.cmake" ^
           -Dvcpkg_ROOT:FILEPATH="%VCPKG_INSTALLATION_ROOT%" -DVCPKG_BINARY_SOURCES:STRING=clear;nuget,GitHub,readwrite ^
           ${{env.INPUT_GENERATOR && '-G "%INPUT_GENERATOR%"' || ''}} ^
