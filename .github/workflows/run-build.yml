@@ -51,8 +51,10 @@ jobs:
       
     - name: Get vcpkg State
       id: vcpkg-cache
-      shell: cmd
-      run: echo hash=${{hashFiles('build/bin/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}} >> %GITHUB_OUTPUT%
+      shell: bash
+      run: |
+        echo "hash=${{hashFiles('build/bin/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}" >> $GITHUB_OUTPUT
+        > build/vcpkg.stamp
     
     - name: Setup MSVC Environment
       # FIXME when done
@@ -76,7 +78,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{github.token}}
       run: |
-        echo "::notice title=Updated vcpkg::old=${{steps.vcpkg-cache.outputs.hash}}, new=${{hashFiles('build/bin/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}"
+        echo "### Updated vckpkg Dependencies" >> $GITHUB_STEP_SUMMARY
+        find -newer build/vcpkg.stamp build/bin/vcpkg_installed -printf '%P\n' >> $GITHUB_STEP_SUMMARY
         curl -X DELETE -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches?key=${{steps.vcpkg-restore.outputs.cache-primary-key}}&ref=$GITHUB_REF"
         echo "updated=1" >> $GITHUB_OUTPUT
 
