@@ -15,8 +15,14 @@ on:
         description: Use precompiled headers.
         type: boolean
         default: true
-      extra-args:
+      configure-args:
         description: Extra arguments for CMake configure.
+        type: string
+      build-args:
+        description: Extra arguments for CMake build.
+        type: string
+      test-args:
+        description: Extra arguments for CTest.
         type: string
     secrets:
       CODACY_PROJECT_API_TOKEN:
@@ -69,7 +75,7 @@ jobs:
         source-dir: ${{inputs.source-dir}}
         binary-dir: build/bin
         generator: Ninja Multi-Config
-        extra-args: ${{inputs.unity && '-D "CMAKE_UNITY_BUILD:BOOL=ON"' || ''}} ${{!inputs.pch && '-D "CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON"' || ''}} ${{inputs.extra-args}}
+        extra-args: ${{inputs.unity && '-D "CMAKE_UNITY_BUILD:BOOL=ON"' || ''}} ${{!inputs.pch && '-D "CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON"' || ''}} ${{inputs.configure-args}}
 
     - name: Remove Stale vcpkg Cache
       id: vcpkg-check
@@ -106,8 +112,17 @@ jobs:
           !build/bin/vcpkg-packages
         key: cmu-build-${{github.workflow}}-${{github.run_number}}
 
-  build:
-    name: Build
+    - name: Save vcpkg Logs
+      if: ${{always()}}
+      uses: actions/upload-artifact@v3
+      with:
+        name: vcpkg-Logs
+        path: |
+            build/bin/vcpkg-buildtrees/*/*.log
+            !build/bin/vcpkg-buildtrees/detect_compiler/**
+
+  build-and-test:
+    name: Build and Test
     runs-on: windows-latest
     needs: configure
     strategy:
@@ -153,13 +168,13 @@ jobs:
     - name: Build
       shell: cmd
       working-directory: build/bin
-      run: cmake --build . --config ${{matrix.configuration}}
+      run: cmake --build . --config ${{matrix.configuration}} %INPUT_BUILD_ARGS%
 
     - name: Test
       if: matrix.configuration != 'Debug'
       shell: cmd
       working-directory: build/bin
-      run: ctest --output-on-failure -C ${{matrix.configuration}}
+      run: ctest --output-on-failure -C ${{matrix.configuration}} %INPUT_TEST_ARGS%
 
     - name: Coverage
       if: matrix.configuration == 'Debug'
@@ -167,8 +182,7 @@ jobs:
       with:
         source-dir: ${{inputs.source-dir}}
         binary-dir: build/bin
-        #command: ctest --output-on-failure -C Debug
-        command: Debug/ok.exe
+        command: ctest --output-on-failure -C ${{matrix.configuration}} %INPUT_TEST_ARGS%
         codacy-token: ${{secrets.CODACY_PROJECT_API_TOKEN}}
 
     - name: Codecov
@@ -178,15 +192,12 @@ jobs:
         files: build/bin/coverage-*.xml
         fail_ci_if_error: true
         
-    - name: Save Build Logs
+    - name: Save Test Logs
       if: ${{always()}}
       uses: actions/upload-artifact@v3
       with:
-        name: ${{matrix.configuration}}-Build-Logs
-        path: |
-            build/vcpkg-buildtrees/*/*.log
-            !build/vcpkg-buildtrees/detect_compiler/**
-            build/bin/Testing/**/*.log
+        name: ${{matrix.configuration}}-Test-Logs
+        path: build/bin/Testing/**/*.log
   
   analyze:
     name: Analyze
@@ -249,12 +260,9 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: ${{matrix.configuration}}-Analyze-Logs
-        path: |
-            build/vcpkg-buildtrees/*/*.log
-            !build/vcpkg-buildtrees/detect_compiler/**
-            build/bin/${{matrix.configuration}}/clang-tidy-*.log
+        path: build/bin/${{matrix.configuration}}/clang-tidy-*.log
   
-  final:
+  completion:
     name: Send Completion Message
     runs-on: ubuntu-latest
     needs: analyze
@@ -270,7 +278,7 @@ jobs:
     name: Remove Build Environment Cache
     if: ${{always()}}
     runs-on: ubuntu-latest
-    needs: [ build, analyze ]
+    needs: [ build-and-test, analyze ]
     permissions:
       actions: write
     
