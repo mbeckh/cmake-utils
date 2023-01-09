@@ -6,6 +6,8 @@ on:
   pull_request:
     branches: [ master ]
 
+permissions: {}
+
 concurrency: 
   group: ${{github.workflow}}-${{github.event_name}}-${{github.ref}}
   cancel-in-progress: true
@@ -21,16 +23,14 @@ jobs:
         configuration: [ Debug, Release ]
         unity: [ '', 'unity' ]
       fail-fast: false
-
+    permissions:
+      actions: write
+      contents: read
+      packages: write
+    
     steps:
     - name: Checkout
       uses: actions/checkout@v3
-
-    - name: Cache vcpkg
-      uses: actions/cache@v3
-      with:
-        path: build/vcpkg_installed
-        key: vcpkg_installed-${{hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json', '!build/**')}}
 
     - name: Setup MSVC Environment
       uses: ./msvc-dev-env
@@ -75,4 +75,5 @@ jobs:
     with:
       source-dir: test
       test-args: --label-regex "^Run$"
+      pch: false
     secrets: inherit
