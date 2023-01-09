@@ -67,7 +67,6 @@ jobs:
       uses: mbeckh/cmake-utils/msvc-dev-env@build-job
 
     - name: Configure
-      id: configure
       # FIXME when done
       uses: mbeckh/cmake-utils/configure@build-job
       with:
