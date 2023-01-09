@@ -11,8 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    if: 1 == 0
+  test:
     name: Test
     runs-on: windows-latest
     strategy:
@@ -62,12 +61,13 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v3
       with:
-        name: ${{matrix.preset || 'nopreset'}}-${{matrix.multi-config || 'single'}}-${{matrix.configuration}}-${{matrix.unity || 'regular'}}-Logs
+        name: Build-${{matrix.preset || 'nopreset'}}-${{matrix.multi-config || 'single'}}-${{matrix.configuration}}-${{matrix.unity || 'regular'}}-Logs
         path: |
           build/cmake-utils/vcpkg-buildtrees/*/*.log
           !build/cmake-utils/vcpkg-buildtrees/detect_compiler
           build/cmake-utils/Testing/**/*.log
           build/cmake-utils/**/clang-tidy-*.log
+        if-no-files-found: ignore
 
   build-workflow:
     name: Build Workflow
