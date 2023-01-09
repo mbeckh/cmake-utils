@@ -49,6 +49,7 @@ jobs:
       shell: bash
       run: |
         echo "hash=${{hashFiles('build/bin/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}" >> $GITHUB_OUTPUT
+        mkdir -p build
         > build/vcpkg.stamp
 
     - name: Setup MSVC Environment
@@ -119,3 +120,5 @@ jobs:
         path: |
             build/bin/vcpkg-buildtrees/*/*.log
             !build/bin/vcpkg-buildtrees/detect_compiler
+        if-no-files-found: ignore
+
