@@ -74,5 +74,5 @@ jobs:
     uses: ./.github/workflows/run-build.yml
     with:
       source-dir: test
-      test-args: --label-exclude "^Build$"
+      test-args: --label-regex "^Run$"
     secrets: inherit
