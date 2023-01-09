@@ -64,30 +64,12 @@ jobs:
         > build/vcpkg.stamp
     
     - name: Setup MSVC Environment
-      if: ${{github.repository == 'mbeckh/cmake-utils'}}
-      uses: ./msvc-dev-env
-      with:
-        env-file: build/dev.env
-
-    - name: Setup MSVC Environment
-      if: ${{github.repository != 'mbeckh/cmake-utils'}}
-      uses: mbeckh/cmake-utils/msvc-dev-env@v1
+      uses: mbeckh/cmake-utils/msvc-dev-env@build-job
       with:
         env-file: build/dev.env
 
     - name: Configure
-      if: ${{github.repository == 'mbeckh/cmake-utils'}}
-      uses: ./configure
-      with:
-        build-root: build
-        source-dir: ${{inputs.source-dir}}
-        binary-dir: build/bin
-        generator: Ninja Multi-Config
-        extra-args: ${{inputs.unity && '-D "CMAKE_UNITY_BUILD:BOOL=ON"' || ''}} ${{!inputs.pch && '-D "CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON"' || ''}} ${{inputs.configure-args}}
-
-    - name: Configure
-      if: ${{github.repository != 'mbeckh/cmake-utils'}}
-      uses: mbeckh/cmake-utils/configure@v1
+      uses: mbeckh/cmake-utils/configure@build-job
       with:
         build-root: build
         source-dir: ${{inputs.source-dir}}

@@ -53,27 +53,10 @@ jobs:
         > build/vcpkg.stamp
 
     - name: Setup MSVC Environment
-      if: ${{github.repository == 'mbeckh/cmake-utils'}}
-      uses: ./src/msvc-dev-env
-
-    - name: Setup MSVC Environment
-      if: ${{github.repository != 'mbeckh/cmake-utils'}}
-      uses: mbeckh/cmake-utils/msvc-dev-env@v1
+      uses: mbeckh/cmake-utils/msvc-dev-env@build-job
 
     - name: Configure
-      if: ${{github.repository == 'mbeckh/cmake-utils'}}
-      uses: ./src/configure
-      with:
-        build-root: build
-        source-dir: src${{inputs.source-dir && format('/{0}', inputs.source-dir) || ''}}
-        binary-dir: build/bin
-        generator: Ninja
-        configuration: Release
-        extra-args: -D "CMU_DISABLE_DEBUG_INFORMATION:BOOL=ON" -D "CMU_DISABLE_CLANG_TOOLS:BOOL=ON" ${{inputs.configure-args}}
-
-    - name: Configure
-      if: ${{github.repository != 'mbeckh/cmake-utils'}}
-      uses: mbeckh/cmake-utils/configure@v1
+      uses: mbeckh/cmake-utils/configure@build-job
       with:
         build-root: build
         source-dir: src${{inputs.source-dir && format('/{0}', inputs.source-dir) || ''}}
