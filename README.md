@@ -51,58 +51,7 @@ Modules for building projects using [CMake](https://cmake.org/).
     plain build is sufficient.
     
 ## Changes to Build
--   Sets common build options for both local projects and libraries built by vcpkg.
-    -   Postfix `d` for debug executable.
-
-    -   Common preprocessor macros `UNICODE=1`, `_UNICODE=1`, `WIN32=1`, `_WINDOWS=1`, `WINVER=0x0A00`, `_WIN32_WINNT=0x0A00` and either `_DEBUG=1` or `NDEBUG=1`.
-
-    -   Multi-threaded static MSVC runtime library in release or debug flavor (`/MT`, `/MTd`).
-
-    -   Enable interprocedural optimization (aka link-time code generation) by default for all configurations but Debug (`/Gy`, `/LTCG`).
-
-    -   Just my code debugging for configurations Debug and RelWithDebInfo (`/JMC`); never enabled for packages built by vcpkg.
-
-    -   Debugging information for edit and continue (`/ZI`) for configurations Debug and RelWithDebInfo, embedded (`/Z7`) for all other configurations and for all packages built by vcpkg (all configurations).
-
-    -   Additional compiler options
-        -   Optimization
-            -   `/Od` (Debug configuration only) - switch off optimizations for debug builds
-            -   `/O2` (all configurations but Debug) - generate fast code
-            -   `/Ob3` (all configurations but Debug) - aggressive inlining
-
-        -   Code generation
-            -   `/EHsc` - enable C++ exceptions, C is `nothrow`.
-            -   `/GR-` - disable runtime type identification (RTTI).
-            -   `/Gw` (all configurations but Debug) - whole-program global data optimzation.
-            -   `/RTC1`  (Debug configuration only) - enable runtime checks.
-
-        -   Language
-            -   `/permissive-` - better standards conformance.
-            -   `/Zc:inline` (all configurations but Debug) - remove unreferenced functions.
-
-        -   Miscellaneous
-            -   `/bigobj` - high number of sections in object files required by tests and LTCG.
-            -   `/FC` (Debug configuration and only if linking with googletest libraries ) - full paths required for linking to source in test errors.
-            -   `/FS` (configurations Debug and RelWithDebInfo only) - required to prevent errors during build.
-            -   `/MP` - required by CodeQL scanning on GitHub.
-            -   `/utf-8` - standard character set for source and runtime.
-
-        -   Diagnostics
-            -   `/diagnostics:caret` - show location of errors and warnings.
-            -   `/sdl` - more security warnings.
-            -   `/W4` - better code quality.
-            -   `/wd4373` - disable a legacy warning in valid C++ code which exists for pre 2008 versions of MSVC.
-            -   `/WX` (all configurations but Debug) - treat warnings as errors.
-
-    -   Additional linker options
-        -   `/CGTHREADS` (if using interprocedural optimization) - use all available CPUs.
-        -   `/DEBUG:NONE` (if no debugging information is generated)
-        -   `/DEBUG:FULL` (whenever debugging information is generated) - FULL is faster than FASTLINK.
-        -   `/INCREMENTAL` (Debug configuration only) - speed up linking.
-        -   `/INCREMENTAL:NO` (all configurations but Debug) - keep binary size small.
-        -   `/OPT:REF` (all configurations but Debug) - remove unreferenced functions and data.
-        -   `/OPT:ICF` (all configurations but Debug) - identical COMDAT folding.
-        -   `/WX` (all configurations but Debug) - treat warnings as errors.
+-   Sets [common build options](options.md) for both local projects and libraries built by vcpkg.
 
 -   Enables CMake option `BUILD_TESTING` if a project is at the top level (`PROJECT_IS_TOP_LEVEL`).
 
@@ -124,59 +73,22 @@ Modules for building projects using [CMake](https://cmake.org/).
     target.
 
 ## GitHub Actions
-### `configure` - Configure a Build
-Configures CMake for generator Ninja adding the cmake-utils toolchain. This adds bootstrapping of vcpkg, sets common
-compiler settings for MSVC and adds auto-generated targets for clang-tidy, include-what-you-use and the precompiled 
-header check.
+Two actions perform common build tasks.
+-   [configure](configure) - Configure a CMake build using cmake-utils.
+-   [msvc-dev-env](msvc-dev-env) - Set-up MSVC development environment.
 
-Example:
-~~~yml
-    - name: Configure
-      uses: mbeckh/cmake-utils/configure@v1
-      with:
-        build-root: build
-        binary-dir: build/Debug
-        configuration: Debug
-~~~
+## GitHub Workflows
+[Two workflows](workflows.md) can be used by consuming projects to get a full-featured build pipeline with
+-   Configure CMake build for MSVC.
+-   Build dependencies configured for vcpkg.
+-   Build both Debug and Release configuration.
+-   Run tests using CTest.
+-   Get code coverage for Debug configuration and send to Codacy and Codecov.
+-   Run clang-tidy for both Debug and Release.
+-   Run CodeQL for Release.
+-   Apply vcpkg binary caching.
+-   Caching of vcpkg artifacts for GitHub actions.
 
-The [test workflow](.github/workflow/test.yml) includes additional steps for configuring the MSVC build environment
-and cache vcpkg artifacts to speed up the builds.
-
-#### Inputs for `configure`
--   `build-root` - The path to the root build directory - relative to GitHub workspace - which includes the vcpkg 
-    build folder (optional, defaults to GitHub workspace directory).
-
--   `preset` - The CMake configure preset (optional) .
-
--   `source-dir` - The CMake source directory (optional, defaults to GitHub workspace directory if no preset is used).
-
--   `binary-dir` - The CMake binary directory (optional, defaults to GitHub workspace directory if no preset is used).
-
--   `generator` - The CMake generator (optional, defaults to Ninja if no preset is used).
-
--   `configuration` - The CMake build type for CMAKE_BUILD_TYPE (optional, defaults to `Release` if no preset is used).
-
--   `configurations` - The CMake configuration types for CMAKE_CONFIGURATION_TYPES (optional, defaults to
-    `Debug;Release` if no preset is used and generator is Ninja Multi-Config).
-
--   `extra-args` - Additional arguments which are passed to CMake, e.g. for setting CMake variables (optional).
-
-#### Packages
-The action sets up package caching using NuGet on GitHub. If an error occurs when updating a package that is used by
-different repositories, it might be required to allow write access to this package for repositories other than the one
-that created the package in the first place.
-
-### `msvc-dev-env` - Set-up MSVC Development Environment
-Sets environment variables for MSVC.
-
-Example:
-~~~yml
-    - name: Set-up MSVC Environment
-      uses: mbeckh/cmake-utils/msvc-dev-env@v1
-~~~
-
-#### Inputs for `msvc-dev-env`
--   `arch` - The CPU architecture for the build (optional, defaults to `amd64` aka `x64`).
 
 ## Visual Studio Integration
 Add one or more external tools within Visual Studio with the following settings:

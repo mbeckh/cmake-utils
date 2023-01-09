@@ -4,25 +4,25 @@ on:
   workflow_call:
     inputs:
       source-dir:
-        description: The CMake source directory (optional, defaults to current directory)
+        description: The CMake source directory (optional, defaults to working directory)
         type: string
         default: .
       unity:
-        description: Use unity build in CMake.
+        description: Use unity build in CMake (optional, defaults to true).
         type: boolean
         default: true
       pch:
-        description: Use precompiled headers.
+        description: Use precompiled headers (optional, defaults to true).
         type: boolean
         default: true
       configure-args:
-        description: Extra arguments for CMake configure.
+        description: Extra arguments for CMake configure (optional).
         type: string
       build-args:
-        description: Extra arguments for CMake build.
+        description: Extra arguments for CMake build (optional).
         type: string
       test-args:
-        description: Extra arguments for CTest.
+        description: Extra arguments for CTest (optional).
         type: string
     secrets:
       CODACY_PROJECT_API_TOKEN:
@@ -64,12 +64,20 @@ jobs:
         > build/vcpkg.stamp
     
     - name: Setup MSVC Environment
-      # FIXME when done
-      uses: mbeckh/cmake-utils/msvc-dev-env@build-job
+      if: ${{github.repository == 'mbeckh/cmake-utils'}}
+      uses: ./msvc-dev-env
+      with:
+        env-file: build/dev.env
+
+    - name: Setup MSVC Environment
+      if: ${{github.repository != 'mbeckh/cmake-utils'}}
+      uses: mbeckh/cmake-utils/msvc-dev-env@v1
+      with:
+        env-file: build/dev.env
 
     - name: Configure
-      # FIXME when done
-      uses: mbeckh/cmake-utils/configure@build-job
+      if: ${{github.repository == 'mbeckh/cmake-utils'}}
+      uses: ./configure
       with:
         build-root: build
         source-dir: ${{inputs.source-dir}}
@@ -77,14 +85,24 @@ jobs:
         generator: Ninja Multi-Config
         extra-args: ${{inputs.unity && '-D "CMAKE_UNITY_BUILD:BOOL=ON"' || ''}} ${{!inputs.pch && '-D "CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON"' || ''}} ${{inputs.configure-args}}
 
-    - name: Remove Stale vcpkg Cache
+    - name: Configure
+      if: ${{github.repository != 'mbeckh/cmake-utils'}}
+      uses: mbeckh/cmake-utils/configure@v1
+      with:
+        build-root: build
+        source-dir: ${{inputs.source-dir}}
+        binary-dir: build/bin
+        generator: Ninja Multi-Config
+        extra-args: ${{inputs.unity && '-D "CMAKE_UNITY_BUILD:BOOL=ON"' || ''}} ${{!inputs.pch && '-D "CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON"' || ''}} ${{inputs.configure-args}}
+
+    - name: Check vcpkg Update
       id: vcpkg-check
       if: ${{always() && steps.vcpkg-restore.outputs.cache-hit && steps.vcpkg-cache.outputs.hash != hashFiles('build/bin/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}
       shell: bash
       env:
         GITHUB_TOKEN: ${{github.token}}
       run: |
-        echo "### Updated vckpkg Dependencies" >> $GITHUB_STEP_SUMMARY
+        echo "### Updated vcpkg Dependencies" >> $GITHUB_STEP_SUMMARY
         find build/bin/vcpkg_installed -newer build/vcpkg.stamp -printf '%P\n' >> $GITHUB_STEP_SUMMARY
         curl -X DELETE -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches?key=${{steps.vcpkg-restore.outputs.cache-primary-key}}&ref=$GITHUB_REF"
         echo "updated=1" >> $GITHUB_OUTPUT
@@ -106,6 +124,7 @@ jobs:
           !.git/hooks
           !.git/objects
           !build
+          build/dev.env
           build/bin/*
           !build/bin/vcpkg_installed
           !build/bin/vcpkg-buildtrees
@@ -144,6 +163,7 @@ jobs:
           !.git/hooks
           !.git/objects
           !build
+          build/dev.env
           build/bin/*
           !build/bin/vcpkg_installed
           !build/bin/vcpkg-buildtrees
@@ -162,9 +182,9 @@ jobs:
       if: ${{!steps.vcpkg-restore.outputs.cache-hit}}
       run: exit 1
 
-    - name: Setup MSVC Environment
-      # FIXME when done
-      uses: mbeckh/cmake-utils/msvc-dev-env@build-job
+    - name: Restore MSVC Environment
+      shell: bash
+      run: cat build/dev.env >> $GITHUB_ENV
 
     - name: Build
       shell: cmd
@@ -227,6 +247,7 @@ jobs:
           !.git/hooks
           !.git/objects
           !build
+          build/dev.env
           build/bin/*
           !build/bin/vcpkg_installed
           !build/bin/vcpkg-buildtrees
@@ -245,9 +266,9 @@ jobs:
       if: ${{!steps.vcpkg-restore.outputs.cache-hit}}
       run: exit 1
 
-    - name: Setup MSVC Environment
-      # FIXME when done
-      uses: mbeckh/cmake-utils/msvc-dev-env@build-job
+    - name: Restore MSVC Environment
+      shell: bash
+      run: cat build/dev.env >> $GITHUB_ENV
 
     - name: Analyze
       shell: cmd

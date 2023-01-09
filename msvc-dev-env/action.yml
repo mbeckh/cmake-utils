@@ -5,6 +5,8 @@ inputs:
   arch:
     description: The architecture (optional, defaults to amd64 aka x64)
     default: amd64
+  env-file:
+    description: Also write the output to a file (relative to workspace directory) for re-use in a different job.
 runs:
   using: composite
   steps:
@@ -25,16 +27,18 @@ runs:
     - name: Detect Changes to Development Environment
       shell: bash
       working-directory: ${{github.action_path}}
+      env:
+        ENV_FILE: ${{inputs.env-file && format('{0}/{1}', github.workspace, inputs.env-file) || 'dev.env'}}
       run: |
         # Detect Changes to Development Environment
         special='(EXTERNAL_)?INCLUDE|LIB(PATH)?|PATH'
         join -v 2 -t '' -i <(sort -f old.env) <(sort -f new.env) | \
-        tee >(egrep -v -i "^($special)=" > dev.env) | \
+        tee >(egrep -v -i "^($special)=" > "$ENV_FILE") | \
         egrep -i "^($special)=" | while read -r line; do
           value=$(awk 'BEGIN{RS=FS="[;\n]";ORS=";"}!seen[tolower($0)]++' <<< ${line#*=})
           echo "${line%%=*}=${value%;}"
-        done >> dev.env
+        done >> "$ENV_FILE"
         
         echo "::group::Environment Variables for Development Environment"
-        tee -a $GITHUB_ENV < dev.env
+        tee -a "$GITHUB_ENV" < "$ENV_FILE"
         echo "::endgroup::"

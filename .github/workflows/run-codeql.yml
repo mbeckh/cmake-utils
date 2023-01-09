@@ -53,11 +53,16 @@ jobs:
         > build/vcpkg.stamp
 
     - name: Setup MSVC Environment
-      # FIXME when done
-      uses: mbeckh/cmake-utils/msvc-dev-env@build-job
+      if: ${{github.repository == 'mbeckh/cmake-utils'}}
+      uses: ./src/msvc-dev-env
+
+    - name: Setup MSVC Environment
+      if: ${{github.repository != 'mbeckh/cmake-utils'}}
+      uses: mbeckh/cmake-utils/msvc-dev-env@v1
 
     - name: Configure
-      uses: mbeckh/cmake-utils/configure@build-job
+      if: ${{github.repository == 'mbeckh/cmake-utils'}}
+      uses: ./src/configure
       with:
         build-root: build
         source-dir: src${{inputs.source-dir && format('/{0}', inputs.source-dir) || ''}}
@@ -66,7 +71,18 @@ jobs:
         configuration: Release
         extra-args: -D "CMU_DISABLE_DEBUG_INFORMATION:BOOL=ON" -D "CMU_DISABLE_CLANG_TOOLS:BOOL=ON" ${{inputs.configure-args}}
 
-    - name: Remove Stale vcpkg Cache
+    - name: Configure
+      if: ${{github.repository != 'mbeckh/cmake-utils'}}
+      uses: mbeckh/cmake-utils/configure@v1
+      with:
+        build-root: build
+        source-dir: src${{inputs.source-dir && format('/{0}', inputs.source-dir) || ''}}
+        binary-dir: build/bin
+        generator: Ninja
+        configuration: Release
+        extra-args: -D "CMU_DISABLE_DEBUG_INFORMATION:BOOL=ON" -D "CMU_DISABLE_CLANG_TOOLS:BOOL=ON" ${{inputs.configure-args}}
+
+    - name: Check vcpkg Update
       id: vcpkg-check
       if: ${{always() && steps.vcpkg-restore.outputs.cache-hit && steps.vcpkg-cache.outputs.hash != hashFiles('build/bin/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}
       shell: bash
