@@ -77,3 +77,20 @@ jobs:
       test-args: --label-regex "^Run$"
       pch: false
     secrets: inherit
+    permissions:
+      actions: write
+      contents: read
+      packages: write
+
+  codeql-workflow:
+    name: CodeQL Workflow
+    uses: ./.github/workflows/run-codeql.yml
+    with:
+      source-dir: test
+    secrets: inherit
+    permissions:
+      actions: write
+      contents: read
+      packages: write
+      security-events: write
+
