@@ -189,7 +189,7 @@ jobs:
       with:
         source-dir: ${{inputs.source-dir}}
         binary-dir: build/bin
-        command: ctest --output-on-failure -C ${{matrix.configuration}} %INPUT_TEST_ARGS%
+        command: ctest --output-on-failure -C ${{matrix.configuration}} ${{inputs.test-args}}
         codacy-token: ${{secrets.CODACY_PROJECT_API_TOKEN}}
 
     - name: Codecov
