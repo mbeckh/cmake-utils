@@ -165,8 +165,7 @@ jobs:
       run: exit 1
 
     - name: Restore MSVC Environment
-      shell: bash
-      run: cat build/dev.env >> $GITHUB_ENV
+      uses: mbeckh/cmake-utils/env-restore@build-job
 
     - name: Build
       shell: cmd
@@ -249,8 +248,7 @@ jobs:
       run: exit 1
 
     - name: Restore MSVC Environment
-      shell: bash
-      run: cat build/dev.env >> $GITHUB_ENV
+      uses: mbeckh/cmake-utils/env-restore@build-job
 
     - name: Analyze
       shell: cmd

@@ -73,9 +73,10 @@ Modules for building projects using [CMake](https://cmake.org/).
     target.
 
 ## GitHub Actions
-Two actions perform common build tasks.
+Three actions perform common build tasks.
 -   [configure](configure) - Configure a CMake build using cmake-utils.
 -   [msvc-dev-env](msvc-dev-env) - Set-up MSVC development environment.
+-   [env-restore](env-restore) - Re-use the MSVC environment in a different job.
 
 ## GitHub Workflows
 [Two workflows](workflows.md) can be used by consuming projects to get a full-featured build pipeline with
