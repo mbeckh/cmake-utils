@@ -57,7 +57,7 @@ jobs:
       uses: mbeckh/cmake-utils/msvc-dev-env@build-job
 
     - name: Configure
-      uses: mbeckh/cmake-utils/configure@v1
+      uses: mbeckh/cmake-utils/configure@build-job
       with:
         build-root: build
         source-dir: src${{inputs.source-dir && format('/{0}', inputs.source-dir) || ''}}
