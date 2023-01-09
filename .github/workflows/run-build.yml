@@ -184,8 +184,6 @@ jobs:
     - name: Coverage
       if: matrix.configuration == 'Debug'
       uses: mbeckh/code-quality-actions/coverage@v1
-      env:
-        INPUT_TEST_ARGS: ${{inputs.test-args}}
       with:
         source-dir: ${{inputs.source-dir}}
         binary-dir: build/bin
