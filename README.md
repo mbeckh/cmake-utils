@@ -33,6 +33,8 @@ Modules for building projects using [CMake](https://cmake.org/).
 
 -   [GitHub actions](#github-actions) for setting MSVC build environment and bootstrapping cmake-utils.
 
+-   [GitHub workflows](#github-workflows) for re-use of a fully configured CI, testing and linting pipeline.
+
 ## Usage
 -   Set environment CMake variable `BUILD_ROOT` to the path of an output folder. A subfolder will be created therein 
     for every project.
