@@ -3,14 +3,14 @@ author: Michael Beckh
 description: Configure a project using CMake and cmake-utils.
 inputs:
   build-root:
-    description: The root build directory (optional, defaults to github.workspace)
+    description: The root build directory (optional, defaults to working directory)
     default: .
   preset:
-    description: Use the specified CMake configure preset (optional)
+    description: Use the specified CMake configure preset (optional, default is to use no preset)
   source-dir:
-    description: The CMake source directory (optional, defaults to github.workspace if no preset is used)
+    description: The CMake source directory (optional, defaults to working directory if no preset is used)
   binary-dir:
-    description: The CMake binary directory (optional, defaults to github.workspace if no preset is used)
+    description: The CMake binary directory (optional, defaults to working directory if no preset is used)
   generator:
     description: The CMake generator (optional, defaults to Ninja if no preset is used)
   configuration:
@@ -22,17 +22,30 @@ inputs:
 runs:
   using: composite
   steps:
-    - shell: cmd
+    - name: Configure NuGet
+      shell: cmd
+      env:
+        GITHUB_TOKEN: ${{github.token}}
       run: |
-        nuget sources Add -Source "https://nuget.pkg.github.com/${{github.repository_owner}}/index.json" -StorePasswordInClearText -Name "GitHub" -UserName "${{github.repository_owner}}" -Password "${{github.token}}" -NonInteractive
-        nuget setapikey "${{github.token}}" -Source "https://nuget.pkg.github.com/${{github.repository_owner}}/index.json" -NonInteractive
-    - shell: cmd
+        rem Configure NuGet
+        nuget sources Add -Name "GitHub" -Source "https://nuget.pkg.github.com/%GITHUB_REPOSITORY_OWNER%/index.json" -UserName "%GITHUB_REPOSITORY_OWNER%" -Password "%GITHUB_TOKEN%" -StorePasswordInClearText -NonInteractive
+        nuget setapikey "%GITHUB_TOKEN%" -Source "https://nuget.pkg.github.com/%GITHUB_REPOSITORY_OWNER%/index.json" -NonInteractive
+    - name: Configure Build
+      shell: cmd
+      env:
+        INPUT_BUILD_ROOT: ${{inputs.build-root}}
+        INPUT_PRESET: ${{inputs.preset}}
+        INPUT_GENERATOR: ${{(inputs.generator || !inputs.preset) && (inputs.generator || 'Ninja') || ''}}
+        INPUT_CONFIGURATION: ${{((inputs.configuration || !inputs.preset) && (inputs.generator == 'Ninja' || !inputs.generator)) && (inputs.configuration || 'Release') || ''}}
+        INPUT_CONFIGURATIONS: ${{(inputs.configurations || !inputs.preset && inputs.generator == 'Ninja Multi-Config') && (inputs.configurations || 'Debug;Release') || ''}}
+        INPUT_SOURCE_DIR: ${{(inputs.source-dir || !inputs.preset) && (inputs.source-dir || '.') || ''}}
+        INPUT_BINARY_DIR: ${{(inputs.binary-dir || !inputs.preset) && (inputs.binary-dir || '.') || ''}}
+        INPUT_EXTRA_ARGS: ${{inputs.extra-args}}
       run: |
-        cmake -DBUILD_ROOT:PATH="${{github.workspace}}/${{inputs.build-root}}" -DCMAKE_TOOLCHAIN_FILE:FILEPATH="${{github.action_path}}/../Toolchain.cmake" -Dvcpkg_ROOT:FILEPATH="%VCPKG_INSTALLATION_ROOT%" -DVCPKG_BINARY_SOURCES:STRING=clear;nuget,GitHub,readwrite ^
-          ${{inputs.preset && format('--preset "{0}"', inputs.preset) || ''}} ^
-          ${{(inputs.generator || !inputs.preset) && format('-G "{0}"', inputs.generator || 'Ninja') || ''}} ^
-          ${{(inputs.configuration || !inputs.preset && (inputs.generator == 'Ninja' || !inputs.generator)) && format('-DCMAKE_BUILD_TYPE:STRING={0}', inputs.configuration || 'Release') || ''}} ^
-          ${{(inputs.configurations || !inputs.preset && inputs.generator == 'Ninja Multi-Config') && format('-DCMAKE_CONFIGURATION_TYPES:STRING={0}', inputs.configurations || 'Debug;Release') || ''}} ^
-          ${{(inputs.source-dir || !inputs.preset) && format('-S "{0}"', inputs.source-dir || '.') || ''}} ^
-          ${{(inputs.binary-dir || !inputs.preset) && format('-B "{0}"', inputs.binary-dir || '.') || ''}} ^
-          ${{inputs.extra-args}}
+        rem Configure Build
+        cmake ${{env.INPUT_PRESET && '--preset "%INPUT_PRESET%"' || ''}} -D "BUILD_ROOT:PATH=%GITHUB_WORKSPACE%/%INPUT_BUILD_ROOT%" -D "CMAKE_TOOLCHAIN_FILE:FILEPATH=%GITHUB_ACTION_PATH%/../Toolchain.cmake" ^
+          -D "vcpkg_ROOT:FILEPATH=%VCPKG_INSTALLATION_ROOT%" -D "VCPKG_BINARY_SOURCES:STRING=clear;nuget,GitHub,readwrite" ^
+          ${{env.INPUT_GENERATOR && '-G "%INPUT_GENERATOR%"' || ''}} ^
+          ${{env.INPUT_CONFIGURATION && '-D "CMAKE_BUILD_TYPE:STRING=%INPUT_CONFIGURATION%"' || ''}} ${{env.INPUT_CONFIGURATIONS && '-D "CMAKE_CONFIGURATION_TYPES:STRING=%INPUT_CONFIGURATIONS%"' || ''}} ^
+          ${{env.INPUT_SOURCE_DIR && '-S "%INPUT_SOURCE_DIR%"' || ''}} ${{env.INPUT_BINARY_DIR && '-B "%INPUT_BINARY_DIR%"' || ''}} ^
+          %INPUT_EXTRA_ARGS%

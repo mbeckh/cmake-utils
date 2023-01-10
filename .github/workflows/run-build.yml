@@ -3,142 +3,280 @@ name: Build
 on:
   workflow_call:
     inputs:
+      source-dir:
+        description: The CMake source directory (optional, defaults to working directory)
+        type: string
+        default: .
       unity:
-        description: Use unity build in CMake.
-        default: true
+        description: Use unity build in CMake (optional, defaults to true).
         type: boolean
-      extra-args:
-        description: Extra arguments for CMake configure.
+        default: true
+      pch:
+        description: Use precompiled headers (optional, defaults to true).
+        type: boolean
+        default: true
+      configure-args:
+        description: Extra arguments for CMake configure (optional).
+        type: string
+      build-args:
+        description: Extra arguments for CMake build (optional).
+        type: string
+      test-args:
+        description: Extra arguments for CTest (optional).
         type: string
     secrets:
       CODACY_PROJECT_API_TOKEN:
         required: true
 
+permissions: {}
+  
 concurrency: 
-  group: ${{github.workflow}}-${{github.event_name}}-${{github.head_ref || github.ref}}
+  group: run-build-${{github.workflow}}-${{github.event_name}}-${{github.ref}}
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Build
+  configure:
+    name: Configure
     runs-on: windows-latest
-    strategy:
-      matrix:
-        configuration: [ Debug, Release ]
+    permissions:
+      actions: write
+      contents: read
+      packages: write
 
     steps:
     - name: Checkout
       uses: actions/checkout@v3
 
-    - name: Cache vcpkg
-      uses: actions/cache@v3
+    - name: Restore vcpkg
+      id: vcpkg-restore
+      uses: actions/cache/restore@v3
       with:
-        path: build/${{matrix.configuration}}/vcpkg_installed
-        key: vcpkg_installed-${{matrix.configuration}}-${{hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json', '!build/**')}}
-
+        path: build/bin/vcpkg_installed
+        key: cmu-vcpkg_installed-${{hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json', '!build/**')}}
+        restore-keys: cmu-vcpkg_installed-
+      
+    - name: Get vcpkg State
+      id: vcpkg-cache
+      shell: bash
+      run: |
+        echo "hash=${{hashFiles('build/bin/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}" >> $GITHUB_OUTPUT
+        mkdir -p build
+        > build/vcpkg.stamp
+    
     - name: Setup MSVC Environment
-      uses: mbeckh/msvc-dev-cmd@v1
+      uses: mbeckh/cmake-utils/msvc-dev-env@master
       with:
-        toolset: 14.34
+        env-file: build/dev.env
 
     - name: Configure
-      uses: mbeckh/cmake-utils/configure@v1
+      uses: mbeckh/cmake-utils/configure@master
       with:
         build-root: build
-        binary-dir: build/${{matrix.configuration}}
-        configuration: ${{matrix.configuration}}
-        extra-args: ${{inputs.unity && '-D CMAKE_UNITY_BUILD:BOOL=ON -D CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON' || ''}} -D CMU_DISABLE_CLANG_TOOLS:BOOL=ON ${{inputs.extra-args}}
+        source-dir: ${{inputs.source-dir}}
+        binary-dir: build/bin
+        generator: Ninja Multi-Config
+        extra-args: ${{inputs.unity && '-D "CMAKE_UNITY_BUILD:BOOL=ON"' || ''}} ${{!inputs.pch && '-D "CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON"' || ''}} ${{inputs.configure-args}}
+
+    - name: Check vcpkg Update
+      id: vcpkg-check
+      if: ${{always() && steps.vcpkg-restore.outputs.cache-hit && steps.vcpkg-cache.outputs.hash != hashFiles('build/bin/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{github.token}}
+      run: |
+        echo "### Updated vcpkg Dependencies" >> $GITHUB_STEP_SUMMARY
+        find build/bin/vcpkg_installed -newer build/vcpkg.stamp -printf '%P\n' >> $GITHUB_STEP_SUMMARY
+        curl -X DELETE -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches?key=${{steps.vcpkg-restore.outputs.cache-primary-key}}&ref=$GITHUB_REF"
+        echo "updated=1" >> $GITHUB_OUTPUT
+
+    - name: Cache vcpkg
+      if: ${{always() && (!steps.vcpkg-restore.outputs.cache-hit || steps.vcpkg-check.outputs.updated)}}
+      uses: actions/cache/save@v3
+      with:
+        path: build/bin/vcpkg_installed
+        key: ${{steps.vcpkg-restore.outputs.cache-primary-key}}
+
+    - name: Cache Build Environment
+      uses: actions/cache/save@v3
+      with:
+        path: |
+          *
+          !.git
+          .git/*
+          !.git/hooks
+          !.git/objects
+          !build
+          build/dev.env
+          build/bin/*
+          !build/bin/vcpkg_installed
+          !build/bin/vcpkg-buildtrees
+          !build/bin/vcpkg-packages
+        key: cmu-build-${{github.workflow}}-${{github.run_number}}
+
+    - name: Save vcpkg Logs
+      if: ${{always()}}
+      uses: actions/upload-artifact@v3
+      with:
+        name: vcpkg-Logs
+        path: |
+            build/bin/vcpkg-buildtrees/*/*.log
+            !build/bin/vcpkg-buildtrees/detect_compiler/**
+        if-no-files-found: ignore
+
+  build-and-test:
+    name: Build and Test
+    runs-on: windows-latest
+    needs: configure
+    strategy:
+      matrix:
+        configuration: [ Debug, Release ]
+    permissions:
+      actions: read
+
+    steps:
+    - name: Restore Build Environment
+      id: build-restore
+      uses: actions/cache/restore@v3
+      with:
+        path: |
+          *
+          !.git
+          .git/*
+          !.git/hooks
+          !.git/objects
+          !build
+          build/dev.env
+          build/bin/*
+          !build/bin/vcpkg_installed
+          !build/bin/vcpkg-buildtrees
+          !build/bin/vcpkg-packages
+        key: cmu-build-${{github.workflow}}-${{github.run_number}}
+ 
+    - name: Restore vcpkg
+      id: vcpkg-restore
+      if: steps.build-restore.outputs.cache-hit
+      uses: actions/cache/restore@v3
+      with:
+        path: build/bin/vcpkg_installed
+        key: cmu-vcpkg_installed-${{hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json', '!build/**')}}
+
+    - name: Fail on Cache Errors
+      if: ${{!steps.vcpkg-restore.outputs.cache-hit}}
+      run: exit 1
+
+    - name: Restore MSVC Environment
+      uses: mbeckh/cmake-utils/env-restore@master
+      with:
+        env-file: build/dev.env
 
     - name: Build
       shell: cmd
-      working-directory: build/${{matrix.configuration}}
-      run: cmake --build .
+      working-directory: build/bin
+      env:
+        INPUT_BUILD_ARGS: ${{inputs.build-args}}
+      run: cmake --build . --config ${{matrix.configuration}} %INPUT_BUILD_ARGS%
 
     - name: Test
       if: matrix.configuration != 'Debug'
       shell: cmd
-      working-directory: build/${{matrix.configuration}}
-      run: ctest --output-on-failure
+      working-directory: build/bin
+      env:
+        INPUT_TEST_ARGS: ${{inputs.test-args}}
+      run: ctest --output-on-failure -C ${{matrix.configuration}} %INPUT_TEST_ARGS%
 
     - name: Coverage
       if: matrix.configuration == 'Debug'
       uses: mbeckh/code-quality-actions/coverage@v1
       with:
-        binary-dir: build/${{matrix.configuration}}
+        source-dir: ${{inputs.source-dir}}
+        binary-dir: build/bin
+        command: ctest --output-on-failure -C ${{matrix.configuration}} ${{inputs.test-args}}
         codacy-token: ${{secrets.CODACY_PROJECT_API_TOKEN}}
 
     - name: Codecov
       if: matrix.configuration == 'Debug'
       uses: codecov/codecov-action@v3
       with:
-        files: build/${{matrix.configuration}}/coverage-*.xml
+        files: build/bin/coverage-*.xml
         fail_ci_if_error: true
         
-    - name: Save Build Logs
-      if: always()
+    - name: Save Test Logs
+      if: ${{always()}}
       uses: actions/upload-artifact@v3
       with:
-        name: ${{matrix.configuration}}-Build-Logs
-        path: |
-            build/**/vcpkg-buildtrees/*/*.log
-            !build/**/vcpkg-buildtrees/detect_compiler
-            build/${{matrix.configuration}}/Testing/**/*.log
+        name: ${{matrix.configuration}}-Test-Logs
+        path: build/bin/Testing/**/*.log
+        if-no-files-found: ignore
   
   analyze:
     name: Analyze
     runs-on: windows-latest
+    needs: configure
     strategy:
       matrix:
         configuration: [ Debug, Release ]
+    permissions:
+      actions: read
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-
-    - name: Cache vcpkg
-      uses: actions/cache@v3
+    - name: Restore Build Environment
+      id: build-restore
+      uses: actions/cache/restore@v3
       with:
-        path: build/${{matrix.configuration}}/vcpkg_installed
-        key: vcpkg_installed-${{matrix.configuration}}-${{hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json', '!build/**')}}
+        path: |
+          *
+          !.git
+          .git/*
+          !.git/hooks
+          !.git/objects
+          !build
+          build/dev.env
+          build/bin/*
+          !build/bin/vcpkg_installed
+          !build/bin/vcpkg-buildtrees
+          !build/bin/vcpkg-packages
+        key: cmu-build-${{github.workflow}}-${{github.run_number}}
 
-    - name: Setup MSVC Environment
-      uses: mbeckh/msvc-dev-cmd@v1
+    - name: Restore vcpkg
+      id: vcpkg-restore
+      if: steps.build-restore.outputs.cache-hit
+      uses: actions/cache/restore@v3
       with:
-        toolset: 14.34
+        path: build/bin/vcpkg_installed
+        key: cmu-vcpkg_installed-${{hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json', '!build/**')}}
 
-    - name: Configure
-      uses: mbeckh/cmake-utils/configure@v1
+    - name: Fail on Cache Errors
+      if: ${{!steps.vcpkg-restore.outputs.cache-hit}}
+      run: exit 1
+
+    - name: Restore MSVC Environment
+      uses: mbeckh/cmake-utils/env-restore@master
       with:
-        build-root: build
-        binary-dir: build/${{matrix.configuration}}
-        configuration: ${{matrix.configuration}}
-        extra-args: ${{inputs.unity && '-D CMAKE_UNITY_BUILD:BOOL=ON -D CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON' || ''}} ${{inputs.extra-args}}
+        env-file: build/dev.env
 
     - name: Analyze
       shell: cmd
-      working-directory: build/${{matrix.configuration}}
-      run: cmake --build . --target clang-tidy
+      working-directory: build/bin
+      run: cmake --build . --config ${{matrix.configuration}} --target clang-tidy
 
     - name: Report
       uses: mbeckh/code-quality-actions/report@v1
       with:
         mode: partial
-        binary-dir: build/${{matrix.configuration}}
+        binary-dir: build/bin
         codacy-token: ${{secrets.CODACY_PROJECT_API_TOKEN}}
 
     - name: Save Analyze Logs
-      if: always()
+      if: ${{always()}}
       uses: actions/upload-artifact@v3
       with:
         name: ${{matrix.configuration}}-Analyze-Logs
-        path: |
-            build/**/vcpkg-buildtrees/*/*.log
-            !build/**/vcpkg-buildtrees/detect_compiler
-            build/${{matrix.configuration}}/clang-tidy-*.log
+        path: build/bin/${{matrix.configuration}}/clang-tidy-*.log
+        if-no-files-found: ignore
   
-  final:
+  completion:
     name: Send Completion Message
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     needs: analyze
     
     steps:
@@ -147,3 +285,19 @@ jobs:
       with:
         mode: final
         codacy-token: ${{secrets.CODACY_PROJECT_API_TOKEN}}
+
+  cleanup:
+    name: Remove Build Environment Cache
+    if: ${{always()}}
+    runs-on: ubuntu-latest
+    needs: [ build-and-test, analyze ]
+    permissions:
+      actions: write
+    
+    steps:
+    - name: Remove Build Environment Cache
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{github.token}}
+      run: |
+        curl -X DELETE -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches?key=cmu-build-$GITHUB_WORKFLOW-$GITHUB_RUN_NUMBER"

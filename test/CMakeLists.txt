@@ -68,6 +68,9 @@ endif()
 enable_testing()
 
 string(REPLACE ";" "\\;" include "$ENV{INCLUDE}")
+string(REPLACE ";" "\\;" external_include "$ENV{EXTERNAL_INCLUDE}")
+string(REPLACE ";" "\\;" lib "$ENV{LIB}")
+string(REPLACE ";" "\\;" libpath "$ENV{LIBPATH}")
 
 get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 if(is_multi_config)
@@ -79,12 +82,23 @@ else()
 endif()
 
 #
+# Run
+#
+add_test(NAME cmake-utils.run.ok
+         COMMAND "$<TARGET_FILE:ok>")
+set_tests_properties(cmake-utils.run.ok PROPERTIES
+                     LABELS "Run")
+
+
+#
 # Clean
 #
 add_test(NAME cmake-utils.common.clean
          COMMAND "${CMAKE_COMMAND}" --build . ${config} --target clean)
 set_tests_properties(cmake-utils.common.clean PROPERTIES
-                     ENVIRONMENT "INCLUDE=${include}"
+                     LABELS "CMake;Clean"
+                     DEPENDS cmake-utils.run.ok
+                     ENVIRONMENT "INCLUDE=${include};EXTERNAL_INCLUDE=${external_include};LIB=${lib};LIBPATH=${libpath}"
                      FIXTURES_SETUP clean)
 
 #
@@ -95,8 +109,9 @@ foreach(target clang-tidy iwyu pch)
              COMMAND "${CMAKE_COMMAND}" --build . ${config} --target ${target})
 
     set_tests_properties(cmake-utils.common.build-${target} PROPERTIES
+                         LABELS "CMake;Build"
                          DISABLED "$<AND:$<OR:$<STREQUAL:${target},iwyu>,$<STREQUAL:${target},pch>>,$<NOT:$<TARGET_EXISTS:${target}>>>"
-                         ENVIRONMENT "INCLUDE=${include}"
+                         ENVIRONMENT "INCLUDE=${include};EXTERNAL_INCLUDE=${external_include};LIB=${lib};LIBPATH=${libpath}"
                          DEPENDS cmake-utils.common.clean
                          FIXTURES_SETUP build-${target}
                          FIXTURES_REQUIRED clean
@@ -109,6 +124,7 @@ foreach(target ok tidy_error include_error subdirectory subproject)
     add_test(NAME cmake-utils.common.no-link-${target}
              COMMAND "${CMAKE_COMMAND}" -E md5sum "$<TARGET_FILE:${target}>")
     set_tests_properties(cmake-utils.common.no-link-${target} PROPERTIES
+                         LABELS "CMake;No Link"
                          FIXTURES_REQUIRED build-${target}
                          DEPENDS cmake-utils.common.build-${target}
                          WILL_FAIL YES)
@@ -118,7 +134,8 @@ endforeach()
 add_test(NAME cmake-utils.common.build-binaries
          COMMAND "${CMAKE_COMMAND}" --build . ${config} --target all)
 set_tests_properties(cmake-utils.common.build-binaries PROPERTIES
-                     ENVIRONMENT "INCLUDE=${include}"
+                     LABEL "CMake;Build"
+                     ENVIRONMENT "INCLUDE=${include};EXTERNAL_INCLUDE=${external_include};LIB=${lib};LIBPATH=${libpath}"
                      DEPENDS "cmake-utils.common.build;${no_link_tests}"
                      FIXTURES_SETUP build-binaries)
 
@@ -126,6 +143,7 @@ foreach(target ok tidy_error include_error subdirectory subproject)
     add_test(NAME cmake-utils.common.link-${target}
              COMMAND "${CMAKE_COMMAND}" -E md5sum "$<TARGET_FILE:${target}>")
     set_tests_properties(cmake-utils.common.link-${target} PROPERTIES
+                         LABELS "CMake;No Link"
                          FIXTURES_REQUIRED build-binaries
                          DEPENDS cmake-utils.common.build-binaries)
 endforeach()
@@ -142,6 +160,7 @@ add_test(NAME cmake-utils.clang-tidy.logs
                  "${CMAKE_BINARY_DIR}/${config_subdir}clang-tidy-subproject.log")
 
 set_tests_properties(cmake-utils.clang-tidy.logs PROPERTIES
+                     LABELS "CMake;clang-tidy"
                      FIXTURES_REQUIRED build-clang-tidy
                      DEPENDS cmake-utils.common.build-clang-tidy)
 
@@ -150,7 +169,8 @@ add_test(NAME cmake-utils.clang-tidy.ok
          COMMAND "${CMAKE_COMMAND}" --build . ${config} --target clang-tidy-ok)
 
 set_tests_properties(cmake-utils.clang-tidy.ok PROPERTIES
-                     ENVIRONMENT "INCLUDE=${include}"
+                     LABELS "CMake;clang-tidy"
+                     ENVIRONMENT "INCLUDE=${include};EXTERNAL_INCLUDE=${external_include};LIB=${lib};LIBPATH=${libpath}"
                      FIXTURES_REQUIRED build-clang-tidy
                      DEPENDS cmake-utils.common.build-clang-tidy
                      PASS_REGULAR_EXPRESSION [[
@@ -180,7 +200,8 @@ src/tidy_error_2\.cpp:.+\[modernize-avoid-c-arrays\]
 $]] pass @ONLY)
 
 set_tests_properties(cmake-utils.clang-tidy.tidy_error PROPERTIES
-                     ENVIRONMENT "INCLUDE=${include}"
+                     LABELS "CMake;clang-tidy"
+                     ENVIRONMENT "INCLUDE=${include};EXTERNAL_INCLUDE=${external_include};LIB=${lib};LIBPATH=${libpath}"
                      FIXTURES_REQUIRED build-clang-tidy
                      DEPENDS cmake-utils.common.build-clang-tidy
                      PASS_REGULAR_EXPRESSION "${pass}")
@@ -190,7 +211,8 @@ add_test(NAME cmake-utils.clang-tidy.include_error
          COMMAND "${CMAKE_COMMAND}" --build . ${config} --target clang-tidy-include_error)
 
 set_tests_properties(cmake-utils.clang-tidy.include_error PROPERTIES
-                     ENVIRONMENT "INCLUDE=${include}"
+                     LABELS "CMake;clang-tidy"
+                     ENVIRONMENT "INCLUDE=${include};EXTERNAL_INCLUDE=${external_include};LIB=${lib};LIBPATH=${libpath}"
                      FIXTURES_REQUIRED build-clang-tidy
                      DEPENDS cmake-utils.common.build-clang-tidy
                      PASS_REGULAR_EXPRESSION [[
@@ -203,7 +225,8 @@ add_test(NAME cmake-utils.clang-tidy.subdirectory
          COMMAND "${CMAKE_COMMAND}" --build . ${config} --target clang-tidy-subdirectory)
 
 set_tests_properties(cmake-utils.clang-tidy.subdirectory PROPERTIES
-                     ENVIRONMENT "INCLUDE=${include}"
+                     LABELS "CMake;clang-tidy"
+                     ENVIRONMENT "INCLUDE=${include};EXTERNAL_INCLUDE=${external_include};LIB=${lib};LIBPATH=${libpath}"
                      FIXTURES_REQUIRED build-clang-tidy
                      DEPENDS cmake-utils.common.build-clang-tidy
                      PASS_REGULAR_EXPRESSION [[
@@ -216,7 +239,8 @@ add_test(NAME cmake-utils.clang-tidy.subproject
          COMMAND "${CMAKE_COMMAND}" --build . ${config} --target clang-tidy-subproject)
 
 set_tests_properties(cmake-utils.clang-tidy.subproject PROPERTIES
-                     ENVIRONMENT "INCLUDE=${include}"
+                     LABELS "CMake;clang-tidy"
+                     ENVIRONMENT "INCLUDE=${include};EXTERNAL_INCLUDE=${external_include};LIB=${lib};LIBPATH=${libpath}"
                      FIXTURES_REQUIRED build-clang-tidy
                      DEPENDS cmake-utils.common.build-clang-tidy
                      PASS_REGULAR_EXPRESSION [[
@@ -238,6 +262,7 @@ add_test(NAME cmake-utils.iwyu.logs
                     "${CMAKE_BINARY_DIR}/${config_subdir}iwyu-subproject.log")
 
 set_tests_properties(cmake-utils.iwyu.logs PROPERTIES
+                     LABELS "CMake;iwyu"
                      DISABLED "$<NOT:$<TARGET_EXISTS:iwyu>>"
                      FIXTURES_REQUIRED build-iwyu
                      DEPENDS cmake-utils.common.build-iwyu)
@@ -246,8 +271,9 @@ set_tests_properties(cmake-utils.iwyu.logs PROPERTIES
 add_test(NAME cmake-utils.iwyu.ok
          COMMAND "${CMAKE_COMMAND}" --build . ${config} --target iwyu-ok)
 set_tests_properties(cmake-utils.iwyu.ok PROPERTIES
+                     LABELS "CMake;iwyu"
                      DISABLED "$<NOT:$<TARGET_EXISTS:iwyu>>"
-                     ENVIRONMENT "INCLUDE=${include}"
+                     ENVIRONMENT "INCLUDE=${include};EXTERNAL_INCLUDE=${external_include};LIB=${lib};LIBPATH=${libpath}"
                      FIXTURES_REQUIRED build-iwyu
                      DEPENDS cmake-utils.common.build-iwyu
                      PASS_REGULAR_EXPRESSION [[
@@ -298,8 +324,9 @@ $]])
 add_test(NAME cmake-utils.iwyu.tidy_error
          COMMAND "${CMAKE_COMMAND}" --build . ${config} --target iwyu-tidy_error)
 set_tests_properties(cmake-utils.iwyu.tidy_error PROPERTIES
+                     LABELS "CMake;iwyu"
                      DISABLED "$<NOT:$<TARGET_EXISTS:iwyu>>"
-                     ENVIRONMENT "INCLUDE=${include}"
+                     ENVIRONMENT "INCLUDE=${include};EXTERNAL_INCLUDE=${external_include};LIB=${lib};LIBPATH=${libpath}"
                      FIXTURES_REQUIRED build-iwyu
                      DEPENDS cmake-utils.common.build-iwyu
                      PASS_REGULAR_EXPRESSION [[
@@ -349,8 +376,9 @@ $]])
 add_test(NAME cmake-utils.iwyu.include_error
          COMMAND "${CMAKE_COMMAND}" --build . ${config} --target iwyu-include_error)
 set_tests_properties(cmake-utils.iwyu.include_error PROPERTIES
+                     LABELS "CMake;iwyu"
                      DISABLED "$<NOT:$<TARGET_EXISTS:iwyu>>"
-                     ENVIRONMENT "INCLUDE=${include}"
+                     ENVIRONMENT "INCLUDE=${include};EXTERNAL_INCLUDE=${external_include};LIB=${lib};LIBPATH=${libpath}"
                      FIXTURES_REQUIRED build-iwyu
                      DEPENDS cmake-utils.common.build-iwyu
                      PASS_REGULAR_EXPRESSION [[
@@ -373,8 +401,9 @@ $]])
 add_test(NAME cmake-utils.iwyu.subdirectory
          COMMAND "${CMAKE_COMMAND}" --build . ${config} --target iwyu-subdirectory)
 set_tests_properties(cmake-utils.iwyu.subdirectory PROPERTIES
+                     LABELS "CMake;iwyu"
                      DISABLED "$<NOT:$<TARGET_EXISTS:iwyu>>"
-                     ENVIRONMENT "INCLUDE=${include}"
+                     ENVIRONMENT "INCLUDE=${include};EXTERNAL_INCLUDE=${external_include};LIB=${lib};LIBPATH=${libpath}"
                      FIXTURES_REQUIRED build-iwyu
                      DEPENDS cmake-utils.common.build-iwyu
                      PASS_REGULAR_EXPRESSION [[
@@ -394,8 +423,9 @@ $]])
 add_test(NAME cmake-utils.iwyu.subproject
          COMMAND "${CMAKE_COMMAND}" --build . ${config} --target iwyu-subproject)
 set_tests_properties(cmake-utils.iwyu.subproject PROPERTIES
+                     LABELS "CMake;iwyu"
                      DISABLED "$<NOT:$<TARGET_EXISTS:iwyu>>"
-                     ENVIRONMENT "INCLUDE=${include}"
+                     ENVIRONMENT "INCLUDE=${include};EXTERNAL_INCLUDE=${external_include};LIB=${lib};LIBPATH=${libpath}"
                      FIXTURES_REQUIRED build-iwyu
                      DEPENDS cmake-utils.common.build-iwyu
                      PASS_REGULAR_EXPRESSION [[
@@ -424,6 +454,7 @@ add_test(NAME cmake-utils.pch.logs
                  "${CMAKE_BINARY_DIR}/${config_subdir}pch-include_error.log")
 
 set_tests_properties(cmake-utils.pch.logs PROPERTIES
+                     LABELS "CMake;pch"
                      DISABLED "$<NOT:$<TARGET_EXISTS:pch>>"
                      FIXTURES_REQUIRED build-pch
                      DEPENDS cmake-utils.common.build-pch)
@@ -434,6 +465,7 @@ foreach(target subdirectory subproject)
              COMMAND "${CMAKE_COMMAND}" -E cat "${CMAKE_BINARY_DIR}/pch-${target}.log")
 
     set_tests_properties(cmake-utils.pch.no-log-${target} PROPERTIES
+                         LABELS "CMake;pch"
                          DISABLED "$<NOT:$<TARGET_EXISTS:pch>>"
                          FIXTURES_REQUIRED build-pch
                          DEPENDS cmake-utils.common.build-pch
@@ -444,8 +476,9 @@ endforeach()
 add_test(NAME cmake-utils.pch.ok
          COMMAND "${CMAKE_COMMAND}" --build . ${config} --target pch-ok)
 set_tests_properties(cmake-utils.pch.ok PROPERTIES
+                     LABELS "CMake;pch"
                      DISABLED "$<NOT:$<TARGET_EXISTS:pch>>"
-                     ENVIRONMENT "INCLUDE=${include}"
+                     ENVIRONMENT "INCLUDE=${include};EXTERNAL_INCLUDE=${external_include};LIB=${lib};LIBPATH=${libpath}"
                      FIXTURES_REQUIRED build-pch
                      DEPENDS cmake-utils.common.build-pch
                      PASS_REGULAR_EXPRESSION [[
@@ -459,8 +492,9 @@ $]])
 add_test(NAME cmake-utils.pch.tidy_error
          COMMAND "${CMAKE_COMMAND}" --build . ${config} --target pch-tidy_error)
 set_tests_properties(cmake-utils.pch.tidy_error PROPERTIES
+                     LABELS "CMake;pch"
                      DISABLED "$<NOT:$<TARGET_EXISTS:pch>>"
-                     ENVIRONMENT "INCLUDE=${include}"
+                     ENVIRONMENT "INCLUDE=${include};EXTERNAL_INCLUDE=${external_include};LIB=${lib};LIBPATH=${libpath}"
                      FIXTURES_REQUIRED build-pch
                      DEPENDS cmake-utils.common.build-pch
                      PASS_REGULAR_EXPRESSION [[
@@ -474,8 +508,9 @@ $]])
 add_test(NAME cmake-utils.pch.include_error
          COMMAND "${CMAKE_COMMAND}" --build . ${config} --target pch-include_error)
 set_tests_properties(cmake-utils.pch.include_error PROPERTIES
+                     LABELS "CMake;pch"
                      DISABLED "$<NOT:$<TARGET_EXISTS:pch>>"
-                     ENVIRONMENT "INCLUDE=${include}"
+                     ENVIRONMENT "INCLUDE=${include};EXTERNAL_INCLUDE=${external_include};LIB=${lib};LIBPATH=${libpath}"
                      FIXTURES_REQUIRED build-pch
                      DEPENDS cmake-utils.common.build-pch
                      PASS_REGULAR_EXPRESSION [[
