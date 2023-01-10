@@ -53,10 +53,10 @@ jobs:
         > build/vcpkg.stamp
 
     - name: Setup MSVC Environment
-      uses: mbeckh/cmake-utils/msvc-dev-env@build-job
+      uses: mbeckh/cmake-utils/msvc-dev-env@master
 
     - name: Configure
-      uses: mbeckh/cmake-utils/configure@build-job
+      uses: mbeckh/cmake-utils/configure@master
       with:
         build-root: build
         source-dir: src${{inputs.source-dir && format('/{0}', inputs.source-dir) || ''}}

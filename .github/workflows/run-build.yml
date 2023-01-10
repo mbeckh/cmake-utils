@@ -64,12 +64,12 @@ jobs:
         > build/vcpkg.stamp
     
     - name: Setup MSVC Environment
-      uses: mbeckh/cmake-utils/msvc-dev-env@build-job
+      uses: mbeckh/cmake-utils/msvc-dev-env@master
       with:
         env-file: build/dev.env
 
     - name: Configure
-      uses: mbeckh/cmake-utils/configure@build-job
+      uses: mbeckh/cmake-utils/configure@master
       with:
         build-root: build
         source-dir: ${{inputs.source-dir}}
@@ -165,7 +165,7 @@ jobs:
       run: exit 1
 
     - name: Restore MSVC Environment
-      uses: mbeckh/cmake-utils/env-restore@build-job
+      uses: mbeckh/cmake-utils/env-restore@master
       with:
         env-file: build/dev.env
 
@@ -250,7 +250,7 @@ jobs:
       run: exit 1
 
     - name: Restore MSVC Environment
-      uses: mbeckh/cmake-utils/env-restore@build-job
+      uses: mbeckh/cmake-utils/env-restore@master
       with:
         env-file: build/dev.env
 
