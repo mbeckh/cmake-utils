@@ -2,7 +2,7 @@
 ## Build
 The workflow [`run-build.yml`](.github/workflows/run-build.yml) creates and runs a build in the binary directory `build/bin`  using the Ninja Multi-Config generator.
 
-### Inputs
+### Build Inputs
 -   `source-dir` - Path of the CMake source directory (optional, defaults to working directory).
 -   `unity` - Use unity build in CMake (optional, defaults to true).
 -   `pch` - Use precompiled headers (optional, defaults to true - even for unity builds).
@@ -10,7 +10,7 @@ The workflow [`run-build.yml`](.github/workflows/run-build.yml) creates and runs
 -   `build-args` - Extra arguments for CMake build (optional).
 -   `test-args` - Extra arguments for CTest (optional). `--output-on-failure` is added by default.
  
-### Use Cases
+### Build Use Cases
 #### Run Build
 Add the following job to a GitHub workflow.
 ~~~yml
@@ -42,12 +42,12 @@ To only run a particular test for both tests and coverage.
 ## CodeQL
 The workflow [`run-codeql.yml`](.github/workflows/run-codeql.yml) runs code analysis using CodeQL. This never uses unity builds because they do not work with CodeQL.
 
-### Inputs
+### CodeQL Inputs
 -   `source-dir` - Path of the CMake source directory (optional, defaults to working directory).
 -   `configure-args` - Extra arguments for CMake configure (optional).
 -   `build-args` - Extra arguments for CMake build (optional).
 
-### Use Cases
+### CodeQL Use Cases
 #### Analyze Code
 Add the following job to a GitHub workflow.
 ~~~yml

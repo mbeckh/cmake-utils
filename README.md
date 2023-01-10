@@ -92,7 +92,6 @@ Three actions perform common build tasks.
 -   Apply vcpkg binary caching.
 -   Caching of vcpkg artifacts for GitHub actions.
 
-
 ## Visual Studio Integration
 Add one or more external tools within Visual Studio with the following settings:
 -   Command: Path of `scripts/run-clang-tools.bat`.
