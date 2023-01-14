@@ -9,4 +9,4 @@ ExtraArgsBefore: [
   '-WCL4', '-Wpedantic', '-Wthread-safety', '-Wmicrosoft', '-Wdocumentation', '-Wdocumentation-pedantic',
   '-fno-delayed-template-parsing', '/clang:-fcomment-block-commands=internal,hideinitializer'
   ]
-CheckOptions:
+CheckOptions: { }

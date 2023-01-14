@@ -13,7 +13,7 @@
 # limitations under the License.
 cmake_minimum_required(VERSION 3.25 FATAL_ERROR)
 
-project("cmake-utils-test" VERSION 1.0.3
+project("cmake-utils-test" VERSION 1.1.0
     DESCRIPTION "Test project for cmake-utils"
     HOMEPAGE_URL "https://github.com/mbeckh/cmake-utils"
     LANGUAGES CXX)
