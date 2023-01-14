@@ -104,6 +104,13 @@ endfunction()
     cmake_language(EVAL CODE ${code})
 endfunction()
 
+function(z_clang_tools_add_source_dependency source)
+message("XXX ${target_compile_commands_path}")
+    add_custom_command(OUTPUT "${target_compile_commands_path}compile_commands.json"
+                       DEPENDS "${source}"
+                       APPEND)
+endfunction()
+
 #
 # Helper function used by clang_tools_run. Actually run the commands for all targets.
 #
@@ -222,23 +229,9 @@ function(z_clang_tools_deferred tool #[[ [ NAME <name> ] TARGETS <target> ... [ 
         if(target_unity)
             foreach(source IN LISTS target_sources)
                 string(GENEX_STRIP "${source}" source_no_genex)
-                if("${source}" STREQUAL "${source_no_genex}")
-                    if(IS_ABSOLUTE "${source}")
-                        cmake_path(IS_PREFIX PROJECT_SOURCE_DIR "${source}" NORMALIZE is_in_source)
-                        cmake_path(IS_PREFIX PROJECT_BINARY_DIR "${source}" NORMALIZE is_in_binary)
-                        if(NOT is_in_source OR is_in_binary)
-                            continue()
-                        endif()
-                    else()
-                        set(source "${target_source_dir}/${source}")
-                    endif()
+                if("${source}" STREQUAL "${source_no_genex}" AND NOT IS_ABSOLUTE "${source}")
+                    set(source "${target_source_dir}/${source}")
                 endif()
-
-                get_source_file_property(generated "${source}" TARGET "${target}" GENERATED)
-                if(generated)
-                    continue()
-                endif()
-
                 list(APPEND sources "${source}")
             endforeach()
 
@@ -267,6 +260,7 @@ function(z_clang_tools_deferred tool #[[ [ NAME <name> ] TARGETS <target> ... [ 
                     cmake_path(IS_PREFIX PROJECT_SOURCE_DIR "${source}" NORMALIZE is_in_source)
                     cmake_path(IS_PREFIX PROJECT_BINARY_DIR "${source}" NORMALIZE is_in_binary)
                     if(NOT is_in_source OR is_in_binary)
+                        z_clang_tools_add_source_dependency("${source}")
                         continue()
                     endif()
                 else()
@@ -275,15 +269,18 @@ function(z_clang_tools_deferred tool #[[ [ NAME <name> ] TARGETS <target> ... [ 
 
                 get_source_file_property(generated "${source}" TARGET "${target}" GENERATED)
                 if(generated)
+                    z_clang_tools_add_source_dependency("${source}")
                     continue()
                 endif()
 
                 get_source_file_property(header "${source}" TARGET "${target}" HEADER_FILE_ONLY)
                 if (header)
+                    z_clang_tools_add_source_dependency("${source}")
                     continue()
                 endif()
 
                 if (NOT source MATCHES ".*\\.(${extensions_pattern})$")
+                    z_clang_tools_add_source_dependency("${source}")
                     continue()
                 endif()
 
@@ -294,6 +291,7 @@ function(z_clang_tools_deferred tool #[[ [ NAME <name> ] TARGETS <target> ... [ 
             else()
                 get_source_file_property(generated "${source}" TARGET "${target}" GENERATED)
                 if(generated)
+                    z_clang_tools_add_source_dependency("${source}")
                     continue()
                 endif()
 
