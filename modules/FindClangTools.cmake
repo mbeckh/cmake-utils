@@ -105,7 +105,6 @@ endfunction()
 endfunction()
 
 function(z_clang_tools_add_source_dependency source)
-message("XXX ${target_compile_commands_path}")
     add_custom_command(OUTPUT "${target_compile_commands_path}compile_commands.json"
                        DEPENDS "${source}"
                        APPEND)
