@@ -67,7 +67,7 @@ jobs:
 
     - name: Check vcpkg Update
       id: vcpkg-check
-      if: ${{always() && steps.vcpkg-restore.outputs.cache-hit && steps.vcpkg-cache.outputs.hash != hashFiles('build/bin/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}
+      if: ${{always() && steps.vcpkg-restore.outputs.cache-hit == 'true' && steps.vcpkg-cache.outputs.hash != hashFiles('build/bin/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}
       shell: bash
       env:
         GITHUB_TOKEN: ${{github.token}}
@@ -75,10 +75,10 @@ jobs:
         echo "### Updated vckpkg Dependencies" >> $GITHUB_STEP_SUMMARY
         find build/bin/vcpkg_installed -newer build/vcpkg.stamp -printf '%P\n' >> $GITHUB_STEP_SUMMARY
         curl -X DELETE -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches?key=${{steps.vcpkg-restore.outputs.cache-primary-key}}&ref=$GITHUB_REF"
-        echo "updated=1" >> $GITHUB_OUTPUT
+        echo "updated=true" >> $GITHUB_OUTPUT
 
     - name: Cache vcpkg
-      if: ${{always() && (!steps.vcpkg-restore.outputs.cache-hit || steps.vcpkg-check.outputs.updated)}}
+      if: ${{always() && (steps.vcpkg-restore.outputs.cache-hit != 'true' || steps.vcpkg-check.outputs.updated == 'true')}}
       uses: actions/cache/save@v3
       with:
         path: build/bin/vcpkg_installed
@@ -120,4 +120,3 @@ jobs:
           build/bin/vcpkg-buildtrees/*/*.log
           !build/bin/vcpkg-buildtrees/detect_compiler
         if-no-files-found: ignore
-
