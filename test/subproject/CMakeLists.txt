@@ -11,9 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.25 FATAL_ERROR)
 
-project("cmake-utils-test-subproject" VERSION 1.0.3
+project("cmake-utils-test-subproject" VERSION 1.1.0
     DESCRIPTION "Test sub project for cmake-utils"
     HOMEPAGE_URL "https://github.com/mbeckh/cmake-utils"
     LANGUAGES CXX)

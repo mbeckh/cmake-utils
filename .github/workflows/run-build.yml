@@ -64,12 +64,12 @@ jobs:
         > build/vcpkg.stamp
     
     - name: Setup MSVC Environment
-      uses: mbeckh/cmake-utils/msvc-dev-env@master
+      uses: mbeckh/cmake-utils/msvc-dev-env@v1
       with:
         env-file: build/dev.env
 
     - name: Configure
-      uses: mbeckh/cmake-utils/configure@master
+      uses: mbeckh/cmake-utils/configure@v1
       with:
         build-root: build
         source-dir: ${{inputs.source-dir}}
@@ -119,8 +119,8 @@ jobs:
       with:
         name: vcpkg-Logs
         path: |
-            build/bin/vcpkg-buildtrees/*/*.log
-            !build/bin/vcpkg-buildtrees/detect_compiler/**
+          build/bin/vcpkg-buildtrees/*/*.log
+          !build/bin/vcpkg-buildtrees/detect_compiler/**
         if-no-files-found: ignore
 
   build-and-test:
@@ -165,7 +165,7 @@ jobs:
       run: exit 1
 
     - name: Restore MSVC Environment
-      uses: mbeckh/cmake-utils/env-restore@master
+      uses: mbeckh/cmake-utils/env-restore@v1
       with:
         env-file: build/dev.env
 
@@ -250,7 +250,7 @@ jobs:
       run: exit 1
 
     - name: Restore MSVC Environment
-      uses: mbeckh/cmake-utils/env-restore@master
+      uses: mbeckh/cmake-utils/env-restore@v1
       with:
         env-file: build/dev.env
 
