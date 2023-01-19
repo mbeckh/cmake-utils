@@ -174,7 +174,9 @@ set_tests_properties(cmake-utils.clang-tidy.ok PROPERTIES
                      FIXTURES_REQUIRED build-clang-tidy
                      DEPENDS cmake-utils.common.build-clang-tidy
                      PASS_REGULAR_EXPRESSION [[
-^\[1/1\] clang-tidy \(ok\)
+^\[1/.\] Checking clang-tidy overrides
+.+
+\[2/2\] clang-tidy \(ok\)
 clang-tidy: ok
 $]])
 
@@ -183,7 +185,9 @@ add_test(NAME cmake-utils.clang-tidy.tidy_error
          COMMAND "${CMAKE_COMMAND}" --build . ${config} --target clang-tidy-tidy_error)
 
 string(CONFIGURE [[
-^\[1/1\] clang-tidy \(tidy_error\)
+^\[1/.\] Checking clang-tidy overrides
+.+
+\[2/2\] clang-tidy \(tidy_error\)
 clang-tidy: tidy_error
 src/tidy_error\.h:.+\[modernize-avoid-c-arrays\]
 .+"$<CONFIG>".+// deliberate error.+
@@ -216,7 +220,9 @@ set_tests_properties(cmake-utils.clang-tidy.include_error PROPERTIES
                      FIXTURES_REQUIRED build-clang-tidy
                      DEPENDS cmake-utils.common.build-clang-tidy
                      PASS_REGULAR_EXPRESSION [[
-^\[1/1\] clang-tidy \(include_error\)
+^\[1/.\] Checking clang-tidy overrides
+.+
+\[2/2\] clang-tidy \(include_error\)
 clang-tidy: include_error
 $]])
 
@@ -230,7 +236,9 @@ set_tests_properties(cmake-utils.clang-tidy.subdirectory PROPERTIES
                      FIXTURES_REQUIRED build-clang-tidy
                      DEPENDS cmake-utils.common.build-clang-tidy
                      PASS_REGULAR_EXPRESSION [[
-^\[1/1\] clang-tidy \(subdirectory\)
+^\[1/.\] Checking clang-tidy overrides
+.+
+\[2/2\] clang-tidy \(subdirectory\)
 clang-tidy: subdirectory
 $]])
 
@@ -244,7 +252,9 @@ set_tests_properties(cmake-utils.clang-tidy.subproject PROPERTIES
                      FIXTURES_REQUIRED build-clang-tidy
                      DEPENDS cmake-utils.common.build-clang-tidy
                      PASS_REGULAR_EXPRESSION [[
-^\[1/1\] clang-tidy \(subproject\)
+^\[1/.\] Checking clang-tidy overrides
+.+
+\[2/2\] clang-tidy \(subproject\)
 clang-tidy: subproject
 $]])
 
