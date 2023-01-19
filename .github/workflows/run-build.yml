@@ -35,12 +35,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  dump_env:
-    runs-on: windows-latest
-    steps:
-    - shell: cmd
-      run: set
-
   configure:
     name: Configure
     runs-on: windows-latest
@@ -50,11 +44,19 @@ jobs:
       packages: write
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
+    - name: Restore Project Environment (Source and Build)
+      id: project-restore
+      uses: actions/cache/restore@v3
       with:
-        path: source
-        persist-credentials: false
+        path: |
+          dev.env
+          source/*
+          build/*
+          !build/vcpkg_installed
+          !build/vcpkg-buildtrees
+          !build/vcpkg-packages
+        key: ${{format('cmu-{0}-{1}-{2}-{3}', github.workflow, env.ImageOS, env.ImageVersion, github.sha)}}
+        restore-keys: ${{format('cmu-{0}-{1}-{2}-', github.workflow, env.ImageOS, env.ImageVersion)}}
 
     - name: Restore vcpkg
       id: vcpkg-restore
@@ -64,6 +66,12 @@ jobs:
         key: cmu-vcpkg_installed-${{hashFiles(format('source{0}{1}/vcpkg.json', inputs.source-dir && '/' || '', inputs.source-dir), format('source{0}{1}/vcpkg-configuration.json', inputs.source-dir && '/' || '', inputs.source-dir))}}
         restore-keys: cmu-vcpkg_installed-
       
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        path: source
+        persist-credentials: false
+
     - name: Get vcpkg State
       id: vcpkg-cache
       shell: bash
@@ -72,7 +80,14 @@ jobs:
         > vcpkg.stamp
     
     - name: Setup MSVC Environment
+      if: ${{steps.project-restore.outputs.cache-matched-key == ''}}
       uses: mbeckh/cmake-utils/msvc-dev-env@v1
+      with:
+        env-file: dev.env
+
+    - name: Restore MSVC Environment
+      if: ${{steps.project-restore.outputs.cache-matched-key != ''}}
+      uses: mbeckh/cmake-utils/env-restore@v1
       with:
         env-file: dev.env
 
@@ -83,6 +98,27 @@ jobs:
         binary-dir: build
         generator: Ninja Multi-Config
         extra-args: ${{inputs.unity && '-D "CMAKE_UNITY_BUILD:BOOL=ON"' || ''}} ${{!inputs.pch && '-D "CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON"' || ''}} ${{inputs.configure-args}}
+
+    - name: Remove Old Project Cache
+      if: ${{always() && steps.project-restore.outputs.cache-hit == 'true'}}
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{github.token}}
+      run: |
+        curl -X DELETE -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches?key=${{steps.project-restore.outputs.cache-primary-key}}&ref=$GITHUB_REF"
+
+    - name: Cache Project Environment
+      if: ${{always()}}
+      uses: actions/cache/save@v3
+      with:
+        path: |
+          dev.env
+          source/*
+          build/*
+          !build/vcpkg_installed
+          !build/vcpkg-buildtrees
+          !build/vcpkg-packages
+        key: ${{steps.project-restore.outputs.cache-primary-key}}
 
     - name: Check vcpkg Update
       id: vcpkg-check
@@ -102,22 +138,6 @@ jobs:
       with:
         path: build/vcpkg_installed
         key: ${{steps.vcpkg-restore.outputs.cache-primary-key}}
-
-    - name: Cache Build Environment
-      uses: actions/cache/save@v3
-      with:
-        path: |
-          source/*
-          !source/.git
-          source/.git/*
-          !source/.git/hooks
-          !source/.git/objects
-          dev.env
-          build/*
-          !build/vcpkg_installed
-          !build/vcpkg-buildtrees
-          !build/vcpkg-packages
-        key: cmu-build-${{github.workflow}}-${{github.run_number}}
 
     - name: Save vcpkg Logs
       if: ${{always()}}
@@ -140,26 +160,22 @@ jobs:
       actions: read
 
     steps:
-    - name: Restore Build Environment
-      id: build-restore
+    - name: Restore Project Environment
+      id: project-restore
       uses: actions/cache/restore@v3
       with:
         path: |
-          source/*
-          !source/.git
-          source/.git/*
-          !source/.git/hooks
-          !source/.git/objects
           dev.env
+          source/*
           build/*
           !build/vcpkg_installed
           !build/vcpkg-buildtrees
           !build/vcpkg-packages
-        key: cmu-build-${{github.workflow}}-${{github.run_number}}
+        key: ${{format('cmu-{0}-{1}-{2}-{3}', github.workflow, env.ImageOS, env.ImageVersion, github.sha)}}
  
     - name: Restore vcpkg
       id: vcpkg-restore
-      if: ${{steps.build-restore.outputs.cache-hit == 'true'}}
+      if: ${{steps.project-restore.outputs.cache-hit == 'true'}}
       uses: actions/cache/restore@v3
       with:
         path: build/vcpkg_installed
@@ -224,26 +240,22 @@ jobs:
       actions: read
 
     steps:
-    - name: Restore Build Environment
-      id: build-restore
+    - name: Restore Project Environment
+      id: project-restore
       uses: actions/cache/restore@v3
       with:
         path: |
-          source/*
-          !source/.git
-          source/.git/*
-          !source/.git/hooks
-          !source/.git/objects
           dev.env
+          source/*
           build/*
           !build/vcpkg_installed
           !build/vcpkg-buildtrees
           !build/vcpkg-packages
-        key: cmu-build-${{github.workflow}}-${{github.run_number}}
+        key: ${{format('cmu-{0}-{1}-{2}-{3}', github.workflow, env.ImageOS, env.ImageVersion, github.sha)}}
 
     - name: Restore vcpkg
       id: vcpkg-restore
-      if: ${{steps.build-restore.outputs.cache-hit == 'true'}}
+      if: ${{steps.project-restore.outputs.cache-hit == 'true'}}
       uses: actions/cache/restore@v3
       with:
         path: build/vcpkg_installed
@@ -291,7 +303,7 @@ jobs:
         codacy-token: ${{secrets.CODACY_PROJECT_API_TOKEN}}
 
   cleanup:
-    name: Remove Build Environment Cache
+    name: Remove Outdated Caches
     if: ${{always()}}
     runs-on: ubuntu-latest
     needs: [ build-and-test, analyze ]
@@ -299,9 +311,9 @@ jobs:
       actions: write
     
     steps:
-    - name: Remove Build Environment Cache
+    - name: Remove Outdated Caches
       shell: bash
       env:
         GITHUB_TOKEN: ${{github.token}}
       run: |
-        curl -X DELETE -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches?key=cmu-build-$GITHUB_WORKFLOW-$GITHUB_RUN_NUMBER"
+        #curl -X DELETE -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches?key=cmu-build-$GITHUB_WORKFLOW-$GITHUB_RUN_NUMBER"
