@@ -26,11 +26,11 @@ jobs:
         branches=$(curl -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/matching-refs/heads")
         echo $branches
         jq -r '.[] |  .ref  | @json' <<< "$branches" > branches.json
-        echo $branches
+        cat branches.json
 
         caches=$(curl -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches")
         echo $caches
-        caches=$(jq --slurpfile branches branches.json --argjson stamp "$stamp" '.actions_caches | map(select(.ref | IN($branches[]) | not)) | map(.last_accessed_at |= sub("\.\d+Z$", "Z") |= fromdateiso8601) | map(select(.last_accessed_at <= $stamp )) | .[] | [ .id, .key, .ref, (.last_accessed_at | gmtime | strftime("%Y-%m-%d %H:%M:%S") ] | @tsv' <<< "$caches")
+        caches=$(jq --slurpfile branches branches.json --argjson stamp "$stamp" '.actions_caches | map(select(.ref | IN($branches[]) | not)) | map(.last_accessed_at |= sub("\\.\\d+Z$", "Z") |= fromdateiso8601) | map(select(.last_accessed_at <= $stamp )) | .[] | [ .id, .key, .ref, (.last_accessed_at | gmtime | strftime("%Y-%m-%d %H:%M:%S") ] | @tsv' <<< "$caches")
         echo $caches
         while IFS=$'\t' read cache_id cache_key cache_ref cache_last_accessed; do
           if [ -n "$cache_id" ]; then
