@@ -23,7 +23,7 @@ runs:
         call "%CMU_VS_ROOT%\VC\Auxiliary\Build\vcvarsall.bat" %INPUT_ARCH%
         echo ::endgroup::
         set > new.env
-        if %RUNNER_DEBUG% equ 1 (echo ::debug::Environment:) & (echo ::debug::------------) & for /f "usebackq tokens=*" %%f in (`set`) do @echo ::debug::%%f
+        if [%RUNNER_DEBUG%] == [1] (echo ::debug::Environment:) & (echo ::debug::------------) & for /f "usebackq tokens=*" %%f in (`set`) do @echo ::debug::%%f
 
     - name: Detect Changes to Development Environment
       shell: bash
