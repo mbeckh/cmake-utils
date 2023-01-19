@@ -36,6 +36,7 @@ concurrency:
 
 jobs:
   dump_env:
+    runs-on: windows-latest
     steps:
     - shell: cmd
       run: set
