@@ -66,10 +66,10 @@ else()
         endforeach()
     endif()
 
-    if(NOT files)
+    if(NOT args)
         # no files, empty output
         file(WRITE "${OUTPUT}" "")
-        file(WRITE "${DEPFILE}" "${OUTPUT}:")
+        file(WRITE "${INTERMEDIATE_FILE}.d" "${OUTPUT}:")
         return()
     endif()
 
