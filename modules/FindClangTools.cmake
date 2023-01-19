@@ -225,6 +225,14 @@ function(z_clang_tools_deferred tool #[[ [ NAME <name> ] TARGETS <target> ... [ 
         add_dependencies("${tool}" "${tool}-${target}")
 
         unset(sources)
+        unset(results)
+        unset(has_genex)
+
+        # Hook to add additional processing logic
+        if(arg_MAP_CUSTOM)
+            cmake_language(CALL "${arg_MAP_CUSTOM}" "${target}" results)
+        endif()
+
         if(target_unity)
             foreach(source IN LISTS target_sources)
                 string(GENEX_STRIP "${source}" source_no_genex)
@@ -236,14 +244,6 @@ function(z_clang_tools_deferred tool #[[ [ NAME <name> ] TARGETS <target> ... [ 
 
             cmake_language(CALL "${arg_UNITY}" "${target}" OUTPUT "${main_output}" DEPENDS ${sources} ${arg_MAP_DEPENDS} ${arg_REDUCE_DEPENDS})
             continue()
-        endif()
-
-        unset(results)
-        unset(has_genex)
-
-        # Hook to add additional processing logic
-        if(arg_MAP_CUSTOM)
-            cmake_language(CALL "${arg_MAP_CUSTOM}" "${target}" results)
         endif()
 
         if(arg_MAP_INCLUDES)

@@ -113,13 +113,27 @@ function(z_clang_tidy_unity target #[[ OUTPUT <output> [ DEPENDS <dependencies> 
                                -P "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/cat.cmake"
                        DEPENDS ${arg_DEPENDS}
                                "${depends}"
+                               "${clang-tidy_EXE}"
                                "${CMAKE_BINARY_DIR}/.clang-tools/${target}/${config_subdir}compile_commands.json"
                                "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/run-clang-tidy.cmake"
                                "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/cat.cmake"
+                               "${CMAKE_BINARY_DIR}/.clang-tools/${target}/${config_subdir}clang-tidy-checks.arg"
                        DEPFILE "${CMAKE_BINARY_DIR}/.clang-tools/${target}/${config_subdir}clang-tidy.tidy.d"
                        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
                        COMMENT "clang-tidy (${target}): Analyzing"
                        JOB_POOL use_all_cpus
+                       VERBATIM)
+endfunction()
+
+function(z_clang_tidy_checks target results)
+    add_custom_command(OUTPUT "${target_compile_commands_path}clang-tidy-checks.arg"
+                       COMMAND "${CMAKE_COMMAND}"
+                               -D "TARGET=${target}"
+                               -D "FILE=${target_compile_commands_path}clang-tidy-checks.arg"
+                               -P "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/clang-tools/clang-tidy-checks.cmake"
+                       BYPRODUCTS "${target_compile_commands_path}clang-tidy-checks.run-always"
+                       # No dependencies required - runs on each build
+                       COMMENT "Checking clang-tidy overrides"
                        VERBATIM)
 endfunction()
 
@@ -129,15 +143,17 @@ function(clang_tidy #[[ <target> ... ]])
     clang_tools_run(clang-tidy
                     TARGETS ${ARGV}
                     UNITY z_clang_tidy_unity
-                    MAP_COMMAND "@clang-tidy_EXE@"
-                                -p "@target_compile_commands_path@"
-                                "--extra-arg=/clang:-MD"
-                                "--extra-arg=/clang:-MF@output@.d"
-                                "--extra-arg=/clang:-MT@output@"
-                                "--header-filter=.*"
-                                @files@
-                                $<ANGLE-R> "@output@" || "@CMAKE_COMMAND@" -E true
-                    MAP_DEPENDS "@clang-tidy_EXE@"
+                    MAP_CUSTOM  z_clang_tidy_checks
+                    MAP_COMMAND "@CMAKE_COMMAND@"
+                               -D "clang-tidy_EXE=@clang-tidy_EXE@"
+                               -D "COMPILE_COMMANDS_PATH=@target_compile_commands_path@"
+                               -D "FILES=@files@"
+                               -D "OUTPUT=@output@"
+                               -P "@CMAKE_CURRENT_FUNCTION_LIST_DIR@/clang-tools/run-clang-tidy.cmake"
+                    MAP_DEPENDS "@CMAKE_CURRENT_FUNCTION_LIST_DIR@/clang-tools/run-clang-tidy.cmake"
+                                "@clang-tidy_EXE@"
+                                "@target_compile_commands_path@compile_commands.json"
+                                "@target_compile_commands_path@clang-tidy-checks.arg"
                                 ${depends}
                     MAP_DEPFILE
                     MAP_EXTENSION tidy)

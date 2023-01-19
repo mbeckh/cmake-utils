@@ -248,7 +248,21 @@ endif()
 
 if(TOOL STREQUAL "compile")
     set(result_file "${object}")
-elseif(TOOL STREQUAL "clang-tidy")
+elseif(TOOL MATCHES "^clang-tidy(.*)$")
+    set(mode "${CMAKE_MATCH_1}")
+    set(clang_tidy_checks "${binary_dir}/.clang-tools/.clang-tidy-checks")
+    if(mode STREQUAL "-custom-set-config")
+        # separate action to make launch of tool more responsive
+        cmake_path(NATIVE_PATH clang_tidy_checks NORMALIZE clang_tidy_checks_native)
+        execute_process(COMMAND "$ENV{COMSPEC}" /c "start" "clang-tidy Checks Override" "/wait"
+                        "$ENV{COMSPEC}" /c "${CMAKE_CURRENT_LIST_DIR}/set-clang-tidy-config.bat" "${clang_tidy_checks_native}"
+                        COMMAND_ECHO NONE)
+        return()
+    endif()
+    if(mode STREQUAL "-custom" AND EXISTS "${clang_tidy_checks}")
+        file(READ "${clang_tidy_checks}" checks)
+        set(env_cmd "${CMAKE_COMMAND}" -E env "CMU_CLANG_TIDY_CHECKS=${checks}")
+    endif()
     set(result_file ".clang-tools/${target}/${config_subdir}${file}.tidy")
 elseif(TOOL STREQUAL "iwyu")
     set(result_file ".clang-tools/${target}/${config_subdir}${file}.iwyu")
@@ -258,7 +272,7 @@ else()
     message(FATAL_ERROR "Unknown tool: ${TOOL}")
 endif()
 
-execute_process(COMMAND "${CMAKE_COMMAND}" --build --preset "${build_preset}" --target "${result_file}"
+execute_process(COMMAND ${env_cmd} "${CMAKE_COMMAND}" --build --preset "${build_preset}" --target "${result_file}"
                 WORKING_DIRECTORY "${source_dir}"
                 RESULTS_VARIABLE results
                 OUTPUT_VARIABLE output
@@ -284,7 +298,7 @@ file(READ "${binary_dir}/${result_file}" output)
 string(REPLACE ";" "\\;" output "${output}")
 string(REPLACE "\n" ";" output "${output}")
 unset(result)
-if(TOOL STREQUAL "clang-tidy")
+if(TOOL MATCHES "^clang-tidy.*")
     foreach(line IN LISTS output)
         string(REGEX MATCH "^([^ ].+):([0-9]+):([0-9]+): ([^ ]+): (.+) \\[(.+)\\]$" parts "${line}")
         if(parts)

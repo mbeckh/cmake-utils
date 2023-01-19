@@ -51,7 +51,11 @@ Modules for building projects using [CMake](https://cmake.org/).
 -   If CMake variable `CMU_DISABLE_CLANG_TOOLS` is set to `true`, configure will skip detection of clang but retain
     common build settings and vcpkg integration. This can speed up generation of CMake cache in some scenarios if a
     plain build is sufficient.
-    
+
+-   CMake variable `CMU_CLANG_TIDY_CHECKS` is read at _build time_ to modify the set of [checks for clang tidy](clang-tidy-checks.md).
+    The content is passed to clang-tidy as `--checks`. This can be used in the development workflow to reduce the
+    run-time of clang-tidy when fixing a particular warning.
+
 ## Changes to Build
 -   Sets [common build options](options.md) for both local projects and libraries built by vcpkg.
 
@@ -97,7 +101,9 @@ Add one or more external tools within Visual Studio with the following settings:
 -   Command: Path of `scripts/run-clang-tools.bat`.
 
 -   Arguments: `<tool> "$(ItemPath)" "<vcvars>" [ "<cmake>" ]` with
-    -   `tool` set to either `compile`, `clang-tidy`, `iwyu` or `pch`, `compile` runs a build for a single file (which is broken in MSVC as of v16.11 when using precompiled headers).
+    -   `tool` set to either `compile`, `clang-tidy`, `clang-tidy-custom`, `iwyu` or `pch`.
+        -  `compile` runs a build for a single file (which is broken in MSVC at least in v16.11 when using precompiled headers).
+        -  `clang-tidy-custom` runs a clang-tidy but allows entry of custom checks to reduce time required by clang-tidy
     -   `vcvars` set to the full path of a batch script to set the build environment, e.g. `C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat` and
     -   `cmake` optionally set to the full file path of `cmake.exe`. If `cmake` is not provided, `cmake.exe` from the current path is used.
 
