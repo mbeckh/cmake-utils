@@ -304,9 +304,7 @@ jobs:
 
   cleanup:
     name: Clean Caches
-    if: ${{always()}}
     runs-on: ubuntu-latest
-    needs: [ build-and-test, analyze ]
     permissions:
       actions: write
     
