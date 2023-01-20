@@ -34,23 +34,23 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
       with:
-        path: src
+        path: source
+        persist-credentials: false
 
     - name: Restore vcpkg
       id: vcpkg-restore
       uses: actions/cache/restore@v3
       with:
-        path: build/bin/vcpkg_installed
-        key: cmu-vcpkg_installed-${{hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json', '!build/**')}}
+        path: build/vcpkg_installed
+        key: cmu-vcpkg_installed-${{hashFiles(format('source/{0}{1}vcpkg.json', inputs.source-dir, inputs.source-dir && '/' || ''), format('source/{0}{1}vcpkg-configuration.json', inputs.source-dir, inputs.source-dir && '/' || ''))}}
         restore-keys: cmu-vcpkg_installed-
-      
+
     - name: Get vcpkg State
       id: vcpkg-cache
       shell: bash
       run: |
-        echo "hash=${{hashFiles('build/bin/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}" >> $GITHUB_OUTPUT
-        mkdir -p build
-        > build/vcpkg.stamp
+        echo "hash=${{hashFiles('build/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}" >> $GITHUB_OUTPUT
+        > vcpkg.stamp
 
     - name: Setup MSVC Environment
       uses: mbeckh/cmake-utils/msvc-dev-env@v1
@@ -59,21 +59,21 @@ jobs:
       uses: mbeckh/cmake-utils/configure@v1
       with:
         build-root: build
-        source-dir: src${{inputs.source-dir && format('/{0}', inputs.source-dir) || ''}}
-        binary-dir: build/bin
+        source-dir: ${{format('source{0}{1}', inputs.source-dir && '/' || '', inputs.source-dir)}}
+        binary-dir: build
         generator: Ninja
         configuration: Release
         extra-args: -D "CMU_DISABLE_DEBUG_INFORMATION:BOOL=ON" -D "CMU_DISABLE_CLANG_TOOLS:BOOL=ON" ${{inputs.configure-args}}
 
     - name: Check vcpkg Update
       id: vcpkg-check
-      if: ${{always() && steps.vcpkg-restore.outputs.cache-hit == 'true' && steps.vcpkg-cache.outputs.hash != hashFiles('build/bin/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}
+      if: ${{always() && steps.vcpkg-restore.outputs.cache-hit == 'true' && steps.vcpkg-cache.outputs.hash != hashFiles('build/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}
       shell: bash
       env:
         GITHUB_TOKEN: ${{github.token}}
       run: |
         echo "### Updated vckpkg Dependencies" >> $GITHUB_STEP_SUMMARY
-        find build/bin/vcpkg_installed -newer build/vcpkg.stamp -printf '%P\n' >> $GITHUB_STEP_SUMMARY
+        find build/vcpkg_installed -newer vcpkg.stamp -printf '%P\n' >> $GITHUB_STEP_SUMMARY
         curl -X DELETE -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches?key=${{steps.vcpkg-restore.outputs.cache-primary-key}}&ref=$GITHUB_REF"
         echo "updated=true" >> $GITHUB_OUTPUT
 
@@ -81,7 +81,7 @@ jobs:
       if: ${{always() && (steps.vcpkg-restore.outputs.cache-hit != 'true' || steps.vcpkg-check.outputs.updated == 'true')}}
       uses: actions/cache/save@v3
       with:
-        path: build/bin/vcpkg_installed
+        path: build/vcpkg_installed
         key: ${{steps.vcpkg-restore.outputs.cache-primary-key}}
 
     - name: Initialize CodeQL
@@ -90,18 +90,18 @@ jobs:
       with:
         languages: cpp
         queries: security-and-quality
-        source-root: src${{inputs.source-dir && format('/{0}', inputs.source-dir) || ''}}
+        source-root: ${{format('source{0}{1}', inputs.source-dir && '/' || '', inputs.source-dir)}}
 
     - name: Initialize CodeQL for Pull Request
       if: ${{github.event_name == 'pull_request'}}
       uses: github/codeql-action/init@v2
       with:
         languages: cpp
-        source-root: src${{inputs.source-dir && format('/{0}', inputs.source-dir) || ''}}
+        source-root: ${{format('source{0}{1}', inputs.source-dir && '/' || '', inputs.source-dir)}}
 
     - name: Build
       shell: cmd
-      working-directory: build/bin
+      working-directory: build
       env:
         INPUT_BUILD_ARGS: ${{inputs.build-args}}
       run: cmake --build . %INPUT_BUILD_ARGS%
@@ -109,7 +109,7 @@ jobs:
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
       with:
-        checkout_path: ${{github.workspace}}/src
+        checkout_path: ${{github.workspace}}/source
 
     - name: Save Logs
       if: ${{always()}}
@@ -117,6 +117,6 @@ jobs:
       with:
         name: Logs
         path: |
-          build/bin/vcpkg-buildtrees/*/*.log
-          !build/bin/vcpkg-buildtrees/detect_compiler
+          build/vcpkg-buildtrees/*/*.log
+          !build/vcpkg-buildtrees/detect_compiler
         if-no-files-found: ignore

@@ -17,12 +17,13 @@ runs:
         INPUT_ARCH: ${{inputs.arch == 'x64' && 'amd64' || inputs.arch}}
       run: |
         rem Configure Development Environment
-        for /f "usebackq delims=<" %%p in (`vswhere -latest -property installationPath -format value`) do set CMU_VS_ROOT=%%p
+        for /f "usebackq tokens=*" %%p in (`vswhere -latest -property installationPath -format value`) do set CMU_VS_ROOT=%%p
         set > old.env
         echo ::group::Running "%CMU_VS_ROOT%\VC\Auxiliary\Build\vcvarsall.bat" %INPUT_ARCH%
         call "%CMU_VS_ROOT%\VC\Auxiliary\Build\vcvarsall.bat" %INPUT_ARCH%
         echo ::endgroup::
         set > new.env
+        if [%RUNNER_DEBUG%] == [1] (echo ::debug::Environment:) & (echo ::debug::------------) & for /f "usebackq tokens=*" %%f in (`set`) do @echo ::debug::%%f
 
     - name: Detect Changes to Development Environment
       shell: bash
