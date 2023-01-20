@@ -79,7 +79,7 @@ jobs:
       uses: actions/cache/restore@v3
       with:
         path: build/vcpkg_installed
-        key: cmu-vcpkg_installed-${{hashFiles(format('source{0}{1}/vcpkg.json', inputs.source-dir && '/' || '', inputs.source-dir), format('source{0}{1}/vcpkg-configuration.json', inputs.source-dir && '/' || '', inputs.source-dir))}}
+        key: cmu-vcpkg_installed-${{hashFiles(format('source{0}{1}/vcpkg.json', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || ''), format('source{0}{1}/vcpkg-configuration.json', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || ''))}}
         restore-keys: cmu-vcpkg_installed-
 
     - name: Get vcpkg State
@@ -104,7 +104,7 @@ jobs:
     - name: Configure
       uses: mbeckh/cmake-utils/configure@v1
       with:
-        source-dir: ${{format('source{0}{1}', inputs.source-dir && '/' || '', inputs.source-dir)}}
+        source-dir: ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || '')}}
         binary-dir: build
         generator: Ninja Multi-Config
         extra-args: ${{inputs.unity && '-D "CMAKE_UNITY_BUILD:BOOL=ON"' || ''}} ${{!inputs.pch && '-D "CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON"' || ''}} ${{inputs.configure-args}}
@@ -220,7 +220,7 @@ jobs:
       if: matrix.configuration == 'Debug'
       uses: mbeckh/code-quality-actions/coverage@v1
       with:
-        source-dir: ${{format('source{0}{1}', inputs.source-dir && '/' || '', inputs.source-dir)}}
+        source-dir: ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || '')}}
         binary-dir: build
         command: ctest --output-on-failure -C ${{matrix.configuration}} ${{inputs.test-args}}
         codacy-token: ${{secrets.CODACY_PROJECT_API_TOKEN}}

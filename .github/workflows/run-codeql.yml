@@ -42,7 +42,7 @@ jobs:
       uses: actions/cache/restore@v3
       with:
         path: build/vcpkg_installed
-        key: cmu-vcpkg_installed-${{hashFiles(format('source/{0}{1}vcpkg.json', inputs.source-dir, inputs.source-dir && '/' || ''), format('source/{0}{1}vcpkg-configuration.json', inputs.source-dir, inputs.source-dir && '/' || ''))}}
+        key: cmu-vcpkg_installed-${{hashFiles(format('source{0}{1}/vcpkg.json', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || ''), format('source{0}{1}/vcpkg-configuration.json', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || ''))}}
         restore-keys: cmu-vcpkg_installed-
 
     - name: Get vcpkg State
@@ -59,7 +59,7 @@ jobs:
       uses: mbeckh/cmake-utils/configure@v1
       with:
         build-root: build
-        source-dir: ${{format('source{0}{1}', inputs.source-dir && '/' || '', inputs.source-dir)}}
+        source-dir: ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || '')}}
         binary-dir: build
         generator: Ninja
         configuration: Release
@@ -90,14 +90,14 @@ jobs:
       with:
         languages: cpp
         queries: security-and-quality
-        source-root: ${{format('source{0}{1}', inputs.source-dir && '/' || '', inputs.source-dir)}}
+        source-root: ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || '')}}
 
     - name: Initialize CodeQL for Pull Request
       if: ${{github.event_name == 'pull_request'}}
       uses: github/codeql-action/init@v2
       with:
         languages: cpp
-        source-root: ${{format('source{0}{1}', inputs.source-dir && '/' || '', inputs.source-dir)}}
+        source-root: ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || '')}}
 
     - name: Build
       shell: cmd
