@@ -99,13 +99,13 @@ jobs:
         generator: Ninja Multi-Config
         extra-args: ${{inputs.unity && '-D "CMAKE_UNITY_BUILD:BOOL=ON"' || ''}} ${{!inputs.pch && '-D "CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON"' || ''}} ${{inputs.configure-args}}
 
-    - name: Remove Old Project Cache
-      if: ${{always() && steps.project-restore.outputs.cache-hit == 'true'}}
+    - name: Remove Previous Project Cache
+      if: ${{always() && steps.project-restore.outputs.cache-matched-key != ''}}
       shell: bash
       env:
         GITHUB_TOKEN: ${{github.token}}
       run: |
-        curl -X DELETE -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches?key=${{steps.project-restore.outputs.cache-primary-key}}&ref=$GITHUB_REF"
+        curl -X DELETE -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches?key=${{steps.project-restore.outputs.cache-matched-key}}&ref=$GITHUB_REF"
 
     - name: Cache Project Environment
       if: ${{always()}}
@@ -303,7 +303,7 @@ jobs:
         codacy-token: ${{secrets.CODACY_PROJECT_API_TOKEN}}
 
   cleanup:
-    name: Remove Outdated Caches
+    name: Clean Caches
     if: ${{always()}}
     runs-on: ubuntu-latest
     needs: [ build-and-test, analyze ]
@@ -311,9 +311,28 @@ jobs:
       actions: write
     
     steps:
-    - name: Remove Outdated Caches
+    - name: Remove Caches of Deleted Branches
       shell: bash
       env:
         GITHUB_TOKEN: ${{github.token}}
       run: |
-        #curl -X DELETE -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches?key=cmu-build-$GITHUB_WORKFLOW-$GITHUB_RUN_NUMBER"
+        stamp=$(jq -n -r 'now')
+        branches=$(curl -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/matching-refs/heads")
+        if [[ $RUNNER_DEBUG -eq 1 ]]; then echo "::debug::$branches"; fi
+        jq -r '.[] |  .ref  | @json' <<< "$branches" > branches.json
+
+        caches=$(curl -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches")
+        if [[ $RUNNER_DEBUG -eq 1 ]]; then echo "::debug::$caches"; fi
+        caches=$(jq -r --slurpfile branches branches.json --argjson stamp "$stamp" '.actions_caches | map(select(.ref | IN($branches[]) | not)) | map(.last_accessed_at |= (sub(".\\d+Z$"; "Z") | fromdateiso8601)) | map(select(.last_accessed_at <= $stamp )) | to_entries[] | [ .key, .value.id, .value.key, .value.ref, (.value.last_accessed_at | gmtime | strftime("%Y-%m-%d %H:%M:%S")) ] | @tsv' <<< "$caches")
+        while IFS=$'\t' read sequence cache_id cache_key cache_ref cache_last_accessed; do
+          if [[ -n $sequence ]]; then
+            if [[ $sequence -eq 0 ]]; then
+              echo "## Clean Caches" >> $GITHUB_STEP_SUMMARY
+              echo "| Branch | Key | Last Accessed At |" >> $GITHUB_STEP_SUMMARY
+              echo "| --- | --- | --- |" >> $GITHUB_STEP_SUMMARY
+            fi
+            echo "Removing cache $cache_key of $cache_ref (last access: $cache_last_accessed)"
+            echo "| $cache_ref | $cache_key | $cache_last_accessed |" >> $GITHUB_STEP_SUMMARY
+            curl -X DELETE -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches/${cache_id}
+          fi
+        done <<< "$caches"
