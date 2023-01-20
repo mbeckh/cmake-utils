@@ -331,6 +331,6 @@ jobs:
             fi
             echo "Removing cache $cache_key of $cache_ref (last access: $cache_last_accessed)"
             echo "| $cache_ref | $cache_key | $cache_last_accessed |" >> $GITHUB_STEP_SUMMARY
-            curl -X DELETE -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches/${cache_id}
+            curl -X DELETE -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches/${cache_id}"
           fi
         done <<< "$caches"
