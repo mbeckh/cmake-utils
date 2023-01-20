@@ -29,7 +29,7 @@ on:
         required: true
 
 permissions: {}
-  
+
 concurrency: 
   group: run-build-${{github.workflow}}-${{github.event_name}}-${{github.ref}}
   cancel-in-progress: true
@@ -65,7 +65,7 @@ jobs:
         path: build/vcpkg_installed
         key: cmu-vcpkg_installed-${{hashFiles(format('source{0}{1}/vcpkg.json', inputs.source-dir && '/' || '', inputs.source-dir), format('source{0}{1}/vcpkg-configuration.json', inputs.source-dir && '/' || '', inputs.source-dir))}}
         restore-keys: cmu-vcpkg_installed-
-      
+
     - name: Checkout
       uses: actions/checkout@v3
       with:
@@ -78,7 +78,7 @@ jobs:
       run: |
         echo "hash=${{hashFiles('build/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}" >> $GITHUB_OUTPUT
         > vcpkg.stamp
-    
+
     - name: Setup MSVC Environment
       if: ${{steps.project-restore.outputs.cache-matched-key == ''}}
       uses: mbeckh/cmake-utils/msvc-dev-env@v1
@@ -172,7 +172,7 @@ jobs:
           !build/vcpkg-buildtrees
           !build/vcpkg-packages
         key: ${{format('cmu-{0}-{1}-{2}-{3}', github.workflow, env.ImageOS, env.ImageVersion, github.sha)}}
- 
+
     - name: Restore vcpkg
       id: vcpkg-restore
       if: ${{steps.project-restore.outputs.cache-hit == 'true'}}
@@ -220,7 +220,7 @@ jobs:
       with:
         files: build/coverage-*.xml
         fail_ci_if_error: true
-        
+
     - name: Save Test Logs
       if: ${{always()}}
       uses: actions/upload-artifact@v3
@@ -228,7 +228,7 @@ jobs:
         name: ${{matrix.configuration}}-Test-Logs
         path: build/Testing/**/*.log
         if-no-files-found: ignore
-  
+
   analyze:
     name: Analyze
     runs-on: windows-latest
@@ -289,12 +289,12 @@ jobs:
         name: ${{matrix.configuration}}-Analyze-Logs
         path: build/${{matrix.configuration}}/clang-tidy-*.log
         if-no-files-found: ignore
-  
+
   completion:
     name: Send Completion Message
     runs-on: ubuntu-latest
     needs: analyze
-    
+
     steps:
     - name: Report
       uses: mbeckh/code-quality-actions/report@v1
@@ -307,7 +307,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       actions: write
-    
+
     steps:
     - name: Remove Caches of Deleted Branches
       shell: bash
