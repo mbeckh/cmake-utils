@@ -89,15 +89,17 @@ jobs:
         echo "hash=${{hashFiles('build/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}" >> $GITHUB_OUTPUT
         > vcpkg.stamp
 
-    - name: Setup MSVC Environment
-      if: ${{steps.project-restore.outputs.cache-matched-key == ''}}
-      uses: mbeckh/cmake-utils/msvc-dev-env@v1
+    - name: Restore MSVC Environment
+      id: msvc-restore
+      if: ${{steps.project-restore.outputs.cache-matched-key != ''}}
+      continue-on-error: true
+      uses: mbeckh/cmake-utils/env-restore@v1
       with:
         env-file: dev.env
 
-    - name: Restore MSVC Environment
-      if: ${{steps.project-restore.outputs.cache-matched-key != ''}}
-      uses: mbeckh/cmake-utils/env-restore@v1
+    - name: Setup MSVC Environment
+      if: ${{steps.project-restore.outputs.cache-matched-key == '' || steps.msvc-restore.outcome == 'failure'}}
+      uses: mbeckh/cmake-utils/msvc-dev-env@v1
       with:
         env-file: dev.env
 
