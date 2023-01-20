@@ -30,6 +30,13 @@ jobs:
       packages: write
       security-events: write
 
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        path: source
+        persist-credentials: false
+
     - name: Restore vcpkg
       id: vcpkg-restore
       uses: actions/cache/restore@v3
@@ -37,12 +44,6 @@ jobs:
         path: build/vcpkg_installed
         key: cmu-vcpkg_installed-${{hashFiles(format('source/{0}{1}vcpkg.json', inputs.source-dir, inputs.source-dir && '/' || ''), format('source/{0}{1}vcpkg-configuration.json', inputs.source-dir, inputs.source-dir && '/' || ''))}}
         restore-keys: cmu-vcpkg_installed-
-
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      with:
-        path: source
-        persist-credentials: false
 
     - name: Get vcpkg State
       id: vcpkg-cache
