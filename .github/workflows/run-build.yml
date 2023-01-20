@@ -50,7 +50,7 @@ jobs:
     - name: Get Image Version
       id: image
       shell: cmd
-      run: (echo os=%ImageOs%) & (echo version=%ImageVersion%) >> %GITHUB_OUTPUT%
+      run: ((echo os=%ImageOs%) & (echo version=%ImageVersion%)) >> %GITHUB_OUTPUT%
 
     - name: Restore Project Environment (Source and Build)
       id: project-restore
@@ -63,8 +63,10 @@ jobs:
           !build/vcpkg_installed
           !build/vcpkg-buildtrees
           !build/vcpkg-packages
-        key: ${{format('cmu-{0}-{1}-{2}-{3}', github.workflow, env.ImageOS, env.ImageVersion, github.sha)}}
-        restore-keys: ${{format('cmu-{0}-{1}-{2}-', github.workflow, steps.image.outputs.os, steps.image.outputs.version)}}
+        key: ${{format('cmu-{0}-{1}-{2}-{3}-{4}', github.workflow, steps.image.outputs.os, steps.image.outputs.version, github.event_name, github.run_number)}}
+        restore-keys: |
+          ${{format('cmu-{0}-{1}-{2}-{3}-', github.workflow, steps.image.outputs.os, steps.image.outputs.version, github.event_name)}}
+          ${{format('cmu-{0}-{1}-{2}-', github.workflow, steps.image.outputs.os, steps.image.outputs.version)}}
 
     - name: Checkout
       uses: actions/checkout@v3
@@ -108,7 +110,8 @@ jobs:
         extra-args: ${{inputs.unity && '-D "CMAKE_UNITY_BUILD:BOOL=ON"' || ''}} ${{!inputs.pch && '-D "CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON"' || ''}} ${{inputs.configure-args}}
 
     - name: Remove Previous Project Cache
-      if: ${{always() && steps.project-restore.outputs.cache-matched-key != ''}}
+      # same event type only
+      if: ${{always() && startsWith(steps.project-restore.outputs.cache-matched-key, format('cmu-{0}-{1}-{2}-{3}-', github.workflow, steps.image.outputs.os, steps.image.outputs.version, github.event_name))}}
       shell: bash
       env:
         GITHUB_TOKEN: ${{github.token}}
