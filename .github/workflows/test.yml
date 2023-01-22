@@ -29,6 +29,19 @@ jobs:
       packages: write
     
     steps:
+    - name: Get Image Version
+      id: image
+      shell: cmd
+      run: ((echo os=%ImageOs%) & (echo version=%ImageVersion%)) >> %GITHUB_OUTPUT%
+      
+    - name: Restore Common vcpkg Tools
+      id: vcpkg-tools-restore
+      uses: actions/cache/restore@v3
+      with:
+        path: |
+          vcpkg-downloads/tools/powershell-core-*
+        key: cmu-vcpkg_tools-${{steps.image.outputs.os}}-${{steps.image.outputs.version}}
+
     - name: Checkout
       uses: actions/checkout@v3
 
@@ -46,6 +59,21 @@ jobs:
         configuration: ${{!matrix.multi-config && matrix.configuration || ''}}
         configurations: ${{matrix.multi-config && 'Debug;Release' || ''}}
         extra-args: ${{matrix.unity && '-D "CMAKE_UNITY_BUILD:BOOL=ON" -D "CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON"' || ''}}
+        
+    - name: Check Caching of Common vcpkg Tools
+      id: vcpkg-tools-check
+      if: ${{always() && steps.vcpkg-tools-restore.outputs.cache-hit != 'true'}}
+      shell: bash
+      run:
+        find vcpkg-downloads/tools -maxdepth 1 -type d -name 'powershell-core-*' -printf "found=1\n" -quit >> $GITHUB_OUTPUT
+
+    - name: Cache Common vcpkg Tools
+      if: ${{always() && steps.vcpkg-tools-restore.outputs.cache-hit != 'true' && steps.vcpkg-tools-check.outputs.found == '1'}}
+      uses: actions/cache/save@v3
+      with:
+        path: |
+          vcpkg-downloads/tools/powershell-core-*
+        key: ${{steps.vcpkg-tools-restore.outputs.cache-primary-key}}
         
     - name: Build
       shell: cmd
