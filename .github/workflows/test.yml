@@ -47,14 +47,14 @@ jobs:
       id: msvc-restore
       if: ${{steps.tools-restore.outputs.cache-hit == 'true'}}
       continue-on-error: true
-      uses: mbeckh/cmake-utils/env-restore@v1
+      uses: ./source/env-restore
       with:
         env-file: msvc.env
 
     - name: Setup MSVC Environment
       id: msvc-setup
       if: ${{steps.msvc-restore.outcome != 'success'}}
-      uses: mbeckh/cmake-utils/msvc-dev-env@v1
+      uses: ./source/msvc-dev-env
       with:
         env-file: msvc.env
         
@@ -79,7 +79,7 @@ jobs:
         > vcpkg.stamp
 
     - name: Configure
-      uses: ./configure
+      uses: ./source/configure
       with:
         preset: ${{matrix.preset}}
         source-dir: source/test
