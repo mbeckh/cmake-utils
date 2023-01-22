@@ -12,6 +12,6 @@ jobs:
   run-trial-action:
     name: Run Trial Action
     runs-on: ubuntu-latest
-  steps:
-  - name: Call Trial Action
-    uses: ./.github/actions/test
+    steps:
+    - name: Call Trial Action
+      uses: ./.github/actions/test
