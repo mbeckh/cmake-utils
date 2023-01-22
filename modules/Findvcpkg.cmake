@@ -251,7 +251,7 @@ function(z_vcpkg_run name source_dir)
 
     unset(args)
 
-    if(DEFINED VCPKG_HOST_TRIPLET AND VCPKG_HOST_TRIPLET STREQUAL "")
+    if(DEFINED VCPKG_HOST_TRIPLET AND NOT VCPKG_HOST_TRIPLET STREQUAL "")
         list(APPEND args "--host-triplet=${VCPKG_HOST_TRIPLET}")
     endif()
 
