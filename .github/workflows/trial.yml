@@ -1,0 +1,17 @@
+name: Trial
+
+on:
+  push:
+    branches: [ test ]
+    
+concurrency:
+  group: Trial
+  cancel-in-progress: true
+
+jobs:
+  run-trial-action:
+    name: Run Trial Action
+    runs-on: ubuntu-latest
+  steps:
+  - name: Call Trial Action
+    uses ./.github/actions/test
