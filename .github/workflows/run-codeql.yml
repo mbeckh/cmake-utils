@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       source-dir:
-        description: The CMake source directory (optional, defaults to current directory)
+        description: The CMake source directory (optional, defaults to current directory).
         type: string
         default: .
       configure-args:
@@ -31,13 +31,26 @@ jobs:
       security-events: write
 
     steps:
+    - name: Get Image Version
+      id: image
+      shell: cmd
+      run: ((echo os=%ImageOs%) & (echo version=%ImageVersion%)) >> %GITHUB_OUTPUT%
+      
+    - name: Restore Common vcpkg Tools
+      id: vcpkg-tools-restore
+      uses: actions/cache/restore@v3
+      with:
+        path: |
+          vcpkg-downloads/tools/powershell-core-*
+        key: cmu-vcpkg_tools-${{steps.image.outputs.os}}-${{steps.image.outputs.version}}
+
     - name: Checkout repository
       uses: actions/checkout@v3
       with:
         path: source
         persist-credentials: false
 
-    - name: Restore vcpkg
+    - name: Restore vcpkg Packages
       id: vcpkg-restore
       uses: actions/cache/restore@v3
       with:
@@ -65,7 +78,22 @@ jobs:
         configuration: Release
         extra-args: -D "CMU_DISABLE_DEBUG_INFORMATION:BOOL=ON" -D "CMU_DISABLE_CLANG_TOOLS:BOOL=ON" ${{inputs.configure-args}}
 
-    - name: Check vcpkg Update
+    - name: Check Caching of Common vcpkg Tools
+      id: vcpkg-tools-check
+      if: ${{always() && steps.vcpkg-tools-restore.outputs.cache-hit != 'true'}}
+      shell: bash
+      run:
+        find vcpkg-downloads/tools -maxdepth 1 -type d -name 'powershell-core-*' -printf "found=1\n" -quit >> $GITHUB_OUTPUT
+
+    - name: Cache Common vcpkg Tools
+      if: ${{always() && steps.vcpkg-tools-restore.outputs.cache-hit != 'true' && steps.vcpkg-tools-check.outputs.found == '1'}}
+      uses: actions/cache/save@v3
+      with:
+        path: |
+          vcpkg-downloads/tools/powershell-core-*
+        key: ${{steps.vcpkg-tools-restore.outputs.cache-primary-key}}
+
+    - name: Check and Prepare vcpkg Packages Update
       id: vcpkg-check
       if: ${{always() && steps.vcpkg-restore.outputs.cache-hit == 'true' && steps.vcpkg-cache.outputs.hash != hashFiles('build/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}
       shell: bash
@@ -77,7 +105,7 @@ jobs:
         curl -X DELETE -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches?key=${{steps.vcpkg-restore.outputs.cache-primary-key}}&ref=$GITHUB_REF"
         echo "updated=true" >> $GITHUB_OUTPUT
 
-    - name: Cache vcpkg
+    - name: Cache vcpkg Packages
       if: ${{always() && (steps.vcpkg-restore.outputs.cache-hit != 'true' || steps.vcpkg-check.outputs.updated == 'true')}}
       uses: actions/cache/save@v3
       with:
