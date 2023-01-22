@@ -369,9 +369,14 @@ jobs:
         GITHUB_TOKEN: ${{github.token}}
       run: |
         stamp=$(jq -n -r 'now')
+        # Heads
         branches=$(curl -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/matching-refs/heads")
         if [[ $RUNNER_DEBUG -eq 1 ]]; then echo "::debug::$branches"; fi
         jq -r '.[] |  .ref  | @json' <<< "$branches" > branches.json
+        # Pull Requests
+        branches=$(curl -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/matching-refs/pull")
+        if [[ $RUNNER_DEBUG -eq 1 ]]; then echo "::debug::$branches"; fi
+        jq -r '.[] |  .ref  | @json' <<< "$branches" >> branches.json
 
         caches=$(curl -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches")
         if [[ $RUNNER_DEBUG -eq 1 ]]; then echo "::debug::$caches"; fi
