@@ -14,4 +14,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Call Trial Action
-      uses: ./.github/actions/test
+      uses: mbeckh/cmake-utils/.github/actions/test@test
