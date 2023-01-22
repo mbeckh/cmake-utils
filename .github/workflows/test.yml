@@ -34,6 +34,19 @@ jobs:
       shell: cmd
       run: ((echo os=%ImageOs%) & (echo version=%ImageVersion%)) >> %GITHUB_OUTPUT%
       
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        path: source
+
+    - name: Restore vcpkg Packages
+      id: vcpkg-restore
+      uses: actions/cache/restore@v3
+      with:
+        path: build/vcpkg_installed
+        key: cmu-vcpkg_installed-${{hashFiles(format('source{0}{1}/vcpkg.json', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || ''), format('source{0}{1}/vcpkg-configuration.json', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || ''))}}
+        restore-keys: cmu-vcpkg_installed-
+
     - name: Restore Tools
       id: tools-restore
       uses: actions/cache/restore@v3
@@ -42,6 +55,13 @@ jobs:
           msvc.env
           vcpkg-downloads/tools/powershell-core-*
         key: cmu-tools-${{steps.image.outputs.os}}-${{steps.image.outputs.version}}
+
+    - name: Get vcpkg State
+      id: vcpkg-cache
+      shell: bash
+      run: |
+        echo "hash=${{hashFiles('build/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}" >> $GITHUB_OUTPUT
+        > vcpkg.stamp
 
     - name: Restore MSVC Environment
       id: msvc-restore
@@ -58,26 +78,6 @@ jobs:
       with:
         env-file: msvc.env
         
-    - name: Checkout
-      uses: actions/checkout@v3
-      with:
-        path: source
-
-    - name: Restore vcpkg Packages
-      id: vcpkg-restore
-      uses: actions/cache/restore@v3
-      with:
-        path: build/vcpkg_installed
-        key: cmu-vcpkg_installed-${{hashFiles(format('source{0}{1}/vcpkg.json', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || ''), format('source{0}{1}/vcpkg-configuration.json', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || ''))}}
-        restore-keys: cmu-vcpkg_installed-
-
-    - name: Get vcpkg Packages State
-      id: vcpkg-cache
-      shell: bash
-      run: |
-        echo "hash=${{hashFiles('build/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}" >> $GITHUB_OUTPUT
-        > vcpkg.stamp
-
     - name: Configure
       uses: ./source/configure
       with:
