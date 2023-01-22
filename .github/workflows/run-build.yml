@@ -52,30 +52,6 @@ jobs:
       shell: cmd
       run: ((echo os=%ImageOs%) & (echo version=%ImageVersion%)) >> %GITHUB_OUTPUT%
 
-    - name: Restore Tools
-      id: tools-restore
-      uses: actions/cache/restore@v3
-      with:
-        path: |
-          msvc.env
-          vcpkg-downloads/tools/powershell-core-*
-        key: cmu-tools-${{steps.image.outputs.os}}-${{steps.image.outputs.version}}
-
-    - name: Restore MSVC Environment
-      id: msvc-restore
-      if: ${{steps.tools-restore.outputs.cache-hit == 'true'}}
-      continue-on-error: true
-      uses: mbeckh/cmake-utils/env-restore@v1
-      with:
-        env-file: msvc.env
-
-    - name: Setup MSVC Environment
-      id: msvc-setup
-      if: ${{steps.msvc-restore.outcome != 'success'}}
-      uses: mbeckh/cmake-utils/msvc-dev-env@v1
-      with:
-        env-file: msvc.env
-
     - name: Restore Source and Build Directories
       id: project-restore
       uses: actions/cache/restore@v3
@@ -106,12 +82,36 @@ jobs:
         key: cmu-vcpkg_installed-${{hashFiles(format('source{0}{1}/vcpkg.json', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || ''), format('source{0}{1}/vcpkg-configuration.json', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || ''))}}
         restore-keys: cmu-vcpkg_installed-
 
-    - name: Get vcpkg Packages State
+    - name: Restore Tools
+      id: tools-restore
+      uses: actions/cache/restore@v3
+      with:
+        path: |
+          msvc.env
+          vcpkg-downloads/tools/powershell-core-*
+        key: cmu-tools-${{steps.image.outputs.os}}-${{steps.image.outputs.version}}
+
+    - name: Get vcpkg State
       id: vcpkg-cache
       shell: bash
       run: |
         echo "hash=${{hashFiles('build/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}" >> $GITHUB_OUTPUT
         > vcpkg.stamp
+
+    - name: Restore MSVC Environment
+      id: msvc-restore
+      if: ${{steps.tools-restore.outputs.cache-hit == 'true'}}
+      continue-on-error: true
+      uses: mbeckh/cmake-utils/env-restore@v1
+      with:
+        env-file: msvc.env
+
+    - name: Setup MSVC Environment
+      id: msvc-setup
+      if: ${{steps.msvc-restore.outcome != 'success'}}
+      uses: mbeckh/cmake-utils/msvc-dev-env@v1
+      with:
+        env-file: msvc.env
 
     - name: Configure
       uses: mbeckh/cmake-utils/configure@v1
