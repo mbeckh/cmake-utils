@@ -242,7 +242,7 @@ jobs:
     - name: Restore MSVC Environment
       uses: mbeckh/cmake-utils/env-restore@v1
       with:
-        env-file: msvc.env
+        env-file: project.env
 
     - name: Build
       shell: cmd
@@ -322,7 +322,7 @@ jobs:
     - name: Restore MSVC Environment
       uses: mbeckh/cmake-utils/env-restore@v1
       with:
-        env-file: .cmake-utils-msvc-env
+        env-file: project.env
 
     - name: Analyze
       shell: cmd
