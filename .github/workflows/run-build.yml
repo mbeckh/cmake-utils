@@ -63,10 +63,18 @@ jobs:
           !build/vcpkg_installed
           !build/vcpkg-buildtrees
           !build/vcpkg-packages
-        key: ${{format('cmu-{0}-{1}-{2}-{3}-{4}', github.workflow, steps.image.outputs.os, steps.image.outputs.version, github.event_name, github.run_number)}}
+        key: cmu-${{github.workflow}}-${{steps.image.outputs.os}}-${{steps.image.outputs.version}}-${{github.event_name}}-${{github.run_number}}
         restore-keys: |
-          ${{format('cmu-{0}-{1}-{2}-{3}-', github.workflow, steps.image.outputs.os, steps.image.outputs.version, github.event_name)}}
-          ${{format('cmu-{0}-{1}-{2}-', github.workflow, steps.image.outputs.os, steps.image.outputs.version)}}
+          cmu-${{github.workflow}}-${{steps.image.outputs.os}}-${{steps.image.outputs.version}}-${{github.event_name}}
+          cmu-${{github.workflow}}-${{steps.image.outputs.os}}-${{steps.image.outputs.version}}
+
+    - name: Restore Common vpkg Tools
+      id: vcpkg-tools-restore
+      uses: actions/cache/restore@v3
+      with:
+        path: |
+          vcpkg-downloads/tools/powershell-core-*
+        key: cmu-vcpkg_tools-${{steps.image.outputs.os}}-${{steps.image.outputs.version}}
 
     - name: Checkout
       uses: actions/checkout@v3
@@ -110,6 +118,20 @@ jobs:
         binary-dir: build
         generator: Ninja Multi-Config
         extra-args: ${{inputs.unity && '-D "CMAKE_UNITY_BUILD:BOOL=ON"' || ''}} ${{!inputs.pch && '-D "CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON"' || ''}} ${{inputs.configure-args}}
+
+    - name: Check Caching of Common vcpkg Tools
+      id: vcpkg-tools-check
+      shell: bash
+      run:
+        find vcpkg-downloads/tools -maxdepth 1 -type d -name 'powershell-core-*' -printf "found=1\n" -quit >> $GITHUB_OUTPUT
+
+    - name: Cache Common vpkg Tools
+      if: ${{always() && steps.vcpkg-tools-check.outputs.found == '1'}}
+      uses: actions/cache/save@v3
+      with:
+        path: |
+          vcpkg-downloads/tools/powershell-core-*
+        key: ${{steps.vcpkg-tools-restore.cache-primary-key}}
 
     - name: Remove Previous Project Cache
       # same event type only
