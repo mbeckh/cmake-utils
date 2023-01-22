@@ -132,7 +132,7 @@ jobs:
       with:
         path: |
           vcpkg-downloads/tools/powershell-core-*
-        key: ${{steps.vcpkg-tools-restore.cache-primary-key}}
+        key: ${{steps.vcpkg-tools-restore.outputs.cache-primary-key}}
 
     - name: Remove Previous Project Cache
       # same event type only
