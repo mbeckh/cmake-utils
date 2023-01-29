@@ -61,12 +61,13 @@ jobs:
       env:
         GITHUB_TOKEN: ${{github.token}}
       run: |
-        curl -L --no-progress-meter --create-dirs -o "cmake-utils-$GITHUB_WORKFLOW_SHA.tar.gz" \
+        curl -L --no-progress-meter -o "cmake-utils-$GITHUB_WORKFLOW_SHA.tar.gz" \
              -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
              "$GITHUB_API_URL/repos/mbeckh/cmake-utils/tarball/$GITHUB_WORKFLOW_SHA"
+        mkdir cmake-utils
         tar -x -v -f "cmake-utils-$GITHUB_WORKFLOW_SHA.tar.gz" -C cmake-utils \
             --strip-components=1 --show-transformed-names --anchored --wildcards --no-wildcards-match-slash \
-            '*/.github/actions' '*/configure' '*/modules' '*/msvc-dev-env' '*/Toolchain.cmake'
+            '*/configure' '*/modules' '*/msvc-dev-env' '*/Toolchain.cmake'
 
     - name: 'Actions: Cache'
       if: ${{steps.actions-restore.outputs.cache-hit != 'true'}}
