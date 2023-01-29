@@ -512,9 +512,9 @@ jobs:
         jq -r '.[] | .ref | @json' branches.json > branch-names.json
 
         load_paged pulls.json "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pulls?state=open"
-        #jq -r '.[] | .ref | @json' pulls.json > branch-names.json
+        #jq -r '.[] | .number | "refs/pull/" + . + "/merge" | @json' pulls.json > branch-names.json
 
-        load_paged caches.json "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches?per_page=10"
+        load_paged caches.json "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches"
 
         if [[ 1 == 1 || $RUNNER_DEBUG -eq 1 ]]; then
             echo "::group::$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/matching-refs/heads"
