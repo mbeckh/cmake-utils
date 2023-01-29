@@ -15,19 +15,205 @@ concurrency:
 jobs:
   warm-up:
     name: Warm-up Caches
-    uses: ./.github/workflows/run-build.yml
-    with:
-      source-dir: test
-      pch: false
-      configure-args: -D "CMU_DISABLE_CLANG_TOOLS:BOOL=ON"
-      build-and-test: false
-      analyze: false
-      clean-caches: false
-    secrets: inherit
+    runs-on: windows-latest
     permissions:
       actions: write
       contents: read
       packages: write
+
+    # Actions: Load
+    - name: 'Actions: Restore'
+      id: actions-restore
+      uses: actions/cache/restore@v3
+      with:
+        path: cmake-utils
+        key: cmu-cmake-utils-${{github.workflow_sha}}
+
+    - name: 'Actions: Load'
+      if: ${{steps.actions-restore.outputs.cache-hit != 'true'}}
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{github.token}}
+      run: |
+        curl -L --no-progress-meter -o "cmake-utils-$GITHUB_WORKFLOW_SHA.tar.gz" \
+             -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
+             "$GITHUB_API_URL/repos/mbeckh/cmake-utils/tarball/$GITHUB_WORKFLOW_SHA"
+        mkdir cmake-utils
+        tar -x -v -f "cmake-utils-$GITHUB_WORKFLOW_SHA.tar.gz" -C cmake-utils \
+            --strip-components=1 --show-transformed-names --exclude='*.md' --wildcards \
+            '*/configure' '*/modules' '*/msvc-dev-env' '*/Toolchain.cmake' \
+
+    - name: 'Actions: Cache'
+      if: ${{steps.actions-restore.outputs.cache-hit != 'true'}}
+      uses: actions/cache/save@v3
+      with:
+        path: cmake-utils
+        key: ${{steps.actions-restore.outputs.cache-primary-key}}
+
+    # Source: Load
+    - name: 'Source: Restore'
+      id: source-restore
+      uses: actions/cache/restore@v3
+      with:
+        path: source
+        key: cmu-source-${{github.sha}}
+        restore-keys: cmu-source-
+
+    - name: 'Source: Checkout'
+      if: ${{steps.source-restore.outputs.cache-hit != 'true'}}
+      uses: actions/checkout@v3
+      with:
+        path: source
+        persist-credentials: false
+
+    - name: 'Source: Remove Cache'
+      if: ${{steps.source-restore.outputs.cache-hit != 'true' && steps.source-restore.outputs.cache-matched-key != ''}}
+      shell: bash
+      env:
+        SOURCE_CACHE_KEY: ${{steps.source-restore.outputs.cache-matched-key}}
+        GITHUB_TOKEN: ${{github.token}}
+      run: |
+        curl --get -X DELETE --no-progress-meter \
+             -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
+             --data-urlencode "key=$SOURCE_CACHE_KEY" --data-urlencode "ref=$GITHUB_REF" \
+             "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches"
+
+    - name: 'Source: Cache'
+      if: ${{steps.source-restore.outputs.cache-hit != 'true'}}
+      uses: actions/cache/save@v3
+      with:
+        path: source
+        key: ${{steps.source-restore.outputs.cache-primary-key}}
+
+    # Build Environment: Load
+    - name: Image Version
+      id: image
+      shell: cmd
+      run: ((echo os=%ImageOs%) & (echo version=%ImageVersion%)) >> %GITHUB_OUTPUT%
+
+    - name: 'Tools: Restore'
+      id: tools-restore
+      uses: actions/cache/restore@v3
+      with:
+        path: |
+          cmake-utils/.msvc.env
+          vcpkg-downloads/tools/powershell-core-*
+        key: cmu-tools-${{steps.image.outputs.os}}-${{steps.image.outputs.version}}
+
+    - name: 'vcpkg Packages: Restore'
+      id: vcpkg-restore
+      uses: actions/cache/restore@v3
+      with:
+        path: build/vcpkg_installed
+        key: >
+          cmu-vcpkg_installed-${{hashFiles(
+            format('source{0}{1}/vcpkg.json',
+              inputs.source-dir != '.' && inputs.source-dir && '/' || '',
+              inputs.source-dir != '.' && inputs.source-dir || ''
+            ),
+            format('source{0}{1}/vcpkg-configuration.json',
+              inputs.source-dir != '.' && inputs.source-dir && '/' || '',
+              inputs.source-dir != '.' && inputs.source-dir || ''
+            ))}}
+        restore-keys: cmu-vcpkg_installed-
+
+    - name: 'MSVC Environment: Restore'
+      id: tools-state
+      shell: bash
+      run: |
+        echo "vcpkg-hash=${{hashFiles('build/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}" >> $GITHUB_OUTPUT
+        > cmake-utils/.tools.stamp
+        if [[ -f cmake-utils/.msvc.env ]]; then
+          cat cmake-utils/.msvc.env >> $GITHUB_ENV 
+          echo "msvc-restored=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: 'MSVC Environment: Setup'
+      id: msvc-setup
+      if: ${{steps.tools-state.outputs.msvc-restored != 'true'}}
+      uses: ./cmake-utils/msvc-dev-env
+      with:
+        env-file: cmake-utils/.msvc.env
+
+    # Install vcpkg
+    - name: 'vcpkg: Install'
+      id: configure
+      shell: cmd
+      env:
+        GITHUB_TOKEN: ${{github.token}}
+      run: |
+        nuget sources Add -Name "GitHub" -Source "https://nuget.pkg.github.com/%GITHUB_REPOSITORY_OWNER%/index.json" -UserName "%GITHUB_REPOSITORY_OWNER%" -Password "%GITHUB_TOKEN%" -StorePasswordInClearText -NonInteractive
+        nuget setapikey "%GITHUB_TOKEN%" -Source "https://nuget.pkg.github.com/%GITHUB_REPOSITORY_OWNER%/index.json" -NonInteractive
+        set BUILD_ROOT=%GITHUB_WORKSPACE%
+        set VCPKG_DOWNLOADS=%BUILD_ROOT%\vcpkg-downloads
+        set VCPKG_BINARY_SOURCES=clear;nuget,GitHub,readwrite
+        %VCPKG_INSTALLATION_ROOT%\vcpkg.exe install --dry-run ^
+          --vcpkg-root=%VCPKG_INSTALLATION_ROOT% --x-wait-for-lock --feature-flags=versions,registries,binarycaching ^
+          --triplet=x64-windows-static --host-triplet=x64-windows-static --overlay-triplets=%GITHUB_WORKSPACE%\cmake-utils\modules\triplets ^
+          --x-manifest-root=%GITHUB_WORKSPACE%\source\test --x-install-root=%BUILD_ROOT%\build\vcpkg_installed ^
+          --x-buildtrees-root=%BUILD_ROOT%\build\vcpkg-buildtrees --x-packages-root=%BUILD_ROOT%\build\vcpkg-packages
+        exit 1
+
+    # Build Environment: Cache
+    - name: 'Tools: Check for Updates'
+      id: tools-check
+      if: ${{always() && steps.configure.outcome != 'skipped' && steps.tools-restore.outputs.cache-matched-key != ''}}
+      shell: bash
+      env:
+        TOOLS_CACHE_KEY: ${{steps.tools-restore.outputs.cache-matched-key}}
+        GITHUB_TOKEN: ${{github.token}}
+      run: |
+        if [[ cmake-utils/.msvc.env -nt cmake-utils/.tools.stamp \
+              || -d vcpkg-downloads/tools \
+                 && $(find vcpkg-downloads/tools -maxdepth 1 -type d -name 'powershell-core-*' -newer cmake-utils/.tools.stamp -printf "1" -quit) == 1 ]]; then
+          curl --get -X DELETE --no-progress-meter \
+               -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
+               --data-urlencode "key=$TOOLS_CACHE_KEY" --data-urlencode "ref=$GITHUB_REF" \
+               "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches"
+          echo "updated=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: 'Tools: Cache'
+      if: ${{always() && steps.configure.outcome != 'skipped' && (steps.tools-restore.outputs.cache-hit != 'true' || steps.tools-check.outputs.updated == 'true')}}
+      uses: actions/cache/save@v3
+      with:
+        path: |
+          cmake-utils/.msvc.env
+          vcpkg-downloads/tools/powershell-core-*
+        key: ${{steps.tools-restore.outputs.cache-primary-key}}
+
+    - name: 'vcpkg Packages: Check for Updates'
+      id: vcpkg-check
+      if: ${{always() && steps.configure.outcome != 'skipped' && steps.vcpkg-restore.outputs.cache-hit == 'true' && steps.tools-state.outputs.vcpkg-hash != hashFiles('build/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}
+      shell: bash
+      env:
+        VCPKG_CACHE_KEY: ${{steps.vcpkg-restore.outputs.cache-primary-key}}
+        GITHUB_TOKEN: ${{github.token}}
+      run: |
+        echo "### Updated vcpkg Dependencies" >> $GITHUB_STEP_SUMMARY
+        find build/vcpkg_installed -newer cmake-utils/.tools.stamp -printf '%P\n' >> $GITHUB_STEP_SUMMARY
+        curl --get -X DELETE --no-progress-meter \
+             -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
+             --data-urlencode "key=$VCPKG_CACHE_KEY" --data-urlencode "ref=$GITHUB_REF" \
+             "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches"
+
+    - name: 'vcpkg Packages: Cache'
+      if: ${{always() && steps.configure.outcome != 'skipped' && (steps.vcpkg-restore.outputs.cache-hit != 'true' || steps.vcpkg-check.outcome == 'success')}}
+      uses: actions/cache/save@v3
+      with:
+        path: build/vcpkg_installed
+        key: ${{steps.vcpkg-restore.outputs.cache-primary-key}}
+
+    # Logs
+    - name: Save vcpkg Logs
+      if: ${{always() && steps.configure.outcome != 'skipped'}}
+      uses: actions/upload-artifact@v3
+      with:
+        name: vcpkg-Logs
+        path: |
+          build/vcpkg-buildtrees/*/*.log
+          !build/vcpkg-buildtrees/detect_compiler/**
+        if-no-files-found: ignore
 
   test:
     name: Test
@@ -41,7 +227,7 @@ jobs:
         unity: [ '', 'unity' ]
       fail-fast: false
     permissions:
-      actions: write
+      actions: read
       contents: read
       packages: write
 

@@ -7,11 +7,8 @@ The workflow [`run-build.yml`](.github/workflows/run-build.yml) creates and runs
 -   `unity` - Use unity build in CMake (optional, defaults to true).
 -   `pch` - Use precompiled headers (optional, defaults to true - even for unity builds).
 -   `configure-args` - Extra arguments for CMake configure (optional).
--   `build-and-test` - Run the CMake build and CTest test suite (optional, defaults to true).
 -   `build-args` - Extra arguments for CMake build (optional).
 -   `test-args` - Extra arguments for CTest (optional). `--output-on-failure` is added by default.
--   `analyze` - Analyze with clang-tidy (optional, defaults to true).
--   `clean-caches`- Clean caches of deleted branches (optional, defaults to true).
  
 ### Build Use Cases
 #### Run Build

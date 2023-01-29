@@ -18,24 +18,12 @@ on:
       configure-args:
         description: Extra arguments for CMake configure (optional).
         type: string
-      build-and-test:
-        description: Run the CMake build and CTest test suite (optional, defaults to true).
-        type: boolean
-        default: true
       build-args:
         description: Extra arguments for CMake build (optional).
         type: string
       test-args:
         description: Extra arguments for CTest (optional).
         type: string
-      analyze:
-        description: Analyze with clang-tidy (optional, defaults to true).
-        type: boolean
-        default: true
-      clean-caches:
-        description: Clean caches of deleted branches (optional, defaults to true).
-        type: boolean
-        default: true
     secrets:
       CODACY_PROJECT_API_TOKEN:
         required: true
@@ -126,7 +114,6 @@ jobs:
     # Build Directory: Load (re-runs only)
     - name: 'Build Directory: Restore'
       id: build-restore
-      if: ${{inputs.build-and-test || inputs.analyze}}
       uses: actions/cache/restore@v3
       with:
         path: |
@@ -249,7 +236,7 @@ jobs:
 
     # Build Directory: Cache
     - name: 'Build Directory: Remove Cache'
-      if: ${{always() && steps.configure.outcome != 'skipped' && steps.build-restore.outputs.cache-matched-key != '' && (inputs.build-and-test || inputs.analyze)}}
+      if: ${{always() && steps.configure.outcome != 'skipped' && steps.build-restore.outputs.cache-matched-key != ''}}
       shell: bash
       env:
         BUILD_CACHE_KEY: ${{steps.build-restore.outputs.cache-matched-key}}
@@ -261,7 +248,7 @@ jobs:
             "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches"
 
     - name: 'Build Directory: Cache'
-      if: ${{always() && steps.configure.outcome != 'skipped' && (inputs.build-and-test || inputs.analyze)}}
+      if: ${{always() && steps.configure.outcome != 'skipped'}}
       uses: actions/cache/save@v3
       with:
         path: |
@@ -284,7 +271,6 @@ jobs:
 
   build-and-test:
     name: Build and Test
-    if: ${{inputs.build-and-test}}
     runs-on: windows-latest
     needs: configure
     strategy:
@@ -394,7 +380,6 @@ jobs:
 
   analyze:
     name: Analyze
-    if: ${{inputs.analyze}}
     runs-on: windows-latest
     needs: configure
     strategy:
@@ -495,7 +480,6 @@ jobs:
 
   cleanup:
     name: Clean Caches
-    if: ${{inputs.clean-caches}}
     runs-on: ubuntu-latest
     permissions:
       actions: write
