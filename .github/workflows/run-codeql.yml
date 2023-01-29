@@ -78,7 +78,7 @@ jobs:
         persist-credentials: false
 
     - name: 'Source: Remove Cache'
-      if: ${{steps.source-restore.outputs.cache-hit != 'true' && startsWith(steps.source-restore.outputs.cache-matched-key, format('cmu-source-{0}-', github.ref)}}
+      if: ${{steps.source-restore.outputs.cache-hit != 'true' && startsWith(steps.source-restore.outputs.cache-matched-key, format('cmu-source-{0}-', github.ref))}}
       shell: bash
       env:
         SOURCE_CACHE_KEY: ${{steps.project-restore.outputs.cache-matched-key}}
