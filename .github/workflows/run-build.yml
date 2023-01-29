@@ -500,6 +500,8 @@ jobs:
                -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
                -o "$1" "$2"
           echo B
+          cat "$1.headers"
+          egrep -i '^link: ' "$1.headers"
           next=$(egrep -i '^link: ' "$1.headers" | grep -P -i -o '(?<=<)([\S]*)(?=>; rel="next")')
           echo C
           while [[ -n $next ]]; do
