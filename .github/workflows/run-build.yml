@@ -460,7 +460,7 @@ jobs:
         codacy-token: ${{secrets.CODACY_PROJECT_API_TOKEN}}
 
     - name: Save Analyze Logs
-      if: ${{always()} && steps.analyze.outcome != 'skipped'}}
+      if: ${{always() && steps.analyze.outcome != 'skipped'}}
       uses: actions/upload-artifact@v3
       with:
         name: ${{matrix.configuration}}-Analyze-Logs
