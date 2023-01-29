@@ -372,7 +372,7 @@ jobs:
 
     # Logs
     - name: Save Test Logs
-      if: ${{always()} && (steps.test.outcome != 'skipped' || steps.coverage.outcome != 'skipped')}
+      if: ${{always()} && (steps.test.outcome != 'skipped' || steps.coverage.outcome != 'skipped')}}
       uses: actions/upload-artifact@v3
       with:
         name: ${{matrix.configuration}}-Test-Logs
