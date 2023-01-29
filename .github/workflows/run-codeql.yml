@@ -32,14 +32,14 @@ jobs:
 
     steps:
     # Actions: Load
-    - name: Actions: Restore
+    - name: 'Actions: Restore'
       id: actions-restore
       uses: actions/cache/restore@v3
       with:
         path: cmake-utils
         key: cmu-cmake-utils-${{github.workflow_sha}}
 
-    - name: Actions: Load
+    - name: 'Actions: Load'
       if: ${{steps.actions-restore.outputs.cache-hit != 'true'}}
       shell: bash
       env:
@@ -52,7 +52,7 @@ jobs:
             --strip-components=1 --show-transformed-names --anchored --wildcards --no-wildcards-match-slash \
             '*/.github/actions' '*/configure' '*/modules' '*/msvc-dev-env' '*/Toolchain.cmake'
 
-    - name: Actions: Cache
+    - name: 'Actions: Cache'
       if: ${{steps.actions-restore.outputs.cache-hit != 'true'}}
       uses: actions/cache/save@v3
       with:
@@ -60,7 +60,7 @@ jobs:
         key: ${{steps.actions-restore.outputs.cache-primary-key}}
 
     # Source: Load
-    - name: Source: Restore
+    - name: 'Source: Restore'
       id: source-restore
       uses: actions/cache/restore@v3
       with:
@@ -70,14 +70,14 @@ jobs:
           cmu-source-${{github.ref}}-
           cmu-source-
 
-    - name: Source: Checkout
+    - name: 'Source: Checkout'
       if: ${{steps.source-restore.outputs.cache-hit != 'true'}}
       uses: actions/checkout@v3
       with:
         path: source
         persist-credentials: false
 
-    - name: Source: Remove Cache
+    - name: 'Source: Remove Cache'
       if: ${{steps.source-restore.outputs.cache-hit != 'true' && startsWith(steps.source-restore.outputs.cache-matched-key, format('cmu-source-{0}-', github.ref)}}
       shell: bash
       env:
@@ -89,7 +89,7 @@ jobs:
              --data-urlencode "key=$SOURCE_CACHE_KEY" --data-urlencode "ref=$GITHUB_REF" \
              "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches"
 
-    - name: Source: Cache
+    - name: 'Source: Cache'
       if: ${{steps.source-restore.outputs.cache-hit != 'true'}}
       uses: actions/cache/save@v3
       with:
@@ -102,7 +102,7 @@ jobs:
       shell: cmd
       run: ((echo os=%ImageOs%) & (echo version=%ImageVersion%)) >> %GITHUB_OUTPUT%
 
-    - name: Tools: Restore
+    - name: 'Tools: Restore'
       id: tools-restore
       uses: actions/cache/restore@v3
       with:
@@ -111,7 +111,7 @@ jobs:
           vcpkg-downloads/tools/powershell-core-*
         key: cmu-tools-${{steps.image.outputs.os}}-${{steps.image.outputs.version}}
 
-    - name: vcpkg Packages: Restore
+    - name: 'vcpkg Packages: Restore'
       id: vcpkg-restore
       uses: actions/cache/restore@v3
       with:
@@ -128,7 +128,7 @@ jobs:
             ))}}
         restore-keys: cmu-vcpkg_installed-
 
-    - name: MSVC Environment: Restore
+    - name: 'MSVC Environment: Restore'
       id: tools-state
       shell: bash
       run: |
@@ -138,7 +138,7 @@ jobs:
           && (cat cmake-utils/.msvc.env >> $GITHUB_ENV) \
           && (echo "msvc-restored=true" >> $GITHUB_OUTPUT)
 
-    - name: MSVC Environment: Setup
+    - name: 'MSVC Environment: Setup'
       id: msvc-setup
       if: ${{steps.tools-state.outputs.msvc-restored != 'true'}}
       uses: ./cmake-utils/msvc-dev-env
@@ -157,7 +157,7 @@ jobs:
         extra-args: -D "CMU_DISABLE_DEBUG_INFORMATION:BOOL=ON" -D "CMU_DISABLE_CLANG_TOOLS:BOOL=ON" ${{inputs.configure-args}}
 
     # Build Environment: Cache
-    - name: Tools: Check for Updates
+    - name: 'Tools: Check for Updates'
       id: tools-check
       if: ${{always() && steps.configure.outcome != 'skipped' && steps.tools-restore.outputs.cache-matched-key != ''}}
       shell: bash
@@ -175,7 +175,7 @@ jobs:
           echo "updated=true" >> $GITHUB_OUTPUT
         fi
 
-    - name: Tools: Cache
+    - name: 'Tools: Cache'
       if: ${{always() && steps.configure.outcome != 'skipped' && (steps.tools-restore.outputs.cache-hit != 'true' || steps.tools-check.outputs.updated == 'true')}}
       uses: actions/cache/save@v3
       with:
@@ -184,7 +184,7 @@ jobs:
           vcpkg-downloads/tools/powershell-core-*
         key: ${{steps.tools-restore.outputs.cache-primary-key}}
 
-    - name: vcpkg Packages: Check for Updates
+    - name: 'vcpkg Packages: Check for Updates'
       id: vcpkg-check
       if: ${{always() && steps.configure.outcome != 'skipped' && steps.vcpkg-restore.outputs.cache-hit == 'true' && steps.tools-state.outputs.vcpkg-hash != hashFiles('build/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}
       shell: bash
@@ -199,7 +199,7 @@ jobs:
              --data-urlencode "key=$VCPKG_CACHE_KEY" --data-urlencode "ref=$GITHUB_REF" \
              "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches"
 
-    - name: vcpkg Packages: Cache
+    - name: 'vcpkg Packages: Cache'
       if: ${{always() && steps.configure.outcome != 'skipped' && (steps.vcpkg-restore.outputs.cache-hit != 'true' || steps.vcpkg-check.outcome == 'success')}}
       uses: actions/cache/save@v3
       with:
@@ -207,7 +207,7 @@ jobs:
         key: ${{steps.vcpkg-restore.outputs.cache-primary-key}}
 
     # CodeQL: Setup
-    - name: Initialize CodeQL
+    - name: 'CodeQL: Initialize'
       if: ${{github.event_name != 'pull_request'}}
       uses: github/codeql-action/init@v2
       with:
@@ -215,7 +215,7 @@ jobs:
         queries: security-and-quality
         source-root: ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || '')}}
 
-    - name: Initialize CodeQL for Pull Request
+    - name: 'CodeQL: Initialize for Pull Request'
       if: ${{github.event_name == 'pull_request'}}
       uses: github/codeql-action/init@v2
       with:
@@ -232,7 +232,7 @@ jobs:
 
 
     # CodeQL: Analyze
-    - name: Perform CodeQL Analysis
+    - name: 'CodeQL: Analyze'
       uses: github/codeql-action/analyze@v2
       with:
         checkout_path: ${{github.workspace}}/source

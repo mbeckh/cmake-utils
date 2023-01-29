@@ -57,14 +57,14 @@ jobs:
     
     steps:
     # Restore
-    - name: Actions: Restore
+    - name: 'Actions: Restore'
       id: actions-restore
       uses: actions/cache/restore@v3
       with:
         path: cmake-utils
         key: cmu-cmake-utils-${{github.workflow_sha}}
 
-    - name: Source: Restore
+    - name: 'Source: Restore'
       id: source-restore
       if: ${{steps.actions-restore.outputs.cache-hit == 'true'}}
       uses: actions/cache/restore@v3
@@ -77,7 +77,7 @@ jobs:
       shell: cmd
       run: ((echo os=%ImageOs%) & (echo version=%ImageVersion%)) >> %GITHUB_OUTPUT%
 
-    - name: Tools: Restore
+    - name: 'Tools: Restore'
       id: tools-restore
       if: ${{steps.source-restore.outputs.cache-hit == 'true'}}
       uses: actions/cache/restore@v3
@@ -87,7 +87,7 @@ jobs:
           vcpkg-downloads/tools/powershell-core-*
         key: cmu-tools-${{steps.image.outputs.os}}-${{steps.image.outputs.version}}
 
-    - name: vcpkg Packages: Restore
+    - name: 'vcpkg Packages: Restore'
       id: vcpkg-restore
       if: ${{steps.tools-restore.outputs.cache-hit == 'true'}}
       uses: actions/cache/restore@v3
@@ -99,7 +99,7 @@ jobs:
       if: ${{steps.vcpkg-restore.outputs.cache-hit != 'true'}}
       run: exit 1
 
-    - name: MSVC Environment: Restore
+    - name: 'MSVC Environment: Restore'
       shell: bash
       run: |
         cmake-utils/.msvc.env >> $GITHUB_ENV
