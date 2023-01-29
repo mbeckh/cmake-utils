@@ -394,7 +394,7 @@ jobs:
 
   analyze:
     name: Analyze
-    if: ${{inputs.analyze == 'true'}}
+    if: ${{inputs.analyze}}
     runs-on: windows-latest
     needs: configure
     strategy:
@@ -495,7 +495,7 @@ jobs:
 
   cleanup:
     name: Clean Caches
-    if: ${{inputs.clean-caches == 'true'}}
+    if: ${{inputs.clean-caches}}
     runs-on: ubuntu-latest
     permissions:
       actions: write

@@ -19,6 +19,7 @@ jobs:
     with:
       source-dir: test
       pch: false
+      configure-args: -D "CMU_DISABLE_CLANG_TOOLS:BOOL=ON"
       build-and-test: false
       analyze: false
       clean-caches: false
