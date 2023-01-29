@@ -497,7 +497,7 @@ jobs:
         # Heads and Pull Requests
         curl --no-progress-meter \
              -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
-             -o "branches-#1.json" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/matching-refs/{heads,pull}"
+             -o "branches-#1.json" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/matching-refs/{heads,pull}" \
              -o "caches.json" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches"
         jq -r '.[] | .ref | @json' branches-heads.json branches-pull.json > branches.json
         if [[ $RUNNER_DEBUG -eq 1 ]]; then
