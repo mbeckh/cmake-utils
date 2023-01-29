@@ -74,6 +74,7 @@ jobs:
 
     - name: Image Version
       id: image
+      if: ${{steps.source-restore.outputs.cache-hit == 'true'}}
       shell: cmd
       run: ((echo os=%ImageOs%) & (echo version=%ImageVersion%)) >> %GITHUB_OUTPUT%
 
