@@ -297,7 +297,7 @@ jobs:
       uses: actions/cache/restore@v3
       with:
         path: source
-        key: cmu-source-${{github.ref}}-${{github.sha}}
+        key: cmu-source-${{github.ref_name}}-${{github.sha}}
 
     - name: 'Build Directory: Restore'
       id: build-restore
