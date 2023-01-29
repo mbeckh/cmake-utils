@@ -13,149 +13,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
-    name: Test
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        preset: [ '', 'x64']
-        multi-config: [ '', 'multi' ]
-        configuration: [ Debug, Release ]
-        unity: [ '', 'unity' ]
-      fail-fast: false
-    permissions:
-      actions: write
-      contents: read
-      packages: write
-    
-    steps:
-    - name: Get Image Version
-      id: image
-      shell: cmd
-      run: ((echo os=%ImageOs%) & (echo version=%ImageVersion%)) >> %GITHUB_OUTPUT%
-      
-    - name: Checkout
-      uses: actions/checkout@v3
-      with:
-        path: source
-
-    - name: Restore vcpkg Packages
-      id: vcpkg-restore
-      uses: actions/cache/restore@v3
-      with:
-        path: build/vcpkg_installed
-        key: cmu-vcpkg_installed-${{hashFiles('source/test/vcpkg.json', 'source/test/vcpkg-configuration.json')}}
-        restore-keys: cmu-vcpkg_installed-
-
-    - name: Restore Tools
-      id: tools-restore
-      uses: actions/cache/restore@v3
-      with:
-        path: |
-          msvc.env
-          vcpkg-downloads/tools/powershell-core-*
-        key: cmu-tools-${{steps.image.outputs.os}}-${{steps.image.outputs.version}}
-
-    - name: Get vcpkg State
-      id: vcpkg-cache
-      shell: bash
-      run: |
-        echo "hash=${{hashFiles('build/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}" >> $GITHUB_OUTPUT
-        > vcpkg.stamp
-
-    - name: Restore MSVC Environment
-      id: msvc-restore
-      if: ${{steps.tools-restore.outputs.cache-hit == 'true'}}
-      continue-on-error: true
-      uses: ./source/env-restore
-      with:
-        env-file: msvc.env
-
-    - name: Setup MSVC Environment
-      id: msvc-setup
-      if: ${{steps.msvc-restore.outcome != 'success'}}
-      uses: ./source/msvc-dev-env
-      with:
-        env-file: msvc.env
-        
-    - name: Configure
-      uses: ./source/configure
-      with:
-        preset: ${{matrix.preset}}
-        source-dir: source/test
-        binary-dir: build
-        generator: ${{matrix.multi-config && 'Ninja Multi-Config' || 'Ninja'}}
-        configuration: ${{!matrix.multi-config && matrix.configuration || ''}}
-        configurations: ${{matrix.multi-config && 'Debug;Release' || ''}}
-        extra-args: ${{matrix.unity && '-D "CMAKE_UNITY_BUILD:BOOL=ON" -D "CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON"' || ''}}
-        
-    - name: Remove Updated Tools Cache
-      id: tools-check
-      if: ${{always() && steps.tools-restore.outputs.cache-hit == 'true'}}
-      shell: bash
-      env:
-        INPUT_MSVC_SETUP: ${{steps.msvc-setup.conclusion}}
-        INPUT_CACHE_KEY: ${{steps.tools-restore.outputs.cache-primary-key}}
-        GITHUB_TOKEN: ${{github.token}}
-      run: |
-        if [[ "$INPUT_MSVC_SETUP" == "success" || \
-              (-d vcpkg-downloads/tools && \
-               $(find vcpkg-downloads/tools -maxdepth 1 -type d -name 'powershell-core-*' -newer vcpkg.stamp -printf "1" -quit) == 1) ]]; then
-          curl --get -X DELETE -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter --data-urlencode "key=$INPUT_CACHE_KEY" --data-urlencode "ref=$GITHUB_REF" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches"
-          echo "updated=true" >> $GITHUB_OUTPUT
-        fi
-
-    - name: Cache Tools
-      if: ${{always() && (steps.tools-restore.outputs.cache-hit != 'true' || steps.tools-check.outputs.updated == 'true')}}
-      uses: actions/cache/save@v3
-      with:
-        path: |
-          msvc.env
-          vcpkg-downloads/tools/powershell-core-*
-        key: ${{steps.tools-restore.outputs.cache-primary-key}}
-
-    - name: Remove Updated vcpkg Packages Cache
-      id: vcpkg-check
-      if: ${{always() && steps.vcpkg-restore.outputs.cache-hit == 'true' && steps.vcpkg-cache.outputs.hash != hashFiles('build/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}
-      shell: bash
-      env:
-        INPUT_CACHE_KEY: ${{steps.vcpkg-restore.outputs.cache-primary-key}}
-        GITHUB_TOKEN: ${{github.token}}
-      run: |
-        echo "### Updated vcpkg Dependencies" >> $GITHUB_STEP_SUMMARY
-        find build/vcpkg_installed -newer vcpkg.stamp -printf '%P\n' >> $GITHUB_STEP_SUMMARY
-        curl --get -X DELETE -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter --data-urlencode "key=$INPUT_CACHE_KEY" --data-urlencode "ref=$GITHUB_REF" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches"
-        echo "updated=true" >> $GITHUB_OUTPUT
-
-    - name: Cache vcpkg Packages
-      if: ${{always() && (steps.vcpkg-restore.outputs.cache-hit != 'true' || steps.vcpkg-check.outputs.updated == 'true')}}
-      uses: actions/cache/save@v3
-      with:
-        path: build/vcpkg_installed
-        key: ${{steps.vcpkg-restore.outputs.cache-primary-key}}
-
-    - name: Build
-      shell: cmd
-      working-directory: build
-      run: cmake --build . ${{matrix.multi-config && format('--config "{0}"', matrix.configuration) || ''}}
-
-    - name: Test
-      shell: cmd
-      working-directory: build
-      run: ctest --output-on-failure ${{matrix.multi-config && format('-C "{0}"', matrix.configuration) || ''}}
-
-    - name: Save Logs
-      if: always()
-      uses: actions/upload-artifact@v3
-      with:
-        name: Build-${{matrix.preset || 'nopreset'}}-${{matrix.multi-config || 'single'}}-${{matrix.configuration}}-${{matrix.unity || 'regular'}}-Logs
-        path: |
-          build/vcpkg-buildtrees/*/*.log
-          !build/vcpkg-buildtrees/detect_compiler
-          build/Testing/**/*.log
-          build/**/clang-tidy-*.log
-        if-no-files-found: ignore
-
   build-workflow:
     name: Build Workflow
     uses: ./.github/workflows/run-build.yml
@@ -171,6 +28,7 @@ jobs:
 
   codeql-workflow:
     name: CodeQL Workflow
+    needs: build-workflow
     uses: ./.github/workflows/run-codeql.yml
     with:
       source-dir: test
@@ -181,3 +39,103 @@ jobs:
       packages: write
       security-events: write
 
+  test:
+    name: Test
+    needs: build-workflow
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        preset: [ '', 'x64']
+        multi-config: [ '', 'multi' ]
+        configuration: [ Debug, Release ]
+        unity: [ '', 'unity' ]
+      fail-fast: false
+    permissions:
+      actions: write
+      contents: read
+      packages: write
+    
+    steps:
+    # Restore
+    - name: Actions: Restore
+      id: actions-restore
+      uses: actions/cache/restore@v3
+      with:
+        path: cmake-utils
+        key: cmu-cmake-utils-${{github.workflow_sha}}
+
+    - name: Source: Restore
+      id: source-restore
+      if: ${{steps.actions-restore.outputs.cache-hit == 'true'}}
+      uses: actions/cache/restore@v3
+      with:
+        path: source
+        key: cmu-source-${{github.ref}}-${{github.sha}}
+
+    - name: Image Version
+      id: image
+      shell: cmd
+      run: ((echo os=%ImageOs%) & (echo version=%ImageVersion%)) >> %GITHUB_OUTPUT%
+
+    - name: Tools: Restore
+      id: tools-restore
+      if: ${{steps.source-restore.outputs.cache-hit == 'true'}}
+      uses: actions/cache/restore@v3
+      with:
+        path: |
+          cmake-utils/.msvc.env
+          vcpkg-downloads/tools/powershell-core-*
+        key: cmu-tools-${{steps.image.outputs.os}}-${{steps.image.outputs.version}}
+
+    - name: vcpkg Packages: Restore
+      id: vcpkg-restore
+      if: ${{steps.tools-restore.outputs.cache-hit == 'true'}}
+      uses: actions/cache/restore@v3
+      with:
+        path: build/vcpkg_installed
+        key: cmu-vcpkg_installed-${{hashFiles('source/test/vcpkg.json', 'source/test/vcpkg-configuration.json')}}
+
+    - name: Fail on Cache Errors
+      if: ${{steps.vcpkg-restore.outputs.cache-hit != 'true'}}
+      run: exit 1
+
+    - name: MSVC Environment: Restore
+      shell: bash
+      run: |
+        cmake-utils/.msvc.env >> $GITHUB_ENV
+
+    # Configure, Build and Test
+    - name: Configure
+      id: configure
+      uses: ./cmake-utils/configure
+      with:
+        preset: ${{matrix.preset}}
+        source-dir: source/test
+        binary-dir: build
+        generator: ${{matrix.multi-config && 'Ninja Multi-Config' || 'Ninja'}}
+        configuration: ${{!matrix.multi-config && matrix.configuration || ''}}
+        configurations: ${{matrix.multi-config && 'Debug;Release' || ''}}
+        extra-args: ${{matrix.unity && '-D "CMAKE_UNITY_BUILD:BOOL=ON" -D "CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON"' || ''}}
+
+    - name: Build
+      shell: cmd
+      working-directory: build
+      run: cmake --build . ${{matrix.multi-config && format('--config "{0}"', matrix.configuration) || ''}}
+
+    - name: Test
+      shell: cmd
+      working-directory: build
+      run: ctest --output-on-failure ${{matrix.multi-config && format('-C "{0}"', matrix.configuration) || ''}}
+
+    # Logs
+    - name: Save Logs
+      if: ${{always() && steps.configure.outcome != 'skipped'}}
+      uses: actions/upload-artifact@v3
+      with:
+        name: Build-${{matrix.preset || 'nopreset'}}-${{matrix.multi-config || 'single'}}-${{matrix.configuration}}-${{matrix.unity || 'regular'}}-Logs
+        path: |
+          build/vcpkg-buildtrees/*/*.log
+          !build/vcpkg-buildtrees/detect_compiler
+          build/Testing/**/*.log
+          build/**/clang-tidy-*.log
+        if-no-files-found: ignore
