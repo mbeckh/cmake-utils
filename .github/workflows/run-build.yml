@@ -150,7 +150,7 @@ jobs:
           cmu-vcpkg_installed-${{hashFiles(
             format('source{0}{1}/vcpkg.json',
               inputs.source-dir != '.' && inputs.source-dir && '/' || '',
-              inputs.source-dir != '.' && inputs.source-dir || '',
+              inputs.source-dir != '.' && inputs.source-dir || ''
             ),
             format('source{0}{1}/vcpkg-configuration.json',
               inputs.source-dir != '.' && inputs.source-dir && '/' || '',
