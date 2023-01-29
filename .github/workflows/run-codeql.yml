@@ -239,7 +239,7 @@ jobs:
 
     # Logs
     - name: Save Logs
-      if: ${{always()} && steps.configure.outcome != 'skipped'}}
+      if: ${{always() && steps.configure.outcome != 'skipped'}}
       uses: actions/upload-artifact@v3
       with:
         name: Logs
