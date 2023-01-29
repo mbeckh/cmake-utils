@@ -495,18 +495,27 @@ jobs:
       run: |
         stamp=$(jq -n -r 'now')
         # Heads and Pull Requests
-        curl -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
-             --no-progress-meter -o "branches-#1.json" \
-             "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/matching-refs/{heads,pull}"
-        cat branches-heads.json branches-pull.json \
-          | ([[ $RUNNER_DEBUG -eq 1 ]] && tee >(echo -n "::debug::" && cat -) || cat -) \
-          | jq -r '.[] | .ref | @json' \
-          | ([[ $RUNNER_DEBUG -eq 1 ]] && tee >(echo -n "::debug::" && cat -) || cat -) \
-          > branches.json
+        curl --no-progress-meter \
+             -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
+             -o "branches-#1.json" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/matching-refs/{heads,pull}"
+             -o "caches.json" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches"
+        jq -r '.[] | .ref | @json' branches-heads.json branches-pull.json > branches.json
+        if [[ $RUNNER_DEBUG -eq 1 ]]; then
+            echo "::group::$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/matching-refs/heads"
+            cat branches-heads.json
+            echo "::endgroup::"
+            echo "::group::$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/matching-refs/pull"
+            cat branches-pull.json
+            echo "::endgroup::"
+            echo "::group::$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches"
+            cat caches.json
+            echo "::endgroup::"
+            echo "::group::Active Branches"
+            cat branches.json
+            echo "::endgroup::"
+        fi
 
-        curl -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches" \
-          | [[ $RUNNER_DEBUG -eq 1 ]] && tee >(echo -n "::debug::) && cat -) || cat -) \
-          | jq -r --slurpfile branches branches.json --argjson stamp "$stamp" '.actions_caches | map(select(.ref | IN($branches[]) | not)) | map(.last_accessed_at |= (sub(".\\d+Z$"; "Z") | fromdateiso8601)) | map(select(.last_accessed_at <= $stamp )) | to_entries[] | [ .key, .value.id, .value.key, .value.ref, (.value.last_accessed_at | gmtime | strftime("%Y-%m-%d %H:%M:%S")) ] | @tsv' \
+        jq -r --slurpfile branches branches.json --argjson stamp "$stamp" '.actions_caches | map(select(.ref | IN($branches[]) | not)) | map(.last_accessed_at |= (sub(".\\d+Z$"; "Z") | fromdateiso8601)) | map(select(.last_accessed_at <= $stamp )) | to_entries[] | [ .key, .value.id, .value.key, .value.ref, (.value.last_accessed_at | gmtime | strftime("%Y-%m-%d %H:%M:%S")) ] | @tsv' caches.json \
           | while IFS=$'\t' read sequence cache_id cache_key cache_ref cache_last_accessed; do
               if [[ -n $sequence ]]; then
                 if [[ $sequence -eq 0 ]]; then
