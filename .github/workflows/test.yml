@@ -148,12 +148,11 @@ jobs:
         set BUILD_ROOT=%GITHUB_WORKSPACE%
         set VCPKG_DOWNLOADS=%BUILD_ROOT%\vcpkg-downloads
         set VCPKG_BINARY_SOURCES=clear;nuget,GitHub,readwrite
-        %VCPKG_INSTALLATION_ROOT%\vcpkg.exe install --dry-run ^
+        %VCPKG_INSTALLATION_ROOT%\vcpkg.exe install ^
           --vcpkg-root=%VCPKG_INSTALLATION_ROOT% --x-wait-for-lock --feature-flags=versions,registries,binarycaching ^
           --triplet=x64-windows-static --host-triplet=x64-windows-static --overlay-triplets=%GITHUB_WORKSPACE%\cmake-utils\modules\triplets ^
           --x-manifest-root=%GITHUB_WORKSPACE%\source\test --x-install-root=%BUILD_ROOT%\build\vcpkg_installed ^
           --x-buildtrees-root=%BUILD_ROOT%\build\vcpkg-buildtrees --x-packages-root=%BUILD_ROOT%\build\vcpkg-packages
-        exit 1
 
     # Build Environment: Cache
     - name: 'Tools: Check for Updates'
