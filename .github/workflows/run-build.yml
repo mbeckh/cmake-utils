@@ -512,7 +512,7 @@ jobs:
         jq -r '.[] | .ref | @json' branches.json > branch-names.json
 
         load_paged pulls.json "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pulls?state=open"
-        jq -r '.[] | .number | "refs/pull/" + . + "/merge" | @json' pulls.json > branch-names.json
+        jq -r '.[] | .number | "refs/pull/" + (. | tostring) + "/merge" | @json' pulls.json > branch-names.json
 
         load_paged caches.json "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches"
 
