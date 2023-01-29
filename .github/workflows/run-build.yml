@@ -37,6 +37,7 @@ concurrency:
 jobs:
   configure:
     name: Configure
+    if: 1 == 2
     outputs:
       tools-cache-key: ${{steps.tools-restore.outputs.cache-primary-key}}
       vcpkg-cache-key: ${{steps.vcpkg-restore.outputs.cache-primary-key}}
@@ -505,13 +506,17 @@ jobs:
             next=$(egrep -i '^link: ' "$1.headers" | grep -P -i -o '(?<=<)([\S]*)(?=>; rel="next")')
           done
         }
+        echo 1
 
         stamp=$(jq -n -r 'now')
+        echo 2
         load_paged branches.json "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/matching-refs/heads"
-        jq -r '.[] | .ref | @json' branches-heads.json branches-pull.json > branch-names.json
+        echo 3
+        jq -r '.[] | .ref | @json' branches.json > branch-names.json
+        echo 4
 
         load_paged pulls.json "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pulls?state=open"
-        #jq -r '.[] | .ref | @json' branches-heads.json branches-pull.json > branches.json
+        #jq -r '.[] | .ref | @json' pulls.json > branch-names.json
 
         load_paged caches.json "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches"
 
