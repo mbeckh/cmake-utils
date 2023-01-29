@@ -21,6 +21,7 @@ jobs:
       contents: read
       packages: write
 
+    steps:
     # Actions: Load
     - name: 'Actions: Restore'
       id: actions-restore
