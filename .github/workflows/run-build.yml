@@ -499,9 +499,7 @@ jobs:
                -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
                -o "$1" "$2"
           echo B
-          set -x
-          next=$(egrep -i '^link: ' "$1.headers" | grep -P -i -o '(?<=<)([\S]*)(?=>; rel="next")')
-          set +x
+          set +e & next=$(egrep -i '^link: ' "$1.headers" | grep -P -i -o '(?<=<)([\S]*)(?=>; rel="next")') & set -e
           echo C
           while [[ -n $next ]]; do
             echo D
@@ -509,9 +507,7 @@ jobs:
                  -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
                  -o "$1" "$next"
             echo E
-            set -x
-            next=$(egrep -i '^link: ' "$1.headers" | grep -P -i -o '(?<=<)([\S]*)(?=>; rel="next")')
-            set +x
+            set +e & next=$(egrep -i '^link: ' "$1.headers" | grep -P -i -o '(?<=<)([\S]*)(?=>; rel="next")') & set -e
             echo F
           done
         }
