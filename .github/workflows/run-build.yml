@@ -37,7 +37,6 @@ concurrency:
 jobs:
   configure:
     name: Configure
-    if: 1 == 2
     outputs:
       tools-cache-key: ${{steps.tools-restore.outputs.cache-primary-key}}
       vcpkg-cache-key: ${{steps.vcpkg-restore.outputs.cache-primary-key}}
@@ -516,7 +515,7 @@ jobs:
 
         load_paged caches.json "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches"
 
-        if [[ 1 == 1 || $RUNNER_DEBUG -eq 1 ]]; then
+        if [[ $RUNNER_DEBUG -eq 1 ]]; then
             echo "::group::$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/matching-refs/heads"
             cat branches.json
             echo "::endgroup::"
