@@ -103,7 +103,7 @@ jobs:
     - name: 'MSVC Environment: Restore'
       shell: bash
       run: |
-        cmake-utils/.msvc.env >> $GITHUB_ENV
+        cat cmake-utils/.msvc.env >> $GITHUB_ENV
 
     # Configure, Build and Test
     - name: Configure

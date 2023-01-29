@@ -336,7 +336,7 @@ jobs:
     - name: 'MSVC Environment: Restore'
       shell: bash
       run: |
-        cmake-utils/.msvc.env >> $GITHUB_ENV
+        cat cmake-utils/.msvc.env >> $GITHUB_ENV
 
     # Build and Test
     - name: Build
@@ -445,7 +445,7 @@ jobs:
     - name: 'MSVC Environment: Restore'
       shell: bash
       run: |
-        cmake-utils/.msvc.env >> $GITHUB_ENV
+        cat cmake-utils/.msvc.env >> $GITHUB_ENV
 
     # Analyze
     - name: Analyze
