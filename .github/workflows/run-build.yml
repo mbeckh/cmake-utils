@@ -495,18 +495,23 @@ jobs:
         GITHUB_TOKEN: ${{github.token}}
       run: |
         function load_paged {
+          echo A
           curl -D "$1.headers" --no-progress-meter \
                -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
                -o "$1" "$2"
+          echo B
           next=$(egrep -i '^link: ' "$1.headers" | grep -P -i -o '(?<=<)([\S]*)(?=>; rel="next")')
+          echo C
           while [[ -n $next ]]; do
+            echo D
             curl -a -D "$1.headers" --no-progress-meter \
                  -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
                  -o "$1" "$next"
+            echo E
             next=$(egrep -i '^link: ' "$1.headers" | grep -P -i -o '(?<=<)([\S]*)(?=>; rel="next")')
+            echo F
           done
         }
-        echo 1
 
         stamp=$(jq -n -r 'now')
         echo 2
