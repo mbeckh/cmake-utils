@@ -67,10 +67,8 @@ jobs:
       uses: actions/cache/restore@v3
       with:
         path: source
-        key: cmu-source-${{github.ref_name}}-${{github.sha}}
-        restore-keys: |
-          cmu-source-${{github.ref_name}}-
-          cmu-source-
+        key: cmu-source-${{github.sha}}
+        restore-keys: cmu-source-
 
     - name: 'Source: Checkout'
       if: ${{steps.source-restore.outputs.cache-hit != 'true'}}
@@ -80,7 +78,7 @@ jobs:
         persist-credentials: false
 
     - name: 'Source: Remove Cache'
-      if: ${{steps.source-restore.outputs.cache-hit != 'true' && startsWith(steps.source-restore.outputs.cache-matched-key, format('cmu-source-{0}-', github.ref_name))}}
+      if: ${{steps.source-restore.outputs.cache-hit != 'true' && steps.source-restore.outputs.cache-matched-key != ''}}
       shell: bash
       env:
         SOURCE_CACHE_KEY: ${{steps.source-restore.outputs.cache-matched-key}}

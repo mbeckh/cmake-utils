@@ -13,35 +13,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-workflow:
-    name: Build Workflow
+  warm-up:
+    name: Warm-up Caches
     uses: ./.github/workflows/run-build.yml
     with:
       source-dir: test
-      test-args: --label-regex "^Run$"
       pch: false
+      build-and-test: false
+      analyze: false
+      clean-caches: false
     secrets: inherit
     permissions:
       actions: write
       contents: read
       packages: write
-
-  codeql-workflow:
-    name: CodeQL Workflow
-    needs: build-workflow
-    uses: ./.github/workflows/run-codeql.yml
-    with:
-      source-dir: test
-    secrets: inherit
-    permissions:
-      actions: write
-      contents: read
-      packages: write
-      security-events: write
 
   test:
     name: Test
-    needs: build-workflow
+    needs: warm-up
     runs-on: windows-latest
     strategy:
       matrix:
@@ -140,3 +129,30 @@ jobs:
           build/Testing/**/*.log
           build/**/clang-tidy-*.log
         if-no-files-found: ignore
+
+  build-workflow:
+    name: Build Workflow
+    needs: warm-up
+    uses: ./.github/workflows/run-build.yml
+    with:
+      source-dir: test
+      pch: false
+      test-args: --label-regex "^Run$"
+    secrets: inherit
+    permissions:
+      actions: write
+      contents: read
+      packages: write
+
+  codeql-workflow:
+    name: CodeQL Workflow
+    needs: warm-up
+    uses: ./.github/workflows/run-codeql.yml
+    with:
+      source-dir: test
+    secrets: inherit
+    permissions:
+      actions: write
+      contents: read
+      packages: write
+      security-events: write

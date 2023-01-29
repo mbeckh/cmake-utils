@@ -18,12 +18,24 @@ on:
       configure-args:
         description: Extra arguments for CMake configure (optional).
         type: string
+      build-and-test:
+        description: Run the CMake build and CTest test suite (optional, defaults to true).
+        type: boolean
+        default: true
       build-args:
         description: Extra arguments for CMake build (optional).
         type: string
       test-args:
         description: Extra arguments for CTest (optional).
         type: string
+      analyze:
+        description: Analyze with clang-tidy (optional, defaults to true).
+        type: boolean
+        default: true
+      clean-caches:
+        description: Clean caches of deleted branches (optional, defaults to true).
+        type: boolean
+        default: true
     secrets:
       CODACY_PROJECT_API_TOKEN:
         required: true
@@ -82,10 +94,8 @@ jobs:
       uses: actions/cache/restore@v3
       with:
         path: source
-        key: cmu-source-${{github.ref_name}}-${{github.sha}}
-        restore-keys: |
-          cmu-source-${{github.ref_name}}-
-          cmu-source-
+        key: cmu-source-${{github.sha}}
+        restore-keys: cmu-source-
 
     - name: 'Source: Checkout'
       if: ${{steps.source-restore.outputs.cache-hit != 'true'}}
@@ -95,7 +105,7 @@ jobs:
         persist-credentials: false
 
     - name: 'Source: Remove Cache'
-      if: ${{steps.source-restore.outputs.cache-hit != 'true' && startsWith(steps.source-restore.outputs.cache-matched-key, format('cmu-source-{0}-', github.ref_name))}}
+      if: ${{steps.source-restore.outputs.cache-hit != 'true' && steps.source-restore.outputs.cache-matched-key != ''}}
       shell: bash
       env:
         SOURCE_CACHE_KEY: ${{steps.source-restore.outputs.cache-matched-key}}
@@ -113,10 +123,10 @@ jobs:
         path: source
         key: ${{steps.source-restore.outputs.cache-primary-key}}
 
-    # Build Directory: Load
+    # Build Directory: Load (re-runs only)
     - name: 'Build Directory: Restore'
-      # For re-runs only
       id: build-restore
+      if: ${{inputs.build-and-test || inputs.analyze}}
       uses: actions/cache/restore@v3
       with:
         path: |
@@ -124,8 +134,8 @@ jobs:
           !build/vcpkg_installed
           !build/vcpkg-buildtrees
           !build/vcpkg-packages
-        key: cmu-build-${{github.workflow}}-${{github.event_name}}-${{github.run_number}}-${{github.workflow_sha}}
-        restore-keys: cmu-build-${{github.workflow}}-${{github.event_name}}-${{github.run_number}}-
+        key: cmu-build-${{github.workflow}}-${{github.run_number}}-${{github.workflow_sha}}
+        restore-keys: cmu-build-${{github.workflow}}-${{github.run_number}}-
 
     # Build Environment: Load
     - name: Image Version
@@ -239,7 +249,7 @@ jobs:
 
     # Build Directory: Cache
     - name: 'Build Directory: Remove Cache'
-      if: ${{always() && steps.configure.outcome != 'skipped' && steps.build-restore.outputs.cache-matched-key != ''}}
+      if: ${{always() && steps.configure.outcome != 'skipped' && steps.build-restore.outputs.cache-matched-key != '' && (inputs.build-and-test || inputs.analyze)}}
       shell: bash
       env:
         BUILD_CACHE_KEY: ${{steps.build-restore.outputs.cache-matched-key}}
@@ -251,7 +261,7 @@ jobs:
             "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches"
 
     - name: 'Build Directory: Cache'
-      if: ${{always() && steps.configure.outcome != 'skipped'}}
+      if: ${{always() && steps.configure.outcome != 'skipped' && (inputs.build-and-test || inputs.analyze)}}
       uses: actions/cache/save@v3
       with:
         path: |
@@ -274,6 +284,7 @@ jobs:
 
   build-and-test:
     name: Build and Test
+    if: ${{inputs.build-and-test}}
     runs-on: windows-latest
     needs: configure
     strategy:
@@ -297,7 +308,7 @@ jobs:
       uses: actions/cache/restore@v3
       with:
         path: source
-        key: cmu-source-${{github.ref_name}}-${{github.sha}}
+        key: cmu-source-${{github.sha}}
 
     - name: 'Build Directory: Restore'
       id: build-restore
@@ -309,7 +320,7 @@ jobs:
           !build/vcpkg_installed
           !build/vcpkg-buildtrees
           !build/vcpkg-packages
-        key: cmu-build-${{github.workflow}}-${{github.event_name}}-${{github.run_number}}-${{github.workflow_sha}}
+        key: cmu-build-${{github.workflow}}-${{github.run_number}}-${{github.workflow_sha}}
 
     - name: 'Tools: Restore'
       id: tools-restore
@@ -348,7 +359,7 @@ jobs:
 
     - name: Test
       id: test
-      if: matrix.configuration != 'Debug'
+      if: ${{matrix.configuration != 'Debug'}}
       shell: cmd
       working-directory: build
       env:
@@ -357,7 +368,7 @@ jobs:
 
     - name: Coverage
       id: coverage
-      if: matrix.configuration == 'Debug'
+      if: ${{matrix.configuration == 'Debug'}}
       uses: mbeckh/code-quality-actions/coverage@v1
       with:
         source-dir: ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || '')}}
@@ -366,7 +377,7 @@ jobs:
         codacy-token: ${{secrets.CODACY_PROJECT_API_TOKEN}}
 
     - name: Codecov
-      if: matrix.configuration == 'Debug'
+      if: ${{steps.coverage.outcome == 'success'}}
       uses: codecov/codecov-action@v3
       with:
         files: build/coverage-*.xml
@@ -383,6 +394,7 @@ jobs:
 
   analyze:
     name: Analyze
+    if: ${{inputs.analyze == 'true'}}
     runs-on: windows-latest
     needs: configure
     strategy:
@@ -406,7 +418,7 @@ jobs:
       uses: actions/cache/restore@v3
       with:
         path: source
-        key: cmu-source-${{github.ref_name}}-${{github.sha}}
+        key: cmu-source-${{github.sha}}
 
     - name: 'Build Directory: Restore'
       id: build-restore
@@ -418,7 +430,7 @@ jobs:
           !build/vcpkg_installed
           !build/vcpkg-buildtrees
           !build/vcpkg-packages
-        key: cmu-build-${{github.workflow}}-${{github.event_name}}-${{github.run_number}}-${{github.workflow_sha}}
+        key: cmu-build-${{github.workflow}}-${{github.run_number}}-${{github.workflow_sha}}
 
     - name: 'Tools: Restore'
       id: tools-restore
@@ -483,6 +495,7 @@ jobs:
 
   cleanup:
     name: Clean Caches
+    if: ${{inputs.clean-caches == 'true'}}
     runs-on: ubuntu-latest
     permissions:
       actions: write
