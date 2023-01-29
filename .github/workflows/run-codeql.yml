@@ -50,8 +50,9 @@ jobs:
              "$GITHUB_API_URL/repos/mbeckh/cmake-utils/tarball/$GITHUB_WORKFLOW_SHA"
         mkdir cmake-utils
         tar -x -v -f "cmake-utils-$GITHUB_WORKFLOW_SHA.tar.gz" -C cmake-utils \
-            --strip-components=1 --show-transformed-names --anchored --wildcards --no-wildcards-match-slash \
-            '*/configure' '*/modules' '*/msvc-dev-env' '*/Toolchain.cmake'
+            --strip-components=1 --show-transformed-names --exclude='*.md' --wildcards \
+            '*/configure' '*/modules' '*/msvc-dev-env' '*/Toolchain.cmake' \
+            --
 
     - name: 'Actions: Cache'
       if: ${{steps.actions-restore.outputs.cache-hit != 'true'}}
@@ -135,9 +136,10 @@ jobs:
       run: |
         echo "vcpkg-hash=${{hashFiles('build/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}" >> $GITHUB_OUTPUT
         > cmake-utils/.tools.stamp
-        [[ -f cmake-utils/.msvc.env ]] \
-          && (cat cmake-utils/.msvc.env >> $GITHUB_ENV) \
-          && (echo "msvc-restored=true" >> $GITHUB_OUTPUT)
+        if [[ -f cmake-utils/.msvc.env ]]; then
+          cat cmake-utils/.msvc.env >> $GITHUB_ENV 
+          echo "msvc-restored=true" >> $GITHUB_OUTPUT
+        fi
 
     - name: 'MSVC Environment: Setup'
       id: msvc-setup
