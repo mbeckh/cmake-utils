@@ -149,7 +149,7 @@ jobs:
         set VCPKG_BINARY_SOURCES=clear;nuget,GitHub,readwrite
         if not exist %BUILD_ROOT%\vcpkg-registries md %BUILD_ROOT%\vcpkg-registries
         %VCPKG_INSTALLATION_ROOT%\vcpkg.exe install ^
-          --vcpkg-root=%VCPKG_INSTALLATION_ROOT% --x-wait-for-lock --feature-flags=versions,registries,binarycaching ^
+          --vcpkg-root=%VCPKG_INSTALLATION_ROOT% --x-wait-for-lock --feature-flags=-compilertracking ^
           --triplet=x64-windows-static --host-triplet=x64-windows-static --overlay-triplets=%GITHUB_WORKSPACE%\cmake-utils\modules\triplets ^
           --downloads-root=%BUILD_ROOT%\vcpkg-downloads --x-registries-cache=%BUILD_ROOT%\vcpkg-registries ^
           --x-manifest-root=%GITHUB_WORKSPACE%\source\test --x-install-root=%BUILD_ROOT%\build\vcpkg_installed ^
