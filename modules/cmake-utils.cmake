@@ -65,7 +65,7 @@ endblock()
 include("${CMAKE_CURRENT_LIST_DIR}/settings/common.cmake")
 
 # Default configuration for vcpkg
-set(VCPKG_FEATURE_FLAGS "versions,registries,binarycaching" CACHE PATH "Default features for vcpkg")
+set(VCPKG_APPLOCAL_DEPS OFF CACHE BOOL "Static triplet should not make this required")
 set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "Default configuration for vcpkg")
 set(VCPKG_HOST_TRIPLET "${VCPKG_TARGET_TRIPLET}" CACHE STRING "Default host configuration for vcpkg")
 

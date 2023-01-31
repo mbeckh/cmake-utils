@@ -1,4 +1,4 @@
-# Copyright 2021-2022 Michael Beckh
+# Copyright 2021-2023 Michael Beckh
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,16 +20,18 @@ if(vcpkg_FOUND)
     return()
 endif()
 
+# Unified access to environment variables
+foreach(name BUILD_ROOT VCPKG_DOWNLOADS VCPKG_FEATURE_FLAGS VCPKG_BINARY_SOURCES VCPKG_OVERLAY_TRIPLETS)
+    if(NOT DEFINED ${name} AND DEFINED ENV{${name}})
+        set(${name} "$ENV{${name}}")
+    endif()
+endforeach()
+
 #
 # Check and configure required settings
 #
 if(NOT BUILD_ROOT)
-    if(DEFINED ENV{BUILD_ROOT})
-        # allow unified access to value for cache and environment variable
-        set(BUILD_ROOT "$ENV{BUILD_ROOT}")
-    else()
-        message(FATAL_ERROR "Build requires setting BUILD_ROOT to a valid output directory")
-    endif()
+    message(FATAL_ERROR "Build requires setting BUILD_ROOT to a valid output directory")
 endif()
 
 block()
@@ -128,24 +130,32 @@ find_package_handle_standard_args(vcpkg REQUIRED_VARS vcpkg_ROOT vcpkg_EXE vcpkg
 #
 
 # Some variables are not forwarded by vcpkg.cmake and MUST be set as an environment variables
-if(VCPKG_DOWNLOADS)
-    set(ENV{VCPKG_DOWNLOADS} "${VCPKG_DOWNLOADS}")
-else()
-    set(ENV{VCPKG_DOWNLOADS} "${BUILD_ROOT}/vcpkg-downloads")
-endif()
-if(VCPKG_BINARY_SOURCES)
-    set(ENV{VCPKG_BINARY_SOURCES} "${VCPKG_BINARY_SOURCES}")
-else()
-    set(ENV{VCPKG_BINARY_SOURCES} "clear;files,${BUILD_ROOT}/vcpkg-binaries,readwrite")
-endif()
 if(VCPKG_DISABLE_METRICS)
     set(ENV{VCPKG_DISABLE_METRICS} "${VCPKG_DISABLE_METRICS}")
 endif()
 
-set(VCPKG_OVERLAY_TRIPLETS "${CMAKE_CURRENT_LIST_DIR}/triplets" CACHE PATH "Additional triplets for vcpkg")
+# Modify provided variables
+if(NOT VCPKG_FEATURE_FLAGS MATCHES "(^|[;,])-?compilertracking([;,]|$)")
+    string(APPEND VCPKG_FEATURE_FLAGS "-compilertracking")
+    set(VCPKG_FEATURE_FLAGS "${VCPKG_FEATURE_FLAGS}" CACHE STRING "Use VCPKG_ENV_PASSTHROUGH instead of compiler tracking" FORCE)
+endif()
+
+if(NOT DEFINED CACHE{VCPKG_OVERLAY_TRIPLETS})
+    cmake_path(CONVERT "${VCPKG_OVERLAY_TRIPLETS}" TO_CMAKE_PATH_LIST VCPKG_OVERLAY_TRIPLETS)
+    list(PREPEND VCPKG_OVERLAY_TRIPLETS "${CMAKE_CURRENT_LIST_DIR}/triplets")
+    cmake_path(CONVERT "${VCPKG_OVERLAY_TRIPLETS}" TO_NATIVE_PATH_LIST VCPKG_OVERLAY_TRIPLETS)
+
+    set(VCPKG_OVERLAY_TRIPLETS "${VCPKG_OVERLAY_TRIPLETS}" CACHE PATH "Additional triplets for vcpkg")
+endif()
+
+if(DEFINED VCPKG_BINARY_SOURCES AND NOT VCPKG_BINARY_SOURCES STREQUAL "")
+    set(ENV{VCPKG_BINARY_SOURCES} "${VCPKG_BINARY_SOURCES}")
+else()
+    set(ENV{VCPKG_BINARY_SOURCES} "clear;files,${BUILD_ROOT}/vcpkg-binaries,readwrite")
+endif()
 
 # Add tests
-block()
+block(PROPAGATE VCPKG_MANIFEST_FEATURES)
     if(PROJECT_IS_TOP_LEVEL AND BUILD_TESTING)
         file(READ "${CMAKE_SOURCE_DIR}/vcpkg.json" content)
         set(result "${VCPKG_MANIFEST_FEATURES}")
@@ -155,12 +165,12 @@ block()
                 list(APPEND result "${feature}")
             endif()
         endforeach()
-        set(VCPKG_MANIFEST_FEATURES "${result}" PARENT_SCOPE)
+        set(VCPKG_MANIFEST_FEATURES "${result}")
     endif()
 endblock()
 
 # Set install options
-block()
+block(PROPAGATE VCPKG_INSTALL_OPTIONS)
     set(path "${CMAKE_BINARY_DIR}")
     while(TRUE)
         cmake_path(GET path PARENT_PATH parent)
@@ -178,8 +188,27 @@ block()
         endif()
     endwhile()
 
-    set(VCPKG_INSTALL_OPTIONS "--x-buildtrees-root=${project_root}/vcpkg-buildtrees;--x-packages-root=${project_root}/vcpkg-packages" CACHE STRING "Additional options for vcpkg")
+    if(NOT VCPKG_INSTALL_OPTIONS MATCHES "(^|;)--downloads-root=")
+        if(DEFINED VCPKG_DOWNLOADS AND NOT VCPKG_DOWNLOADS STREQUAL "")
+            list(APPEND VCPKG_INSTALL_OPTIONS "--downloads-root=${VCPKG_DOWNLOADS}")
+        else()
+            list(APPEND VCPKG_INSTALL_OPTIONS "--downloads-root=${BUILD_ROOT}/vcpkg-downloads")
+        endif()
+    endif()
+    if(NOT VCPKG_INSTALL_OPTIONS MATCHES "(^|;)--x-packages-root=")
+        list(APPEND VCPKG_INSTALL_OPTIONS "--x-packages-root=${project_root}/vcpkg-packages")
+    endif()
+    if(NOT VCPKG_INSTALL_OPTIONS MATCHES "(^|;)--x-registries-cache=")
+        list(APPEND VCPKG_INSTALL_OPTIONS "--x-registries-cache=${BUILD_ROOT}/vcpkg-registries")
+    endif()
+    if(NOT VCPKG_INSTALL_OPTIONS MATCHES "(^|;)--x-buildtrees-root=")
+        list(APPEND VCPKG_INSTALL_OPTIONS "--x-buildtrees-root=${project_root}/vcpkg-buildtrees")
+    endif()
 endblock()
+
+if(NOT IS_DIRECTORY "${BUILD_ROOT}/vcpkg-registries")
+    file(MAKE_DIRECTORY "${BUILD_ROOT}/vcpkg-registries")
+endif()
 
 # vcpkg does not yet allow setting the packages directory to a custom folder
 set(ENV{LOCALAPPDATA} "${BUILD_ROOT}/vcpkg-local-app-data")
