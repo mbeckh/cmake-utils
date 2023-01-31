@@ -107,15 +107,7 @@ jobs:
       with:
         path: build/vcpkg_installed
         key: >
-          cmu-vcpkg_installed-${{hashFiles(
-            format('source{0}{1}/vcpkg.json',
-              inputs.source-dir != '.' && inputs.source-dir && '/' || '',
-              inputs.source-dir != '.' && inputs.source-dir || ''
-            ),
-            format('source{0}{1}/vcpkg-configuration.json',
-              inputs.source-dir != '.' && inputs.source-dir && '/' || '',
-              inputs.source-dir != '.' && inputs.source-dir || ''
-            ))}}
+          cmu-vcpkg_installed-${{hashFiles('source/test/vcpkg.json', 'source/test/vcpkg-configuration.json')}}
         restore-keys: cmu-vcpkg_installed-
 
     - name: 'MSVC Environment: Restore'
