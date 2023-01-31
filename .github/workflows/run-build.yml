@@ -65,7 +65,7 @@ jobs:
              -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
              "$GITHUB_API_URL/repos/mbeckh/cmake-utils/tarball/$GITHUB_WORKFLOW_SHA"
         mkdir cmake-utils
-        tar -x $((($RUNNER_DEBUG == 1)) && echo -- "-v") -f "cmake-utils-$GITHUB_WORKFLOW_SHA.tar.gz" -C cmake-utils \
+        tar -x $([[ $RUNNER_DEBUG == 1 ]] && echo -- "-v") -f "cmake-utils-$GITHUB_WORKFLOW_SHA.tar.gz" -C cmake-utils \
             --strip-components=1 --show-transformed-names --exclude='*.md' --wildcards \
             '*/configure' '*/modules' '*/msvc-dev-env' '*/Toolchain.cmake' \
 
