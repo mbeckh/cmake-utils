@@ -13,6 +13,13 @@ on:
       build-args:
         description: Extra arguments for CMake build.
         type: string
+      codeql-config-file:
+        description: Config file for CodeQL (optional).
+        type: string
+      codeql-queries:
+        description: CodeQL queries to run (optional, defaults to security-and-quality for non-pull-requests if no config file is provided).
+        type: string
+        default: ${{inputs.codeql-config-file && github.event_name != 'pull-request' && 'security-and-quality' || ''}}
 
 permissions: {}
 
@@ -253,7 +260,8 @@ jobs:
       uses: github/codeql-action/init@v2
       with:
         languages: cpp
-        queries: security-and-quality
+        config-file: ${{inputs.codeql-config-file}}
+        queries: ${{inputs.codeql-queries}}
         source-root: ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || '')}}
 
     - name: 'CodeQL: Initialize for Pull Request'
@@ -261,6 +269,8 @@ jobs:
       uses: github/codeql-action/init@v2
       with:
         languages: cpp
+        config-file: ${{inputs.codeql-config-file}}
+        queries: ${{inputs.codeql-queries}}
         source-root: ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || '')}}
 
     # Build

@@ -22,6 +22,7 @@ int ok_1() {
 }
 
 int main(int, char**) {
+	// FIXME: Deliberate error for CodeQL query cpp/fixme-comment
 	fmt::print("ok"); // use fmt
 	return 0;
 }

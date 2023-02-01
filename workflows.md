@@ -48,6 +48,8 @@ unity builds because they do not work with CodeQL.
 -   `source-dir` - Path of the CMake source directory (optional, defaults to working directory).
 -   `configure-args` - Extra arguments for CMake configure (optional).
 -   `build-args` - Extra arguments for CMake build (optional).
+-   `codeql-config-file` - Config file for CodeQL (optional).
+-   `codeql-queries` - CodeQL queries to run (optional, defaults to security-and-quality for non-pull-requests if no config file is provided).
 
 ### CodeQL Use Cases
 #### Analyze Code
