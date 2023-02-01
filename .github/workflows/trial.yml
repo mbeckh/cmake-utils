@@ -15,5 +15,5 @@ jobs:
     name: Trial
     uses: ./.github/workflows/trial-sub.yml
     with:
-      array: [ a, b, c ]
+      array: '[ a, b, c ]'
     secrets: inherit
