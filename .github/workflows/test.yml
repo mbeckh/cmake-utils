@@ -291,7 +291,7 @@ jobs:
         key: cmu-source-${{github.sha}}
 
     - name: 'vcpkg: Hashes'
-      id: 
+      id: state
       if: ${{steps.source-restore.outputs.cache-hit == 'true'}}
       shell: bash
       working-directory: source/test
