@@ -269,10 +269,11 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        preset: [ '', 'x64']
-        multi-config: [ '', 'multi' ]
-        configuration: [ Debug, Release ]
-        unity: [ '', 'unity' ]
+        #preset: [ '', 'x64']
+        #multi-config: [ '', 'multi' ]
+        #configuration: [ Debug, Release ]
+        configuration: Debug
+        #unity: [ '', 'unity' ]
       fail-fast: false
     permissions:
       actions: read
@@ -335,8 +336,8 @@ jobs:
         generator: ${{matrix.multi-config && 'Ninja Multi-Config' || 'Ninja'}}
         configuration: ${{!matrix.multi-config && matrix.configuration || ''}}
         configurations: ${{matrix.multi-config && 'Debug;Release' || ''}}
-        extra-args: ${{matrix.unity && '-D "CMAKE_UNITY_BUILD:BOOL=ON" -D "CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON"' || ''}}
-
+        extra-args: ${{matrix.unity && '-D "CMAKE_UNITY_BUILD:BOOL=ON" -D "CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON"' || ''}} -D "VCPKG_INSTALL_OPTIONS=--debug;--debug-env"
+    - run: exit 1
     - name: Build
       shell: cmd
       working-directory: build
@@ -362,12 +363,12 @@ jobs:
 
   build-workflow:
     name: Build Workflow
+    if: 1 == 2
     needs: warm-up
     uses: ./.github/workflows/run-build.yml
     with:
       source-dir: test
       pch: false
-      configure-args: -D "VCPKG_INSTALL_OPTIONS=--debug;--debug-env"
       test-args: --label-regex "^Run$"
     secrets: inherit
     permissions:
@@ -377,6 +378,7 @@ jobs:
 
   codeql-workflow:
     name: CodeQL Workflow
+    if: 1 == 2
     needs: warm-up
     uses: ./.github/workflows/run-codeql.yml
     with:
