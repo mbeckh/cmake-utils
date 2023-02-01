@@ -203,7 +203,7 @@ jobs:
 
     - name: 'vcpkg Registries: Check for Updates'
       id: vcpkg-registries-check
-      if: ${{always() && steps.configure.outcome != 'skipped' && steps.vcpkg-registries-restore.outputs.cache-hit == 'true')}}
+      if: ${{always() && steps.configure.outcome != 'skipped' && steps.vcpkg-registries-restore.outputs.cache-hit == 'true'}}
       shell: bash
       env:
         VCPKG_REGISTRIES_CACHE_KEY: ${{steps.vcpkg-registries-restore.outputs.cache-primary-key}}
