@@ -92,7 +92,7 @@ jobs:
       shell: bash
       working-directory: source/test
       run: |
-        ((echo image-os=$ImageOs) & (echo image-version=$ImageVersion)) >> $GITHUB_OUTPUT%
+        ((echo "image-os=$ImageOs") & (echo "image-version=$ImageVersion")) >> $GITHUB_OUTPUT
         if [[ -f vcpkg.json ]]; then
           registries=$(jq --sort-keys $([[ -f vcpkg-configuration.json ]] && echo '--slurp') '.' vcpkg.json $([[ -f vcpkg-configuration.json ]] && echo 'vcpkg-configuration.json') \
             | tee >((echo -n 'manifest-hash=' && (sha1sum - | cut -d ' ' -f 1)) >> $GITHUB_OUTPUT) \
@@ -251,7 +251,7 @@ jobs:
       if: ${{always() && steps.configure.outcome != 'skipped'}}
       uses: actions/upload-artifact@v3
       with:
-        name: vcpkg-Logs
+        name: Test-vcpkg-Logs
         path: |
           build/vcpkg-buildtrees/*/*.log
           !build/vcpkg-buildtrees/detect_compiler/**
@@ -296,7 +296,7 @@ jobs:
       shell: bash
       working-directory: source/test
       run: |
-        ((echo image-os=$ImageOs) & (echo image-version=$ImageVersion)) >> $GITHUB_OUTPUT%
+        ((echo "image-os=$ImageOs") & (echo "image-version=$ImageVersion")) >> $GITHUB_OUTPUT
         if [[ -f vcpkg.json ]]; then
           registries=$(jq --sort-keys $([[ -f vcpkg-configuration.json ]] && echo '--slurp') '.' vcpkg.json $([[ -f vcpkg-configuration.json ]] && echo 'vcpkg-configuration.json') \
             | tee >((echo -n 'manifest-hash=' && (sha1sum - | cut -d ' ' -f 1)) >> $GITHUB_OUTPUT) \
@@ -375,7 +375,7 @@ jobs:
       if: ${{always() && steps.configure.outcome != 'skipped'}}
       uses: actions/upload-artifact@v3
       with:
-        name: Build-${{matrix.preset || 'nopreset'}}-${{matrix.multi-config || 'single'}}-${{matrix.configuration}}-${{matrix.unity || 'regular'}}-Logs
+        name: Test-Build-${{matrix.preset || 'nopreset'}}-${{matrix.multi-config || 'single'}}-${{matrix.configuration}}-${{matrix.unity || 'regular'}}-Logs
         path: |
           build/vcpkg-buildtrees/*/*.log
           !build/vcpkg-buildtrees/detect_compiler
@@ -403,7 +403,7 @@ jobs:
     uses: ./.github/workflows/run-codeql.yml
     with:
       source-dir: test
-      codeql-queries: cpp/fixme-comment
+      codeql-queries: fixme-comment
     secrets: inherit
     permissions:
       actions: write
