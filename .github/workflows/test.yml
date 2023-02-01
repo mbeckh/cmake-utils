@@ -15,6 +15,10 @@ concurrency:
 jobs:
   warm-up:
     name: Warm-up Caches
+    outputs:
+      tools-cache-key: ${{steps.tools-restore.outputs.cache-primary-key}}
+      vcpkg-registries-cache-key: ${{steps.vcpkg-registries-restore.outputs.cache-primary-key}}
+      vcpkg-cache-key: ${{steps.vcpkg-restore.outputs.cache-primary-key}}
     runs-on: windows-latest
     permissions:
       actions: write
@@ -92,9 +96,10 @@ jobs:
       shell: bash
       working-directory: source/test
       run: |
-        ((echo "image-os=$ImageOs") & (echo "image-version=$ImageVersion")) >> $GITHUB_OUTPUT
+        ((echo "image-os=$ImageOS") & (echo "image-version=$ImageVersion")) >> $GITHUB_OUTPUT
         if [[ -f vcpkg.json ]]; then
-          registries=$(jq --sort-keys $([[ -f vcpkg-configuration.json ]] && echo '--slurp') '.' vcpkg.json $([[ -f vcpkg-configuration.json ]] && echo 'vcpkg-configuration.json') \
+          registries=$(jq --sort-keys $([[ -f vcpkg-configuration.json ]] && echo '--slurp') '.' \
+                           vcpkg.json $([[ -f vcpkg-configuration.json ]] && echo 'vcpkg-configuration.json') \
             | tee >((echo -n 'manifest-hash=' && (sha1sum - | cut -d ' ' -f 1)) >> $GITHUB_OUTPUT) \
             | jq '
                 [
@@ -291,29 +296,6 @@ jobs:
         path: source
         key: cmu-source-${{github.sha}}
 
-    - name: 'vcpkg: Hashes'
-      id: state
-      if: ${{steps.source-restore.outputs.cache-hit == 'true'}}
-      shell: bash
-      working-directory: source/test
-      run: |
-        ((echo "image-os=$ImageOs") & (echo "image-version=$ImageVersion")) >> $GITHUB_OUTPUT
-        if [[ -f vcpkg.json ]]; then
-          registries=$(jq --sort-keys $([[ -f vcpkg-configuration.json ]] && echo '--slurp') '.' vcpkg.json $([[ -f vcpkg-configuration.json ]] && echo 'vcpkg-configuration.json') \
-            | tee >((echo -n 'manifest-hash=' && (sha1sum - | cut -d ' ' -f 1)) >> $GITHUB_OUTPUT) \
-            | jq '
-              [
-                .. | ((."default-registry"? | objects), (.registries? | .[]?))
-                | select(.kind == "git")
-                | { repository, reference, baseline }
-                | del(.. | nulls)  
-              ] | sort')
-          [[ $RUNNER_DEBUG -eq 1 ]] && echo "$registries" || true
-          if [[ $registries != '[]' ]]; then
-            (echo -n 'registries-hash=' && (sha1sum - | cut -d ' ' -f 1)) >> $GITHUB_OUTPUT
-          fi
-        fi
-
     - name: 'Tools: Restore'
       id: tools-restore
       if: ${{steps.source-restore.outputs.cache-hit == 'true'}}
@@ -322,29 +304,35 @@ jobs:
         path: |
           cmake-utils/.msvc.env
           vcpkg-downloads/tools/powershell-core-*
-        key: cmu-tools-${{steps.state.outputs.image-os}}-${{steps.state.outputs.image-version}}
+        key: ${{needs.warm-up.outputs.tools-cache-key}}
 
     - name: 'vcpkg Registries: Restore'
       id: vcpkg-registries-restore
-      if: ${{steps.tools-restore.outputs.cache-hit == 'true'}}
+      if: ${{steps.tools-restore.outputs.cache-hit == 'true' && needs.warm-up.outputs.vcpkg-registries-cache-key != ''}}
       uses: actions/cache/restore@v3
       with:
         path: vcpkg-registries
-        key: cmu-vcpkg-registries-${{steps.state.outputs.registries-hash}}
-        restore-keys: cmu-vcpkg-registries-
+        key: ${{needs.warm-up.outputs.vcpkg-registries-cache-key}}
 
     - name: 'vcpkg Packages: Restore'
       id: vcpkg-restore
-      if: ${{steps.vcpkg-registries-restore.outputs.cache-hit == 'true'}}
+      if: >
+        ${{(steps.vcpkg-registries-restore.outputs.cache-hit == 'true'
+            || steps.vcpkg-registries-restore.outcome == 'skipped' && steps.tools-restore.outputs.cache-hit == 'true')
+           && needs.warm-up.outputs.vcpkg-cache-key != ''}}
       uses: actions/cache/restore@v3
       with:
         path: build/vcpkg_installed
-        key: cmu-vcpkg_installed-${{steps.state.outputs.manifest-hash}}
+        key: ${{needs.warm-up.outputs.vcpkg-cache-key}}
 
     - name: 'MSVC Environment: Restore'
       shell: bash
       env:
-        CACHE_HIT: ${{steps.vcpkg-restore.outputs.cache-hit}}
+        CACHE_HIT: >
+          ${{steps.vcpkg-restore.outputs.cache-hit == 'true'
+             || (steps.vcpkg-restore.outcome == 'skipped'
+                 && (steps.vcpkg-registries-restore.cache-hit == 'true'
+                     || steps.vcpkg-registries-restore.outcome == 'skipped' && steps.tools-restore.outputs.cache-hit == 'true'))}}
       run: |
         [[ $CACHE_HIT == 'true' ]] && cat cmake-utils/.msvc.env >> $GITHUB_ENV
 
@@ -391,7 +379,7 @@ jobs:
     with:
       source-dir: test
       pch: false
-      configure-args: -D "VCPKG_INSTALL_OPTIONS=--debug --debug-env"
+      configure-args: -D "VCPKG_INSTALL_OPTIONS=--debug;--debug-env"
       test-args: --label-regex "^Run$"
     secrets: inherit
     permissions:

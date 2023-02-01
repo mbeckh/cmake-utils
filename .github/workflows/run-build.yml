@@ -131,9 +131,10 @@ jobs:
       shell: bash
       working-directory: source${{inputs.source-dir != '.' && inputs.source-dir && '/' || ''}}${{inputs.source-dir != '.' && inputs.source-dir || ''}}
       run: |
-        ((echo "image-os=$ImageOs") & (echo "image-version=$ImageVersion")) >> $GITHUB_OUTPUT
+        ((echo "image-os=$ImageOS") & (echo "image-version=$ImageVersion")) >> $GITHUB_OUTPUT
         if [[ -f vcpkg.json ]]; then
-          registries=$(jq --sort-keys $([[ -f vcpkg-configuration.json ]] && echo '--slurp') '.' vcpkg.json $([[ -f vcpkg-configuration.json ]] && echo 'vcpkg-configuration.json') \
+          registries=$(jq --sort-keys $([[ -f vcpkg-configuration.json ]] && echo '--slurp') '.' \
+                           vcpkg.json $([[ -f vcpkg-configuration.json ]] && echo 'vcpkg-configuration.json') \
             | tee >((echo -n 'manifest-hash=' && (sha1sum - | cut -d ' ' -f 1)) >> $GITHUB_OUTPUT) \
             | jq '
                 [
@@ -356,7 +357,7 @@ jobs:
 
     - name: 'vcpkg Packages: Restore'
       id: vcpkg-restore
-      if: ${{steps.build-restore.outputs.cache-hit == 'true'}}
+      if: ${{steps.build-restore.outputs.cache-hit == 'true' && needs.configure.outputs.vcpkg-cache-key != ''}}
       uses: actions/cache/restore@v3
       with:
         path: build/vcpkg_installed
@@ -365,7 +366,9 @@ jobs:
     - name: 'MSVC Environment: Restore'
       shell: bash
       env:
-        CACHE_HIT: ${{steps.vcpkg-restore.outputs.cache-hit}}
+        CACHE_HIT: >
+          ${{steps.vcpkg-restore.outputs.cache-hit == 'true'
+             || steps.vcpkg-restore.outcome == 'skipped' && steps.build-restore.outputs.cache-hit == 'true'}}
       run: |
         [[ $CACHE_HIT == 'true' ]] && cat cmake-utils/.msvc.env >> $GITHUB_ENV
 
@@ -454,7 +457,7 @@ jobs:
 
     - name: 'vcpkg Packages: Restore'
       id: vcpkg-restore
-      if: ${{steps.build-restore.outputs.cache-hit == 'true'}}
+      if: ${{steps.build-restore.outputs.cache-hit == 'true' && needs.configure.outputs.vcpkg-cache-key != ''}}
       uses: actions/cache/restore@v3
       with:
         path: build/vcpkg_installed
@@ -463,9 +466,11 @@ jobs:
     - name: 'MSVC Environment: Restore'
       shell: bash
       env:
-        CACHE_HIT: ${{steps.vcpkg-restore.outputs.cache-hit}}
+        CACHE_HIT: >
+          ${{steps.vcpkg-restore.outputs.cache-hit == 'true'
+             || steps.vcpkg-restore.outcome == 'skipped' && steps.build-restore.outputs.cache-hit == 'true'}}
       run: |
-        [[ $CACHE_HIT == 'true' ]] &&cat cmake-utils/.msvc.env >> $GITHUB_ENV
+        [[ $CACHE_HIT == 'true' ]] && cat cmake-utils/.msvc.env >> $GITHUB_ENV
 
     # Analyze
     - name: Analyze

@@ -108,9 +108,10 @@ jobs:
       shell: bash
       working-directory: source${{inputs.source-dir != '.' && inputs.source-dir && '/' || ''}}${{inputs.source-dir != '.' && inputs.source-dir || ''}}
       run: |
-        ((echo "image-os=$ImageOs") & (echo "image-version=$ImageVersion")) >> $GITHUB_OUTPUT
+        ((echo "image-os=$ImageOS") & (echo "image-version=$ImageVersion")) >> $GITHUB_OUTPUT
         if [[ -f vcpkg.json ]]; then
-          registries=$(jq --sort-keys $([[ -f vcpkg-configuration.json ]] && echo '--slurp') '.' vcpkg.json $([[ -f vcpkg-configuration.json ]] && echo 'vcpkg-configuration.json') \
+          registries=$(jq --sort-keys $([[ -f vcpkg-configuration.json ]] && echo '--slurp') '.' \
+                           vcpkg.json $([[ -f vcpkg-configuration.json ]] && echo 'vcpkg-configuration.json') \
             | tee >((echo -n 'manifest-hash=' && (sha1sum - | cut -d ' ' -f 1)) >> $GITHUB_OUTPUT) \
             | jq '
                 [
