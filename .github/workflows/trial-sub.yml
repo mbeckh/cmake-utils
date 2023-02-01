@@ -20,6 +20,6 @@ jobs:
       env:
         PLAIN: ${{inputs.array}}
         JSON: ${{fromJSON(inputs.array)}}
-      runs: |
+      run: |
         echo "plain: $PLAIN"
         echo "json: $JSON"
