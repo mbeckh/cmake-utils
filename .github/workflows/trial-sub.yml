@@ -1,0 +1,25 @@
+name: Trial-Sub
+
+on:
+  workflow_call:
+    inputs:
+      array:
+        description: An array
+        type: string
+        required: true
+
+permissions: {}
+
+jobs:
+  trial-sub:
+    name: Trial Sub
+    runs-on: ubuntu-latest
+    steps:
+    - name: Test
+      shell: bash
+      env:
+        PLAIN: ${{inputs.array}}
+        JSON: ${{fromJSON(inputs.array)}}
+      runs: |
+        echo "plain: $PLAIN"
+        echo "json: $JSON"
