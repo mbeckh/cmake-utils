@@ -328,23 +328,20 @@ jobs:
     steps:
     # Restore
     - name: 'Actions: Restore'
-      id: actions-restore
       uses: actions/cache/restore@v3
       with:
         path: cmake-utils
         key: cmu-cmake-utils-${{github.workflow_sha}}
+        fail-on-cache-miss: true
 
     - name: 'Source: Restore'
-      id: source-restore
-      if: ${{steps.actions-restore.outputs.cache-hit == 'true'}}
       uses: actions/cache/restore@v3
       with:
         path: source
         key: cmu-source-${{github.sha}}
+        fail-on-cache-miss: true
 
     - name: 'Build Directory: Restore'
-      id: build-restore
-      if: ${{steps.source-restore.outputs.cache-hit == 'true'}}
       uses: actions/cache/restore@v3
       with:
         path: |
@@ -354,23 +351,19 @@ jobs:
           !build/vcpkg-buildtrees
           !build/vcpkg-packages
         key: cmu-build-${{github.workflow}}-${{github.run_number}}-${{github.workflow_sha}}
+        fail-on-cache-miss: true
 
     - name: 'vcpkg Packages: Restore'
-      id: vcpkg-restore
-      if: ${{steps.build-restore.outputs.cache-hit == 'true' && needs.configure.outputs.vcpkg-cache-key != ''}}
+      if: ${{needs.configure.outputs.vcpkg-cache-key != ''}}
       uses: actions/cache/restore@v3
       with:
         path: build/vcpkg_installed
         key: ${{needs.configure.outputs.vcpkg-cache-key}}
+        fail-on-cache-miss: true
 
     - name: 'MSVC Environment: Restore'
       shell: bash
-      env:
-        CACHE_HIT: >
-          ${{steps.vcpkg-restore.outputs.cache-hit == 'true'
-             || steps.vcpkg-restore.outcome == 'skipped' && steps.build-restore.outputs.cache-hit == 'true'}}
-      run: |
-        [[ $CACHE_HIT == 'true' ]] && cat cmake-utils/.msvc.env >> $GITHUB_ENV
+      run: cat cmake-utils/.msvc.env >> $GITHUB_ENV
 
     # Build and Test
     - name: Build
@@ -428,23 +421,20 @@ jobs:
     steps:
     # Restore
     - name: 'Actions: Restore'
-      id: actions-restore
       uses: actions/cache/restore@v3
       with:
         path: cmake-utils
         key: cmu-cmake-utils-${{github.workflow_sha}}
+        fail-on-cache-miss: true
 
     - name: 'Source: Restore'
-      id: source-restore
-      if: ${{steps.actions-restore.outputs.cache-hit == 'true'}}
       uses: actions/cache/restore@v3
       with:
         path: source
         key: cmu-source-${{github.sha}}
+        fail-on-cache-miss: true
 
     - name: 'Build Directory: Restore'
-      id: build-restore
-      if: ${{steps.source-restore.outputs.cache-hit == 'true'}}
       uses: actions/cache/restore@v3
       with:
         path: |
@@ -454,23 +444,19 @@ jobs:
           !build/vcpkg-buildtrees
           !build/vcpkg-packages
         key: cmu-build-${{github.workflow}}-${{github.run_number}}-${{github.workflow_sha}}
+        fail-on-cache-miss: true
 
     - name: 'vcpkg Packages: Restore'
-      id: vcpkg-restore
-      if: ${{steps.build-restore.outputs.cache-hit == 'true' && needs.configure.outputs.vcpkg-cache-key != ''}}
+      if: ${{needs.configure.outputs.vcpkg-cache-key != ''}}
       uses: actions/cache/restore@v3
       with:
         path: build/vcpkg_installed
         key: ${{needs.configure.outputs.vcpkg-cache-key}}
+        fail-on-cache-miss: true
 
     - name: 'MSVC Environment: Restore'
       shell: bash
-      env:
-        CACHE_HIT: >
-          ${{steps.vcpkg-restore.outputs.cache-hit == 'true'
-             || steps.vcpkg-restore.outcome == 'skipped' && steps.build-restore.outputs.cache-hit == 'true'}}
-      run: |
-        [[ $CACHE_HIT == 'true' ]] && cat cmake-utils/.msvc.env >> $GITHUB_ENV
+      run: cat cmake-utils/.msvc.env >> $GITHUB_ENV
 
     # Analyze
     - name: Analyze

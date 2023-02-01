@@ -282,59 +282,47 @@ jobs:
     steps:
     # Restore
     - name: 'Actions: Restore'
-      id: actions-restore
       uses: actions/cache/restore@v3
       with:
         path: cmake-utils
         key: cmu-cmake-utils-${{github.workflow_sha}}
+        fail-on-cache-miss: true
 
     - name: 'Source: Restore'
-      id: source-restore
-      if: ${{steps.actions-restore.outputs.cache-hit == 'true'}}
       uses: actions/cache/restore@v3
       with:
         path: source
         key: cmu-source-${{github.sha}}
+        fail-on-cache-miss: true
 
     - name: 'Tools: Restore'
-      id: tools-restore
-      if: ${{steps.source-restore.outputs.cache-hit == 'true'}}
       uses: actions/cache/restore@v3
       with:
         path: |
           cmake-utils/.msvc.env
           vcpkg-downloads/tools/powershell-core-*
         key: ${{needs.warm-up.outputs.tools-cache-key}}
+        fail-on-cache-miss: true
 
     - name: 'vcpkg Registries: Restore'
-      id: vcpkg-registries-restore
-      if: ${{steps.tools-restore.outputs.cache-hit == 'true' && needs.warm-up.outputs.vcpkg-registries-cache-key != ''}}
+      if: ${{needs.warm-up.outputs.vcpkg-registries-cache-key != ''}}
       uses: actions/cache/restore@v3
       with:
         path: vcpkg-registries
         key: ${{needs.warm-up.outputs.vcpkg-registries-cache-key}}
+        fail-on-cache-miss: true
 
     - name: 'vcpkg Packages: Restore'
-      id: vcpkg-restore
-      if: >
-        ${{(steps.vcpkg-registries-restore.outputs.cache-hit == 'true'
-            || steps.vcpkg-registries-restore.outcome == 'skipped' && steps.tools-restore.outputs.cache-hit == 'true')
-           && needs.warm-up.outputs.vcpkg-cache-key != ''}}
+      if: ${{needs.warm-up.outputs.vcpkg-cache-key != ''}}
       uses: actions/cache/restore@v3
       with:
         path: build/vcpkg_installed
         key: ${{needs.warm-up.outputs.vcpkg-cache-key}}
+        fail-on-cache-miss: true
 
     - name: 'MSVC Environment: Restore'
       shell: bash
-      env:
-        CACHE_HIT: >
-          ${{steps.vcpkg-restore.outputs.cache-hit == 'true'
-             || (steps.vcpkg-restore.outcome == 'skipped'
-                 && (steps.vcpkg-registries-restore.cache-hit == 'true'
-                     || steps.vcpkg-registries-restore.outcome == 'skipped' && steps.tools-restore.outputs.cache-hit == 'true'))}}
-      run: |
-        [[ $CACHE_HIT == 'true' ]] && cat cmake-utils/.msvc.env >> $GITHUB_ENV
+      run: cat cmake-utils/.msvc.env >> $GITHUB_ENV
 
     # Configure, Build and Test
     - name: Configure
