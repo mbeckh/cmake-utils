@@ -99,7 +99,7 @@ jobs:
             | jq '
                 [
                   .. | ((."default-registry"? | objects), (.registries? | .[]?))
-                  | .select(.kind == "git")
+                  | select(.kind == "git")
                   | { repository, reference, baseline }
                   | del(.. | nulls)  
                 ] | sort')
