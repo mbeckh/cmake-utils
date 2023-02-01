@@ -167,6 +167,7 @@ jobs:
         set VCPKG_BINARY_SOURCES=clear;nuget,GitHub,readwrite
         if not exist %BUILD_ROOT%\vcpkg-registries md %BUILD_ROOT%\vcpkg-registries
         %VCPKG_INSTALLATION_ROOT%\vcpkg.exe install ^
+          --debug --debug-env ^
           --vcpkg-root=%VCPKG_INSTALLATION_ROOT% --x-wait-for-lock --feature-flags=-compilertracking ^
           --triplet=x64-windows-static --host-triplet=x64-windows-static --overlay-triplets=%GITHUB_WORKSPACE%\cmake-utils\modules\triplets ^
           --downloads-root=%BUILD_ROOT%\vcpkg-downloads --x-registries-cache=%BUILD_ROOT%\vcpkg-registries ^
@@ -390,6 +391,7 @@ jobs:
     with:
       source-dir: test
       pch: false
+      configure-args: -D "VCPKG_INSTALL_OPTIONS=--debug --debug-env"
       test-args: --label-regex "^Run$"
     secrets: inherit
     permissions:
