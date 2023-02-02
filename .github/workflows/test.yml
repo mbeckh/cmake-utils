@@ -271,8 +271,10 @@ jobs:
       matrix:
         #preset: [ '', 'x64']
         #multi-config: [ '', 'multi' ]
+        multi-config: [ 'multi' ]
         #configuration: [ Debug, Release ]
         configuration: [ Debug ]
+        unity: [ 'unity' ]
         #unity: [ '', 'unity' ]
       fail-fast: false
     permissions:
