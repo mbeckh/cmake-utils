@@ -32,7 +32,7 @@ on:
       codeql-queries:
         description: CodeQL queries to run (optional, defaults to security-and-quality for non-pull-requests if no config file is provided).
         type: string
-        default: ${{inputs.codeql-config-file && github.event_name != 'pull-request' && 'security-and-quality' || ''}}
+        default: ${{!inputs.codeql-config-file && github.event_name != 'pull-request' && 'security-and-quality' || ''}}
 
 permissions: {}
 
