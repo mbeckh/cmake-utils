@@ -160,8 +160,7 @@ jobs:
       id: tools-state
       shell: bash
       run: |
-        echo "vcpkg-packages-hash=${{hashFiles('build/vcpkg_installed/vcpkg/vcpkg-lock.json',
-                                               'build/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}" >> $GITHUB_OUTPUT
+        echo "vcpkg-packages-hash=${{hashFiles('build/vcpkg_installed/vcpkg/vcpkg-lock.json', 'build/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}" >> $GITHUB_OUTPUT
         > cmake-utils/.stamp
         if [[ -f cmake-utils/.msvc.env ]]; then
           cat cmake-utils/.msvc.env >> $GITHUB_ENV
@@ -375,9 +374,9 @@ jobs:
                 fi
                 echo "Removing cache $cache_key of $cache_ref (created: $cache_created, last access: $cache_last_accessed)"
                 echo "| $cache_ref | $cache_key | $cache_created | $cache_last_accessed |" >> $GITHUB_STEP_SUMMARY
-                #curl -X DELETE --no-progress-meter \
-                #     -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
-                #     "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches/${cache_id}"
+                curl -X DELETE --no-progress-meter \
+                     -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
+                     "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches/${cache_id}"
               fi
             done
 
@@ -455,8 +454,8 @@ jobs:
                 fi
                 echo "Removing cache $cache_key of $cache_ref (created: $cache_created, last access: $cache_last_accessed)"
                 echo "| $cache_ref | $cache_key | $cache_created | $cache_last_accessed |" >> $GITHUB_STEP_SUMMARY
-                #curl -X DELETE --no-progress-meter \
-                #     -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
-                #     "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches/${cache_id}"
+                curl -X DELETE --no-progress-meter \
+                     -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
+                     "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches/${cache_id}"
               fi
             done
