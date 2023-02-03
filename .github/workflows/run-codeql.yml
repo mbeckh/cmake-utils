@@ -328,7 +328,7 @@ jobs:
           !build/vcpkg-buildtrees/detect_compiler
         if-no-files-found: ignore
 
-cleanup-pre:
+  cleanup-pre:
     name: Remove Old Caches
     runs-on: ubuntu-latest
     permissions:
