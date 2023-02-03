@@ -116,9 +116,7 @@ jobs:
     - name: 'vcpkg: Hashes'
       id: state
       shell: bash
-      working-directory: >
-        ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || ''
-                                , inputs.source-dir != '.' && inputs.source-dir || '')}}
+      working-directory: ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || '')}}
       run: |
         ((echo "image-os=$ImageOS") & (echo "image-version=$ImageVersion")) >> $GITHUB_OUTPUT
         if [[ -f vcpkg.json ]]; then
@@ -191,15 +189,10 @@ jobs:
       id: configure
       uses: ./cmake-utils/configure
       with:
-        source-dir: >
-          ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || ''
-                                  , inputs.source-dir != '.' && inputs.source-dir || '')}}
+        source-dir: ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || '')}}
         binary-dir: build
         configuration: ${{matrix.configuration}}
-        extra-args: >
-          ${{inputs.unity && '-D "CMAKE_UNITY_BUILD:BOOL=ON"' || ''}}
-          ${{!inputs.pch && '-D "CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON"' || ''}}
-          ${{inputs.configure-args}}
+        extra-args: ${{inputs.unity && '-D "CMAKE_UNITY_BUILD:BOOL=ON"' || ''}} ${{!inputs.pch && '-D "CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON"' || ''}} ${{inputs.configure-args}}
 
     # Build Environment: Cache
     - name: 'Tools: Check for Updates'
@@ -311,9 +304,7 @@ jobs:
       if: ${{matrix.configuration == 'Debug'}}
       uses: mbeckh/code-quality-actions/coverage@v1
       with:
-        source-dir: >
-          ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || ''
-                                  , inputs.source-dir != '.' && inputs.source-dir || '')}}
+        source-dir: ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || '')}}
         binary-dir: build
         command: ctest --output-on-failure -C ${{matrix.configuration}} ${{inputs.test-args}}
         codacy-token: ${{secrets.CODACY_PROJECT_API_TOKEN}}
@@ -405,9 +396,7 @@ jobs:
     - name: 'vcpkg: Hashes'
       id: state
       shell: bash
-      working-directory: >
-        ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || ''
-                                , inputs.source-dir != '.' && inputs.source-dir || '')}}
+      working-directory: ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || '')}}
       run: |
         ((echo "image-os=$ImageOS") & (echo "image-version=$ImageVersion")) >> $GITHUB_OUTPUT
         if [[ -f vcpkg.json ]]; then
@@ -480,15 +469,10 @@ jobs:
       id: configure
       uses: ./cmake-utils/configure
       with:
-        source-dir: >
-          ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || ''
-                                  , inputs.source-dir != '.' && inputs.source-dir || '')}}
+        source-dir: ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || '')}}
         binary-dir: build
         configuration: ${{matrix.configuration}}
-        extra-args: >
-          ${{inputs.unity && '-D "CMAKE_UNITY_BUILD:BOOL=ON"' || ''}}
-          ${{!inputs.pch && '-D "CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON"' || ''}}
-          ${{inputs.configure-args}}
+        extra-args: ${{inputs.unity && '-D "CMAKE_UNITY_BUILD:BOOL=ON"' || ''}} ${{!inputs.pch && '-D "CMAKE_DISABLE_PRECOMPILE_HEADERS:BOOL=ON"' || ''}} ${{inputs.configure-args}}
 
     # Build Environment: Cache
     - name: 'Tools: Check for Updates'
@@ -616,7 +600,7 @@ jobs:
         codacy-token: ${{secrets.CODACY_PROJECT_API_TOKEN}}
 
   cleanup-pre:
-    name: Remove Old Caches
+    name: 'Caches: Remove Old Branches'
     runs-on: ubuntu-latest
     permissions:
       actions: write
@@ -694,7 +678,7 @@ jobs:
             done
 
   cleanup-post:
-    name: Clean Caches
+    name: 'Caches: Clean'
     if: ${{always()}}
     needs: [ build, analyze ]
     runs-on: ubuntu-latest
@@ -702,7 +686,7 @@ jobs:
       actions: write
 
     steps:
-    - name: Stale Caches
+    - name: Stale
       shell: bash
       env:
         GITHUB_TOKEN: ${{github.token}}

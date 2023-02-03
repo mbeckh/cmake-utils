@@ -107,9 +107,7 @@ jobs:
     - name: 'vcpkg: Hashes'
       id: state
       shell: bash
-      working-directory: >
-        ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || ''
-                                , inputs.source-dir != '.' && inputs.source-dir || '')}}
+      working-directory: ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || '')}}
       run: |
         ((echo "image-os=$ImageOS") & (echo "image-version=$ImageVersion")) >> $GITHUB_OUTPUT
         if [[ -f vcpkg.json ]]; then
@@ -182,15 +180,10 @@ jobs:
       id: configure
       uses: ./cmake-utils/configure
       with:
-        source-dir: >
-          ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || ''
-                                  , inputs.source-dir != '.' && inputs.source-dir || '')}}
+        source-dir: ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || '')}}
         binary-dir: build
         configuration: Release
-        extra-args: >
-          -D "CMU_DISABLE_DEBUG_INFORMATION:BOOL=ON"
-          -D "CMU_DISABLE_CLANG_TOOLS:BOOL=ON"
-          ${{inputs.configure-args}}
+        extra-args: -D "CMU_DISABLE_DEBUG_INFORMATION:BOOL=ON" -D "CMU_DISABLE_CLANG_TOOLS:BOOL=ON" ${{inputs.configure-args}}
 
     # Build Environment: Cache
     - name: 'Tools: Check for Updates'
@@ -287,9 +280,7 @@ jobs:
         languages: cpp
         config-file: ${{inputs.codeql-config-file}}
         queries: ${{inputs.codeql-queries}}
-        source-root: >
-          ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || ''
-                                  , inputs.source-dir != '.' && inputs.source-dir || '')}}
+        source-root: ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || '')}}
 
     - name: 'CodeQL: Initialize for Pull Request'
       if: ${{github.event_name == 'pull_request'}}
@@ -298,9 +289,7 @@ jobs:
         languages: cpp
         config-file: ${{inputs.codeql-config-file}}
         queries: ${{inputs.codeql-queries}}
-        source-root: >
-          ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || ''
-                                  , inputs.source-dir != '.' && inputs.source-dir || '')}}
+        source-root: ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || '')}}
 
     # Build
     - name: Build
@@ -329,7 +318,7 @@ jobs:
         if-no-files-found: ignore
 
   cleanup-pre:
-    name: Remove Old Caches
+    name: 'Caches: Remove Old Branches'
     runs-on: ubuntu-latest
     permissions:
       actions: write
@@ -407,7 +396,7 @@ jobs:
             done
 
   cleanup-post:
-    name: Clean Caches
+    name: 'Caches: Clean'
     if: ${{always()}}
     needs: analyze
     runs-on: ubuntu-latest
@@ -415,7 +404,7 @@ jobs:
       actions: write
 
     steps:
-    - name: Stale Caches
+    - name: Stale
       shell: bash
       env:
         GITHUB_TOKEN: ${{github.token}}

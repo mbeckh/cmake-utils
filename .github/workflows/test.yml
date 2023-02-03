@@ -228,7 +228,7 @@ jobs:
       security-events: write
 
   cleanup-post:
-    name: Clean Caches
+    name: 'Caches: Clean'
     if: ${{always()}}
     needs: [ test, build-workflow, codeql-workflow ]
     runs-on: ubuntu-latest
@@ -236,7 +236,7 @@ jobs:
       actions: write
 
     steps:
-    - name: Stale Caches
+    - name: Stale
       shell: bash
       env:
         GITHUB_TOKEN: ${{github.token}}
