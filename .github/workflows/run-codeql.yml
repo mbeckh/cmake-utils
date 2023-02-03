@@ -107,7 +107,7 @@ jobs:
     - name: 'vcpkg: Hashes'
       id: state
       shell: bash
-      working-directory: ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || '')}}
+      working-directory: source${{inputs.source-dir != '.' && inputs.source-dir && '/' || ''}}${{inputs.source-dir != '.' && inputs.source-dir || ''}}
       run: |
         ((echo "image-os=$ImageOS") & (echo "image-version=$ImageVersion")) >> $GITHUB_OUTPUT
         if [[ -f vcpkg.json ]]; then
@@ -180,7 +180,7 @@ jobs:
       id: configure
       uses: ./cmake-utils/configure
       with:
-        source-dir: ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || '')}}
+        source-dir: source${{inputs.source-dir != '.' && inputs.source-dir && '/' || ''}}${{inputs.source-dir != '.' && inputs.source-dir || ''}}
         binary-dir: build
         configuration: Release
         extra-args: -D "CMU_DISABLE_DEBUG_INFORMATION:BOOL=ON" -D "CMU_DISABLE_CLANG_TOOLS:BOOL=ON" ${{inputs.configure-args}}
@@ -280,7 +280,7 @@ jobs:
         languages: cpp
         config-file: ${{inputs.codeql-config-file}}
         queries: ${{inputs.codeql-queries}}
-        source-root: ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || '')}}
+        source-root: source${{inputs.source-dir != '.' && inputs.source-dir && '/' || ''}}${{inputs.source-dir != '.' && inputs.source-dir || ''}}
 
     - name: 'CodeQL: Initialize for Pull Request'
       if: ${{github.event_name == 'pull_request'}}
@@ -289,7 +289,7 @@ jobs:
         languages: cpp
         config-file: ${{inputs.codeql-config-file}}
         queries: ${{inputs.codeql-queries}}
-        source-root: ${{format('source{0}{1}', inputs.source-dir != '.' && inputs.source-dir && '/' || '', inputs.source-dir != '.' && inputs.source-dir || '')}}
+        source-root: source${{inputs.source-dir != '.' && inputs.source-dir && '/' || ''}}${{inputs.source-dir != '.' && inputs.source-dir || ''}}
 
     # Build
     - name: Build
