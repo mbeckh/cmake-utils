@@ -667,7 +667,7 @@ jobs:
         jq -r --slurpfile branches branch-names.json --argjson stamp "$stamp" '
             .actions_caches
             | map(select(.ref | IN($branches[]) | not)
-                  | (.last_accessed_at |= (sub(".\\d+Z$"; "Z") | fromdateiso8601))
+                  | (.last_accessed_at |= (sub("\\.\\d+Z$"; "Z") | fromdateiso8601))
                   | select(.last_accessed_at <= $stamp ))
             | to_entries[]
             | [ .key, .value.id, .value.key, .value.ref, (.value.last_accessed_at | gmtime | strftime("%Y-%m-%d %H:%M:%S")) ]
