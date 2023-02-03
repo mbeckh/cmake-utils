@@ -40,7 +40,7 @@ jobs:
         stamp=$(curl --no-progress-meter \
                      -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
                      "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT?exclude_pull_requests=true" \
-                  | jq -r '.run_started_at | fromdateiso8601')
+                  | jq -r '.created_at | fromdateiso8601')
 
         ref=$(echo -n "$GITHUB_REF" | jq -Rsr '@uri')
         curl -D caches.json.headers --no-progress-meter \
