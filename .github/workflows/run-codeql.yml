@@ -327,3 +327,161 @@ jobs:
           build/vcpkg-buildtrees/*/*.log
           !build/vcpkg-buildtrees/detect_compiler
         if-no-files-found: ignore
+
+cleanup-pre:
+    name: Remove Old Caches
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+
+    steps:
+    - name: Deleted Branches
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{github.token}}
+      run: |
+        function load_paged {
+          curl -D "$2.headers" --no-progress-meter \
+               -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
+               "$1" > "$2"
+          next=$(egrep -i '^link: ' "$2.headers" | grep -P -i -o '(?<=<)([\S]*)(?=>; rel="next")') || [[ $? == 1 ]]
+          while [[ -n $next ]]; do
+            curl -D "$2.headers" --no-progress-meter \
+                 -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
+                 "$next" >> "$2"
+            next=$(egrep -i '^link: ' "$2.headers" | grep -P -i -o '(?<=<)([\S]*)(?=>; rel="next")') || [[ $? == 1 ]]
+          done
+        }
+
+        stamp=$(jq -n -r 'now')
+        load_paged "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches" caches.json
+
+        load_paged "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/matching-refs/heads" branches.json
+        jq -r '.[] | .ref | @json' branches.json > branch-names.json
+
+        load_paged "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pulls?state=open" pulls.json
+        jq -r '.[] | .number | "refs/pull/" + (. | tostring) + "/merge" | @json' pulls.json >> branch-names.json
+
+        if [[ $RUNNER_DEBUG -eq 1 ]]; then
+            echo "::group::$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/matching-refs/heads"
+            cat branches.json
+            echo "::endgroup::"
+            echo "::group::$GITHUB_API_URL/repos/$GITHUB_REPOSITORY//pulls?state=open"
+            cat pulls.json
+            echo "::endgroup::"
+            echo "::group::$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches"
+            cat caches.json
+            echo "::endgroup::"
+            echo "::group::Active Branches"
+            cat branch-names.json
+            echo "::endgroup::"
+        fi
+
+        jq -r --slurpfile branches branch-names.json --argjson stamp "$stamp" '
+            .actions_caches
+            | map( select(.ref | IN($branches[]) | not)
+                   | (.last_accessed_at |= (sub("\\.\\d+Z$"; "Z") | fromdateiso8601))
+                   | select(.last_accessed_at <= $stamp )
+                   | (.created_at |= (sub("\\.\\d+Z$"; "Z") | fromdateiso8601))
+                 )
+            | to_entries[]
+            | [ .key, .value.id, .value.key, .value.ref
+                , (.value.created_at | gmtime | strftime("%Y-%m-%d %H:%M:%S"))
+                , (.value.last_accessed_at | gmtime | strftime("%Y-%m-%d %H:%M:%S"))
+              ]
+            | @tsv
+            ' caches.json \
+          | while IFS=$'\t' read sequence cache_id cache_key cache_ref cache_created cache_last_accessed; do
+              if [[ -n $sequence ]]; then
+                if [[ $sequence -eq 0 ]]; then
+                  echo "## Clean Caches: Deleted Branches" >> $GITHUB_STEP_SUMMARY
+                  echo "| Branch | Key | Created | Last Accessed |" >> $GITHUB_STEP_SUMMARY
+                  echo "| --- | --- | --- | --- |" >> $GITHUB_STEP_SUMMARY
+                fi
+                echo "Removing cache $cache_key of $cache_ref (created: $cache_created, last access: $cache_last_accessed)"
+                echo "| $cache_ref | $cache_key | $cache_created | $cache_last_accessed |" >> $GITHUB_STEP_SUMMARY
+                #curl -X DELETE --no-progress-meter \
+                #     -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
+                #     "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches/${cache_id}"
+              fi
+            done
+
+  cleanup-post:
+    name: Clean Caches
+    if: ${{always()}}
+    needs: analyze
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+
+    steps:
+    - name: Stale Caches
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{github.token}}
+      run: |
+        stamp=$(curl --no-progress-meter \
+                     -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
+                     "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT?exclude_pull_requests=true" \
+                  | jq -r '.run_started_at | sub("\\.\\d+Z$"; "Z") | fromdateiso8601')
+
+        ref=$(echo -n "$GITHUB_REF" | jq -Rsr '@uri')
+        curl -D caches.json.headers --no-progress-meter \
+             -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
+             "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches?ref=$ref" > caches.json
+        next=$(egrep -i '^link: ' caches.json.headers | grep -P -i -o '(?<=<)([\S]*)(?=>; rel="next")') || [[ $? == 1 ]]
+        while [[ -n $next ]]; do
+          curl -D "caches.json.headers" --no-progress-meter \
+               -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
+               "$next" >> caches.json
+          next=$(egrep -i '^link: ' caches.json.headers | grep -P -i -o '(?<=<)([\S]*)(?=>; rel="next")') || [[ $? == 1 ]]
+        done
+
+        if [[ 1 == 1 || $RUNNER_DEBUG -eq 1 ]]; then
+            echo "::debug::stamp=$(jq -n -r --argjson stamp "$stamp" '$stamp | gmtime | strftime("%Y-%m-%d %H:%M:%S")')"
+            echo "::group::$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches?ref=$ref"
+            cat caches.json
+            echo "::endgroup::"
+        fi
+
+        jq -r -s --argjson stamp "$stamp" '
+            { "cmake-utils": 1, "source": 1, "tools": 2, "vcpkg-registries": 1, "vcpkg_installed": 2 } as $keep |
+            [
+              .[]
+              | .actions_caches
+              | .[]
+              | (. + {"$cache": .key
+                                | match("^cmu-(cmake-utils|source|tools|vcpkg-registries|vcpkg_installed)-")
+                                | .captures[0].string })
+            ]
+            | group_by(."$cache")
+            | map(. |= ( sort_by(.last_accessed_at)
+                         | .[:-$keep[.[0]."$cache"]]
+                         | map( (.created_at |= (sub(".\\d+Z$"; "Z") | fromdateiso8601))
+                                | select(.created_at <= $stamp)
+                                (.last_accessed_at |= (sub(".\\d+Z$"; "Z") | fromdateiso8601))
+                              )
+                       )
+                 )
+            | flatten(1)
+            | to_entries[]
+            | [ .key, .value.id, .value.key, .value.ref
+                , (.value.created_at | gmtime | strftime("%Y-%m-%d %H:%M:%S"))
+                , (.value.last_accessed_at | gmtime | strftime("%Y-%m-%d %H:%M:%S"))
+              ]
+            | @tsv
+            ' caches.json \
+          | while IFS=$'\t' read sequence cache_id cache_key cache_ref cache_created cache_last_accessed; do
+              if [[ -n $sequence ]]; then
+                if [[ $sequence -eq 0 ]]; then
+                  echo "## Clean Caches: Stale Caches" >> $GITHUB_STEP_SUMMARY
+                  echo "| Branch | Key | Created | Last Accessed |" >> $GITHUB_STEP_SUMMARY
+                  echo "| --- | --- | --- | --- |" >> $GITHUB_STEP_SUMMARY
+                fi
+                echo "Removing cache $cache_key of $cache_ref (created: $cache_created, last access: $cache_last_accessed)"
+                echo "| $cache_ref | $cache_key | $cache_created | $cache_last_accessed |" >> $GITHUB_STEP_SUMMARY
+                #curl -X DELETE --no-progress-meter \
+                #     -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
+                #     "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches/${cache_id}"
+              fi
+            done
