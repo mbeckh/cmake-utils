@@ -1,4 +1,5 @@
 # Copyright 2023 Michael Beckh
+# Copyright 2023 Michael Beckh
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -50,7 +51,7 @@ jobs:
         key: cmu-cmake-utils-${{github.sha}}
 
     - name: 'Actions: Load'
-      if: ${{steps.actions-restore.outputs.cache-hit != 'true'}}
+      if: steps.actions-restore.outputs.cache-hit != 'true'
       shell: bash
       env:
         GITHUB_TOKEN: ${{github.token}}
@@ -64,7 +65,7 @@ jobs:
             '*/configure' '*/modules' '*/msvc-dev-env' '*/Toolchain.cmake'
 
     - name: 'Actions: Cache'
-      if: ${{steps.actions-restore.outputs.cache-hit != 'true'}}
+      if: steps.actions-restore.outputs.cache-hit != 'true'
       uses: actions/cache/save@v3
       with:
         path: cmake-utils
@@ -80,14 +81,14 @@ jobs:
         restore-keys: cmu-source-
 
     - name: 'Source: Checkout'
-      if: ${{steps.source-restore.outputs.cache-hit != 'true'}}
+      if: steps.source-restore.outputs.cache-hit != 'true'
       uses: actions/checkout@v3
       with:
         path: source
         persist-credentials: false
 
     - name: 'Source: Cache'
-      if: ${{steps.source-restore.outputs.cache-hit != 'true'}}
+      if: steps.source-restore.outputs.cache-hit != 'true'
       uses: actions/cache/save@v3
       with:
         path: source
@@ -128,7 +129,7 @@ jobs:
 
     - name: 'vcpkg Registries: Restore'
       id: vcpkg-registries-restore
-      if: ${{steps.state.outputs.registries-hash != ''}}
+      if: steps.state.outputs.registries-hash != ''
       uses: actions/cache/restore@v3
       with:
         path: vcpkg-registries
@@ -137,7 +138,7 @@ jobs:
 
     - name: 'vcpkg Packages: Restore'
       id: vcpkg-packages-restore
-      if: ${{steps.state.outputs.manifest-hash != ''}}
+      if: steps.state.outputs.manifest-hash != ''
       uses: actions/cache/restore@v3
       with:
         path: build/vcpkg_installed
@@ -160,7 +161,7 @@ jobs:
 
     - name: 'MSVC Environment: Setup'
       id: msvc-setup
-      if: ${{steps.tools-state.outputs.msvc-restored != 'true'}}
+      if: steps.tools-state.outputs.msvc-restored != 'true'
       uses: ./cmake-utils/msvc-dev-env
       with:
         env-file: cmake-utils/.msvc.env
@@ -190,7 +191,7 @@ jobs:
 
     # Logs
     - name: Save Logs
-      if: ${{always() && steps.configure.outcome != 'skipped'}}
+      if: always() && steps.configure.outcome != 'skipped'
       uses: actions/upload-artifact@v3
       with:
         name: Test-Build-${{matrix.preset || 'nopreset'}}-${{matrix.multi-config || 'single'}}-${{matrix.configuration}}-${{matrix.unity || 'regular'}}-Logs
@@ -229,7 +230,7 @@ jobs:
 
   cleanup-post:
     name: 'Caches: Clean'
-    if: ${{always()}}
+    if: always()
     needs: [ test, build-workflow, codeql-workflow ]
     runs-on: ubuntu-latest
     permissions:

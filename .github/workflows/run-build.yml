@@ -69,7 +69,7 @@ jobs:
         key: cmu-cmake-utils-${{github.workflow_sha}}
 
     - name: 'Actions: Load'
-      if: ${{steps.actions-restore.outputs.cache-hit != 'true'}}
+      if: steps.actions-restore.outputs.cache-hit != 'true'
       shell: bash
       env:
         GITHUB_TOKEN: ${{github.token}}
@@ -83,7 +83,7 @@ jobs:
             '*/configure' '*/modules' '*/msvc-dev-env' '*/Toolchain.cmake'
 
     - name: 'Actions: Cache'
-      if: ${{steps.actions-restore.outputs.cache-hit != 'true'}}
+      if: steps.actions-restore.outputs.cache-hit != 'true'
       uses: actions/cache/save@v3
       with:
         path: cmake-utils
@@ -99,14 +99,14 @@ jobs:
         restore-keys: cmu-source-
 
     - name: 'Source: Checkout'
-      if: ${{steps.source-restore.outputs.cache-hit != 'true'}}
+      if: steps.source-restore.outputs.cache-hit != 'true'
       uses: actions/checkout@v3
       with:
         path: source
         persist-credentials: false
 
     - name: 'Source: Cache'
-      if: ${{steps.source-restore.outputs.cache-hit != 'true'}}
+      if: steps.source-restore.outputs.cache-hit != 'true'
       uses: actions/cache/save@v3
       with:
         path: source
@@ -118,6 +118,7 @@ jobs:
       shell: bash
       working-directory: source${{inputs.source-dir != '.' && inputs.source-dir && '/' || ''}}${{inputs.source-dir != '.' && inputs.source-dir || ''}}
       run: |
+        exit 1 # deliberate fail
         ((echo "image-os=$ImageOS") & (echo "image-version=$ImageVersion")) >> $GITHUB_OUTPUT
         if [[ -f vcpkg.json ]]; then
           registries=$(jq --sort-keys $([[ -f vcpkg-configuration.json ]] && echo '--slurp') '.' \
@@ -147,7 +148,7 @@ jobs:
 
     - name: 'vcpkg Registries: Restore'
       id: vcpkg-registries-restore
-      if: ${{steps.state.outputs.registries-hash != ''}}
+      if: steps.state.outputs.registries-hash != ''
       uses: actions/cache/restore@v3
       with:
         path: vcpkg-registries
@@ -156,7 +157,7 @@ jobs:
 
     - name: 'vcpkg Packages: Restore'
       id: vcpkg-packages-restore
-      if: ${{steps.state.outputs.manifest-hash != ''}}
+      if: steps.state.outputs.manifest-hash != ''
       uses: actions/cache/restore@v3
       with:
         path: build/vcpkg_installed
@@ -169,8 +170,7 @@ jobs:
       id: tools-state
       shell: bash
       run: |
-        echo "vcpkg-packages-hash=${{hashFiles('build/vcpkg_installed/vcpkg/vcpkg-lock.json',
-                                               'build/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}" >> $GITHUB_OUTPUT
+        echo "vcpkg-packages-hash=${{hashFiles('build/vcpkg_installed/vcpkg/vcpkg-lock.json', 'build/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}" >> $GITHUB_OUTPUT
         > cmake-utils/.stamp
         if [[ -f cmake-utils/.msvc.env ]]; then
           cat cmake-utils/.msvc.env >> $GITHUB_ENV
@@ -179,7 +179,7 @@ jobs:
 
     - name: 'MSVC Environment: Setup'
       id: msvc-setup
-      if: ${{steps.tools-state.outputs.msvc-restored != 'true'}}
+      if: steps.tools-state.outputs.msvc-restored != 'true'
       uses: ./cmake-utils/msvc-dev-env
       with:
         env-file: cmake-utils/.msvc.env
@@ -197,7 +197,7 @@ jobs:
     # Build Environment: Cache
     - name: 'Tools: Check for Updates'
       id: tools-check
-      if: ${{always() && steps.configure.outcome != 'skipped' && steps.tools-restore.outputs.cache-hit == 'true'}}
+      if: always() && steps.configure.outcome != 'skipped' && steps.tools-restore.outputs.cache-hit == 'true'
       shell: bash
       env:
         CACHE_KEY: ${{steps.tools-restore.outputs.cache-primary-key}}
@@ -215,9 +215,7 @@ jobs:
         fi
 
     - name: 'Tools: Cache'
-      if: >
-        ${{always() && steps.configure.outcome != 'skipped'
-                    && (steps.tools-restore.outputs.cache-hit != 'true' || steps.tools-check.outputs.updated == 'true')}}
+      if: always() && steps.configure.outcome != 'skipped' && (steps.tools-restore.outputs.cache-hit != 'true' || steps.tools-check.outputs.updated == 'true')
       uses: actions/cache/save@v3
       with:
         path: |
@@ -227,9 +225,7 @@ jobs:
 
     - name: 'vcpkg Registries: Check for Updates'
       id: vcpkg-registries-check
-      if: >
-        ${{always() && steps.configure.outcome != 'skipped'
-                    && steps.vcpkg-registries-restore.outputs.cache-hit == 'true'}}
+      if: always() && steps.configure.outcome != 'skipped' && steps.vcpkg-registries-restore.outputs.cache-hit == 'true'
       shell: bash
       env:
         CACHE_KEY: ${{steps.vcpkg-registries-restore.outputs.cache-primary-key}}
@@ -244,10 +240,7 @@ jobs:
         fi
 
     - name: 'vcpkg Registries: Cache'
-      if: >
-        ${{always() && steps.configure.outcome != 'skipped'
-                    && steps.vcpkg-registries-restore.outcome != 'skipped'
-                    && (steps.vcpkg-registries-restore.outputs.cache-hit != 'true' || steps.vcpkg-registries-check.outputs.updated == 'true')}}
+      if: always() && steps.configure.outcome != 'skipped' && steps.vcpkg-registries-restore.outcome != 'skipped' && (steps.vcpkg-registries-restore.outputs.cache-hit != 'true' || steps.vcpkg-registries-check.outputs.updated == 'true')
       uses: actions/cache/save@v3
       with:
         path: vcpkg-registries
@@ -255,11 +248,7 @@ jobs:
 
     - name: 'vcpkg Packages: Check for Updates'
       id: vcpkg-packages-check
-      if: >
-        ${{always() && steps.configure.outcome != 'skipped'
-                    && steps.vcpkg-packages-restore.outputs.cache-hit == 'true'
-                    && steps.tools-state.outputs.vcpkg-packages-hash != hashFiles('build/vcpkg_installed/vcpkg/vcpkg-lock.json',
-                                                                                  'build/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}
+      if: always() && steps.configure.outcome != 'skipped' && steps.vcpkg-packages-restore.outputs.cache-hit == 'true' && steps.tools-state.outputs.vcpkg-packages-hash != hashFiles('build/vcpkg_installed/vcpkg/vcpkg-lock.json', 'build/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')
       shell: bash
       env:
         CACHE_KEY: ${{steps.vcpkg-packages-restore.outputs.cache-primary-key}}
@@ -273,10 +262,7 @@ jobs:
              "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches"
 
     - name: 'vcpkg Packages: Cache'
-      if: >
-        ${{always() && steps.configure.outcome != 'skipped'
-                    && steps.vcpkg-packages-restore.outcome != 'skipped'
-                    && (steps.vcpkg-packages-restore.outputs.cache-hit != 'true' || steps.vcpkg-packages-check.outcome == 'success')}}
+      if: always() && steps.configure.outcome != 'skipped' && steps.vcpkg-packages-restore.outcome != 'skipped' && (steps.vcpkg-packages-restore.outputs.cache-hit != 'true' || steps.vcpkg-packages-check.outcome == 'success')
       uses: actions/cache/save@v3
       with:
         path: build/vcpkg_installed
@@ -292,7 +278,7 @@ jobs:
 
     - name: Test
       id: test
-      if: ${{matrix.configuration != 'Debug'}}
+      if: matrix.configuration != 'Debug'
       shell: cmd
       working-directory: build
       env:
@@ -301,7 +287,7 @@ jobs:
 
     - name: Coverage
       id: coverage
-      if: ${{matrix.configuration == 'Debug'}}
+      if: matrix.configuration == 'Debug'
       uses: mbeckh/code-quality-actions/coverage@v1
       with:
         source-dir: source${{inputs.source-dir != '.' && inputs.source-dir && '/' || ''}}${{inputs.source-dir != '.' && inputs.source-dir || ''}}
@@ -310,7 +296,7 @@ jobs:
         codacy-token: ${{secrets.CODACY_PROJECT_API_TOKEN}}
 
     - name: Codecov
-      if: ${{steps.coverage.outcome == 'success'}}
+      if: steps.coverage.outcome == 'success'
       uses: codecov/codecov-action@v3
       with:
         files: build/coverage-*.xml
@@ -318,7 +304,7 @@ jobs:
 
     # Logs
     - name: Save Logs
-      if: ${{always() && steps.configure.outcome != 'skipped'}}
+      if: always() && steps.configure.outcome != 'skipped'
       uses: actions/upload-artifact@v3
       with:
         name: ${{matrix.configuration}}-Build-Logs
@@ -349,7 +335,7 @@ jobs:
         key: cmu-cmake-utils-${{github.workflow_sha}}
 
     - name: 'Actions: Load'
-      if: ${{steps.actions-restore.outputs.cache-hit != 'true'}}
+      if: steps.actions-restore.outputs.cache-hit != 'true'
       shell: bash
       env:
         GITHUB_TOKEN: ${{github.token}}
@@ -363,7 +349,7 @@ jobs:
             '*/configure' '*/modules' '*/msvc-dev-env' '*/Toolchain.cmake'
 
     - name: 'Actions: Cache'
-      if: ${{steps.actions-restore.outputs.cache-hit != 'true'}}
+      if: steps.actions-restore.outputs.cache-hit != 'true'
       uses: actions/cache/save@v3
       with:
         path: cmake-utils
@@ -379,14 +365,14 @@ jobs:
         restore-keys: cmu-source-
 
     - name: 'Source: Checkout'
-      if: ${{steps.source-restore.outputs.cache-hit != 'true'}}
+      if: steps.source-restore.outputs.cache-hit != 'true'
       uses: actions/checkout@v3
       with:
         path: source
         persist-credentials: false
 
     - name: 'Source: Cache'
-      if: ${{steps.source-restore.outputs.cache-hit != 'true'}}
+      if: steps.source-restore.outputs.cache-hit != 'true'
       uses: actions/cache/save@v3
       with:
         path: source
@@ -427,7 +413,7 @@ jobs:
 
     - name: 'vcpkg Registries: Restore'
       id: vcpkg-registries-restore
-      if: ${{steps.state.outputs.registries-hash != ''}}
+      if: steps.state.outputs.registries-hash != ''
       uses: actions/cache/restore@v3
       with:
         path: vcpkg-registries
@@ -436,7 +422,7 @@ jobs:
 
     - name: 'vcpkg Packages: Restore'
       id: vcpkg-packages-restore
-      if: ${{steps.state.outputs.manifest-hash != ''}}
+      if: steps.state.outputs.manifest-hash != ''
       uses: actions/cache/restore@v3
       with:
         path: build/vcpkg_installed
@@ -459,7 +445,7 @@ jobs:
 
     - name: 'MSVC Environment: Setup'
       id: msvc-setup
-      if: ${{steps.tools-state.outputs.msvc-restored != 'true'}}
+      if: steps.tools-state.outputs.msvc-restored != 'true'
       uses: ./cmake-utils/msvc-dev-env
       with:
         env-file: cmake-utils/.msvc.env
@@ -477,7 +463,7 @@ jobs:
     # Build Environment: Cache
     - name: 'Tools: Check for Updates'
       id: tools-check
-      if: ${{always() && steps.configure.outcome != 'skipped' && steps.tools-restore.outputs.cache-hit == 'true'}}
+      if: always() && steps.configure.outcome != 'skipped' && steps.tools-restore.outputs.cache-hit == 'true'
       shell: bash
       env:
         CACHE_KEY: ${{steps.tools-restore.outputs.cache-primary-key}}
@@ -495,9 +481,7 @@ jobs:
         fi
 
     - name: 'Tools: Cache'
-      if: >
-        ${{always() && steps.configure.outcome != 'skipped'
-                    && (steps.tools-restore.outputs.cache-hit != 'true' || steps.tools-check.outputs.updated == 'true')}}
+      if: always() && steps.configure.outcome != 'skipped' && (steps.tools-restore.outputs.cache-hit != 'true' || steps.tools-check.outputs.updated == 'true')
       uses: actions/cache/save@v3
       with:
         path: |
@@ -507,9 +491,7 @@ jobs:
 
     - name: 'vcpkg Registries: Check for Updates'
       id: vcpkg-registries-check
-      if: >
-        ${{always() && steps.configure.outcome != 'skipped'
-                    && steps.vcpkg-registries-restore.outputs.cache-hit == 'true'}}
+      if: always() && steps.configure.outcome != 'skipped' && steps.vcpkg-registries-restore.outputs.cache-hit == 'true'
       shell: bash
       env:
         CACHE_KEY: ${{steps.vcpkg-registries-restore.outputs.cache-primary-key}}
@@ -524,10 +506,7 @@ jobs:
         fi
 
     - name: 'vcpkg Registries: Cache'
-      if: >
-        ${{always() && steps.configure.outcome != 'skipped'
-                    && steps.vcpkg-registries-restore.outcome != 'skipped'
-                    && (steps.vcpkg-registries-restore.outputs.cache-hit != 'true' || steps.vcpkg-registries-check.outputs.updated == 'true')}}
+      if: always() && steps.configure.outcome != 'skipped' && steps.vcpkg-registries-restore.outcome != 'skipped' && (steps.vcpkg-registries-restore.outputs.cache-hit != 'true' || steps.vcpkg-registries-check.outputs.updated == 'true')
       uses: actions/cache/save@v3
       with:
         path: vcpkg-registries
@@ -535,11 +514,7 @@ jobs:
 
     - name: 'vcpkg Packages: Check for Updates'
       id: vcpkg-packages-check
-      if: >
-        ${{always() && steps.configure.outcome != 'skipped'
-                    && steps.vcpkg-packages-restore.outputs.cache-hit == 'true'
-                    && steps.tools-state.outputs.vcpkg-packages-hash != hashFiles('build/vcpkg_installed/vcpkg/vcpkg-lock.json',
-                                                                                  'build/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}
+      if: always() && steps.configure.outcome != 'skipped' && steps.vcpkg-packages-restore.outputs.cache-hit == 'true' && steps.tools-state.outputs.vcpkg-packages-hash != hashFiles('build/vcpkg_installed/vcpkg/vcpkg-lock.json', 'build/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')
       shell: bash
       env:
         VCPKG_CACHE_KEY: ${{steps.vcpkg-packages-restore.outputs.cache-primary-key}}
@@ -553,10 +528,7 @@ jobs:
              "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches"
 
     - name: 'vcpkg Packages: Cache'
-      if: >
-        ${{always() && steps.configure.outcome != 'skipped'
-                    && steps.vcpkg-packages-restore.outcome != 'skipped'
-                    && (steps.vcpkg-packages-restore.outputs.cache-hit != 'true' || steps.vcpkg-packages-check.outcome == 'success')}}
+      if: always() && steps.configure.outcome != 'skipped' && steps.vcpkg-packages-restore.outcome != 'skipped' && (steps.vcpkg-packages-restore.outputs.cache-hit != 'true' || steps.vcpkg-packages-check.outcome == 'success')
       uses: actions/cache/save@v3
       with:
         path: build/vcpkg_installed
@@ -577,7 +549,7 @@ jobs:
         codacy-token: ${{secrets.CODACY_PROJECT_API_TOKEN}}
 
     - name: Save Logs
-      if: ${{always() && steps.analyze.outcome != 'skipped'}}
+      if: always() && steps.analyze.outcome != 'skipped'
       uses: actions/upload-artifact@v3
       with:
         name: ${{matrix.configuration}}-Analyze-Logs
@@ -679,7 +651,7 @@ jobs:
 
   cleanup-post:
     name: 'Caches: Clean'
-    if: ${{always()}}
+    if: always()
     needs: [ build, analyze ]
     runs-on: ubuntu-latest
     permissions:
