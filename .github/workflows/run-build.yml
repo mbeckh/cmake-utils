@@ -572,7 +572,7 @@ jobs:
         codacy-token: ${{secrets.CODACY_PROJECT_API_TOKEN}}
 
   cleanup-pre:
-    name: 'Caches: Remove Old Branches'
+    name: 'Caches: Old Branches'
     runs-on: ubuntu-latest
     permissions:
       actions: write
