@@ -1,0 +1,21 @@
+name: Check
+
+on:
+  push:
+
+concurrency:
+  group: run-codeql-${{github.workflow}}-${{github.event_name}}-${{github.ref}}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: windows-latest
+
+    steps:
+    # CodeQL: Setup
+    - name: 'CodeQL: Initialize'
+      uses: github/codeql-action/init@v2
+      with:
+        languages: cpp
+        queries: mbeckh/cmake-utils/.github/codeql/test.qls@${{github.sha}}
