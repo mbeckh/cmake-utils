@@ -279,9 +279,9 @@ jobs:
             | group_by(."$cache")
             | map(. |= ( sort_by(.last_accessed_at)
                          | .[:-$keep[.[0]."$cache"]]
-                         | map( (.created_at |= (sub(".\\d+Z$"; "Z") | fromdateiso8601))
+                         | map( (.created_at |= (sub("\\.\\d+Z$"; "Z") | fromdateiso8601))
                                 | select(.created_at <= $stamp)
-                                | (.last_accessed_at |= (sub(".\\d+Z$"; "Z") | fromdateiso8601))
+                                | (.last_accessed_at |= (sub("\\.\\d+Z$"; "Z") | fromdateiso8601))
                               )
                        )
                  )
