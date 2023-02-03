@@ -43,7 +43,7 @@ on:
 
 permissions: {}
 
-concurrency: 
+concurrency:
   group: run-build-${{github.workflow}}-${{github.event_name}}-${{github.ref}}
   cancel-in-progress: true
 
@@ -130,7 +130,7 @@ jobs:
                   .. | ((."default-registry"? | objects), (.registries? | .[]?))
                   | select(.kind == "git")
                   | { repository, reference, baseline }
-                  | del(.. | nulls)  
+                  | del(.. | nulls)
                 ] | sort')
           [[ $RUNNER_DEBUG -eq 1 ]] && echo "$registries" || true
           if [[ $registries != '[]' ]]; then
@@ -175,7 +175,7 @@ jobs:
                                                'build/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}" >> $GITHUB_OUTPUT
         > cmake-utils/.stamp
         if [[ -f cmake-utils/.msvc.env ]]; then
-          cat cmake-utils/.msvc.env >> $GITHUB_ENV 
+          cat cmake-utils/.msvc.env >> $GITHUB_ENV
           echo "msvc-restored=true" >> $GITHUB_OUTPUT
         fi
 
@@ -223,7 +223,7 @@ jobs:
 
     - name: 'Tools: Cache'
       if: >
-        ${{always() && steps.configure.outcome != 'skipped' 
+        ${{always() && steps.configure.outcome != 'skipped'
                     && (steps.tools-restore.outputs.cache-hit != 'true' || steps.tools-check.outputs.updated == 'true')}}
       uses: actions/cache/save@v3
       with:
@@ -235,7 +235,7 @@ jobs:
     - name: 'vcpkg Registries: Check for Updates'
       id: vcpkg-registries-check
       if: >
-        ${{always() && steps.configure.outcome != 'skipped' 
+        ${{always() && steps.configure.outcome != 'skipped'
                     && steps.vcpkg-registries-restore.outputs.cache-hit == 'true'}}
       shell: bash
       env:
@@ -252,8 +252,8 @@ jobs:
 
     - name: 'vcpkg Registries: Cache'
       if: >
-        ${{always() && steps.configure.outcome != 'skipped' 
-                    && steps.vcpkg-registries-restore.outcome != 'skipped' 
+        ${{always() && steps.configure.outcome != 'skipped'
+                    && steps.vcpkg-registries-restore.outcome != 'skipped'
                     && (steps.vcpkg-registries-restore.outputs.cache-hit != 'true' || steps.vcpkg-registries-check.outputs.updated == 'true')}}
       uses: actions/cache/save@v3
       with:
@@ -264,7 +264,7 @@ jobs:
       id: vcpkg-packages-check
       if: >
         ${{always() && steps.configure.outcome != 'skipped'
-                    && steps.vcpkg-packages-restore.outputs.cache-hit == 'true' 
+                    && steps.vcpkg-packages-restore.outputs.cache-hit == 'true'
                     && steps.tools-state.outputs.vcpkg-packages-hash != hashFiles('build/vcpkg_installed/vcpkg/vcpkg-lock.json',
                                                                                   'build/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}
       shell: bash
@@ -281,7 +281,7 @@ jobs:
 
     - name: 'vcpkg Packages: Cache'
       if: >
-        ${{always() && steps.configure.outcome != 'skipped' 
+        ${{always() && steps.configure.outcome != 'skipped'
                     && steps.vcpkg-packages-restore.outcome != 'skipped'
                     && (steps.vcpkg-packages-restore.outputs.cache-hit != 'true' || steps.vcpkg-packages-check.outcome == 'success')}}
       uses: actions/cache/save@v3
@@ -419,7 +419,7 @@ jobs:
                   .. | ((."default-registry"? | objects), (.registries? | .[]?))
                   | select(.kind == "git")
                   | { repository, reference, baseline }
-                  | del(.. | nulls)  
+                  | del(.. | nulls)
                 ] | sort')
           [[ $RUNNER_DEBUG -eq 1 ]] && echo "$registries" || true
           if [[ $registries != '[]' ]]; then
@@ -464,7 +464,7 @@ jobs:
                                                'build/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}" >> $GITHUB_OUTPUT
         > cmake-utils/.stamp
         if [[ -f cmake-utils/.msvc.env ]]; then
-          cat cmake-utils/.msvc.env >> $GITHUB_ENV 
+          cat cmake-utils/.msvc.env >> $GITHUB_ENV
           echo "msvc-restored=true" >> $GITHUB_OUTPUT
         fi
 
@@ -512,7 +512,7 @@ jobs:
 
     - name: 'Tools: Cache'
       if: >
-        ${{always() && steps.configure.outcome != 'skipped' 
+        ${{always() && steps.configure.outcome != 'skipped'
                     && (steps.tools-restore.outputs.cache-hit != 'true' || steps.tools-check.outputs.updated == 'true')}}
       uses: actions/cache/save@v3
       with:
@@ -524,7 +524,7 @@ jobs:
     - name: 'vcpkg Registries: Check for Updates'
       id: vcpkg-registries-check
       if: >
-        ${{always() && steps.configure.outcome != 'skipped' 
+        ${{always() && steps.configure.outcome != 'skipped'
                     && steps.vcpkg-registries-restore.outputs.cache-hit == 'true'}}
       shell: bash
       env:
@@ -541,8 +541,8 @@ jobs:
 
     - name: 'vcpkg Registries: Cache'
       if: >
-        ${{always() && steps.configure.outcome != 'skipped' 
-                    && steps.vcpkg-registries-restore.outcome != 'skipped' 
+        ${{always() && steps.configure.outcome != 'skipped'
+                    && steps.vcpkg-registries-restore.outcome != 'skipped'
                     && (steps.vcpkg-registries-restore.outputs.cache-hit != 'true' || steps.vcpkg-registries-check.outputs.updated == 'true')}}
       uses: actions/cache/save@v3
       with:
@@ -553,7 +553,7 @@ jobs:
       id: vcpkg-packages-check
       if: >
         ${{always() && steps.configure.outcome != 'skipped'
-                    && steps.vcpkg-packages-restore.outputs.cache-hit == 'true' 
+                    && steps.vcpkg-packages-restore.outputs.cache-hit == 'true'
                     && steps.tools-state.outputs.vcpkg-packages-hash != hashFiles('build/vcpkg_installed/vcpkg/vcpkg-lock.json',
                                                                                   'build/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}
       shell: bash
@@ -570,7 +570,7 @@ jobs:
 
     - name: 'vcpkg Packages: Cache'
       if: >
-        ${{always() && steps.configure.outcome != 'skipped' 
+        ${{always() && steps.configure.outcome != 'skipped'
                     && steps.vcpkg-packages-restore.outcome != 'skipped'
                     && (steps.vcpkg-packages-restore.outputs.cache-hit != 'true' || steps.vcpkg-packages-check.outcome == 'success')}}
       uses: actions/cache/save@v3
@@ -641,12 +641,12 @@ jobs:
         }
 
         stamp=$(jq -n -r 'now')
-        load_paged "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches" caches.json 
+        load_paged "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches" caches.json
 
-        load_paged "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/matching-refs/heads" branches.json 
+        load_paged "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/matching-refs/heads" branches.json
         jq -r '.[] | .ref | @json' branches.json > branch-names.json
 
-        load_paged "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pulls?state=open" pulls.json 
+        load_paged "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pulls?state=open" pulls.json
         jq -r '.[] | .number | "refs/pull/" + (. | tostring) + "/merge" | @json' pulls.json >> branch-names.json
 
         if [[ $RUNNER_DEBUG -eq 1 ]]; then
@@ -666,9 +666,9 @@ jobs:
 
         jq -r --slurpfile branches branch-names.json --argjson stamp "$stamp" '
             .actions_caches
-            | map(select(.ref | IN($branches[]) | not))
-            | map(.last_accessed_at |= (sub(".\\d+Z$"; "Z") | fromdateiso8601))
-            | map(select(.last_accessed_at <= $stamp ))
+            | map(select(.ref | IN($branches[]) | not)
+                  | (.last_accessed_at |= (sub(".\\d+Z$"; "Z") | fromdateiso8601))
+                  | select(.last_accessed_at <= $stamp ))
             | to_entries[]
             | [ .key, .value.id, .value.key, .value.ref, (.value.last_accessed_at | gmtime | strftime("%Y-%m-%d %H:%M:%S")) ]
             | @tsv
@@ -676,12 +676,14 @@ jobs:
           | while IFS=$'\t' read sequence cache_id cache_key cache_ref cache_last_accessed; do
               if [[ -n $sequence ]]; then
                 if [[ $sequence -eq 0 ]]; then
-                  echo "## Clean Caches" >> $GITHUB_STEP_SUMMARY
+                  echo "## Clean Caches: Deleted Branches" >> $GITHUB_STEP_SUMMARY
                   echo "| Branch | Key | Last Accessed At |" >> $GITHUB_STEP_SUMMARY
                   echo "| --- | --- | --- |" >> $GITHUB_STEP_SUMMARY
                 fi
                 echo "Removing cache $cache_key of $cache_ref (last access: $cache_last_accessed)"
                 echo "| $cache_ref | $cache_key | $cache_last_accessed |" >> $GITHUB_STEP_SUMMARY
-                #curl -X DELETE -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" --no-progress-meter "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches/${cache_id}"
+                #curl -X DELETE --no-progress-meter \
+                #     -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
+                #     "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches/${cache_id}"
               fi
             done

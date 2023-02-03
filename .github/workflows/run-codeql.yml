@@ -36,7 +36,7 @@ on:
 
 permissions: {}
 
-concurrency: 
+concurrency:
   group: run-codeql-${{github.workflow}}-${{github.event_name}}-${{github.ref}}
   cancel-in-progress: true
 
@@ -121,14 +121,14 @@ jobs:
                   .. | ((."default-registry"? | objects), (.registries? | .[]?))
                   | select(.kind == "git")
                   | { repository, reference, baseline }
-                  | del(.. | nulls)  
+                  | del(.. | nulls)
                 ] | sort')
           [[ $RUNNER_DEBUG -eq 1 ]] && echo "$registries" || true
           if [[ $registries != '[]' ]]; then
             (echo -n 'registries-hash=' && (sha1sum - | cut -d ' ' -f 1)) >> $GITHUB_OUTPUT
           fi
         fi
- 
+
     - name: 'Tools: Restore'
       id: tools-restore
       uses: actions/cache/restore@v3
@@ -166,7 +166,7 @@ jobs:
                                                'build/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}" >> $GITHUB_OUTPUT
         > cmake-utils/.stamp
         if [[ -f cmake-utils/.msvc.env ]]; then
-          cat cmake-utils/.msvc.env >> $GITHUB_ENV 
+          cat cmake-utils/.msvc.env >> $GITHUB_ENV
           echo "msvc-restored=true" >> $GITHUB_OUTPUT
         fi
 
@@ -213,7 +213,7 @@ jobs:
 
     - name: 'Tools: Cache'
       if: >
-        ${{always() && steps.configure.outcome != 'skipped' 
+        ${{always() && steps.configure.outcome != 'skipped'
                     && (steps.tools-restore.outputs.cache-hit != 'true' || steps.tools-check.outputs.updated == 'true')}}
       uses: actions/cache/save@v3
       with:
@@ -225,7 +225,7 @@ jobs:
     - name: 'vcpkg Registries: Check for Updates'
       id: vcpkg-registries-check
       if: >
-        ${{always() && steps.configure.outcome != 'skipped' 
+        ${{always() && steps.configure.outcome != 'skipped'
                     && steps.vcpkg-registries-restore.outputs.cache-hit == 'true'}}
       shell: bash
       env:
@@ -242,8 +242,8 @@ jobs:
 
     - name: 'vcpkg Registries: Cache'
       if: >
-        ${{always() && steps.configure.outcome != 'skipped' 
-                    && steps.vcpkg-registries-restore.outcome != 'skipped' 
+        ${{always() && steps.configure.outcome != 'skipped'
+                    && steps.vcpkg-registries-restore.outcome != 'skipped'
                     && (steps.vcpkg-registries-restore.outputs.cache-hit != 'true' || steps.vcpkg-registries-check.outputs.updated == 'true')}}
       uses: actions/cache/save@v3
       with:
@@ -254,7 +254,7 @@ jobs:
       id: vcpkg-packages-check
       if: >
         ${{always() && steps.configure.outcome != 'skipped'
-                    && steps.vcpkg-packages-restore.outputs.cache-hit == 'true' 
+                    && steps.vcpkg-packages-restore.outputs.cache-hit == 'true'
                     && steps.tools-state.outputs.vcpkg-packages-hash != hashFiles('build/vcpkg_installed/vcpkg/vcpkg-lock.json',
                                                                                   'build/vcpkg_installed/*/share/*/vcpkg_abi_info.txt')}}
       shell: bash
@@ -271,7 +271,7 @@ jobs:
 
     - name: 'vcpkg Packages: Cache'
       if: >
-        ${{always() && steps.configure.outcome != 'skipped' 
+        ${{always() && steps.configure.outcome != 'skipped'
                     && steps.vcpkg-packages-restore.outcome != 'skipped'
                     && (steps.vcpkg-packages-restore.outputs.cache-hit != 'true' || steps.vcpkg-packages-check.outcome == 'success')}}
       uses: actions/cache/save@v3
