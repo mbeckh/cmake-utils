@@ -16,9 +16,9 @@ name: Test
 
 on:
   push:
-    branches: [ master, 'feature**' ]
+    branches: [ xmaster, 'xfeature**' ]
   pull_request:
-    branches: [ master ]
+    branches: [ xmaster ]
 
 permissions: {}
 

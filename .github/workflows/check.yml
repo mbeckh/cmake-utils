@@ -13,9 +13,16 @@ jobs:
     runs-on: windows-latest
 
     steps:
+    - shell: bash
+      run: |
+        echo "- qlpack: codeql/cpp-queries" > test.qls
+        echo "- include:" >> test.qls
+        echo "  id:" >> test.qls
+        echo "  - cpp/fixme-comment" >> test.qls
+
     # CodeQL: Setup
     - name: 'CodeQL: Initialize'
       uses: github/codeql-action/init@v2
       with:
         languages: cpp
-        queries: mbeckh/cmake-utils/.github/codeql/test.qls@${{github.sha}}
+        queries: test.qls
