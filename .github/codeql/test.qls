@@ -1,0 +1,5 @@
+- queries: .
+  from: codeql/cpp-queries
+- include:
+    id:
+      - cpp/fixme-comment

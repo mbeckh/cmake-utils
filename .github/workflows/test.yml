@@ -220,7 +220,7 @@ jobs:
     uses: ./.github/workflows/run-codeql.yml
     with:
       source-dir: test
-      codeql-queries: fixme-comment
+      codeql-queries: ./.github/codeql/test.qls
     secrets: inherit
     permissions:
       actions: write
