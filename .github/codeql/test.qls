@@ -1,5 +1,4 @@
-- queries: .
-  from: codeql/cpp-queries
+- qlpack: codeql/cpp-queries
 - include:
     id:
-      - cpp/fixme-comment
+    - cpp/fixme-comment
