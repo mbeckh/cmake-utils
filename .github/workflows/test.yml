@@ -16,9 +16,9 @@ name: Test
 
 on:
   push:
-    branches: [ xmaster, 'xfeature**' ]
+    branches: [ master, 'feature**' ]
   pull_request:
-    branches: [ xmaster ]
+    branches: [ master ]
 
 permissions: {}
 
@@ -220,7 +220,6 @@ jobs:
     uses: ./.github/workflows/run-codeql.yml
     with:
       source-dir: test
-      codeql-queries: mbeckh/cmake-utils/.github/codeql/test.qls@${{github.sha}}
     secrets: inherit
     permissions:
       actions: write

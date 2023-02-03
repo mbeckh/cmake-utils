@@ -1,7 +1,0 @@
-name: CodeQL config for testing
-
-disable-default-queries: true
-
-queries:
-  - name: Test
-    uses: ./test.qls
