@@ -16,6 +16,9 @@ name: Build
 on:
   workflow_call:
     inputs:
+      version:
+        description: Use actions of this version as workaround for https://github.com/actions/runner/issues/2417 (optional, defaults to latest release).
+        type: string
       source-dir:
         description: The CMake source directory (optional, defaults to working directory).
         type: string
@@ -44,7 +47,7 @@ on:
 permissions: {}
 
 concurrency:
-  group: run-build-${{github.workflow}}-${{github.event_name}}-${{github.ref}}
+  group: cmu-build-${{github.workflow}}-${{github.event_name}}-${{github.ref}}
   cancel-in-progress: true
 
 jobs:
@@ -61,18 +64,37 @@ jobs:
 
     steps:
     # Actions: Load
+    - name: 'Actions: Get SHA'
+      # Workaround for https://github.com/actions/runner/issues/2417
+      id: actions-latest
+      shell: bash
+      env:
+        VERSION: ${{inputs.version}}
+        GITHUB_TOKEN: ${{github.token}}
+      run: |
+        if [[ -z $VERSION ]]; then
+          VERSION=$(curl --no-progress-meter \
+              -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
+              "$GITHUB_API_URL/repos/mbeckh/cmake-utils/releases/latest" \
+            | jq -r '.tag_name')
+          echo "Using latest release: $VERSION"
+        fi
+        (echo -n "sha=" && curl --no-progress-meter \
+              -H "Accept: application/vnd.github.sha" -H "Authorization: Bearer $GITHUB_TOKEN" \
+              "$GITHUB_API_URL/repos/mbeckh/cmake-utils/commits/$VERSION) >> $GITHUB_OUTPUT
+
     - name: 'Actions: Restore'
       id: actions-restore
       uses: actions/cache/restore@v3
       with:
         path: cmake-utils
-        key: cmu-cmake-utils-${{github.job_workflow_sha}}
+        key: cmu-cmake-utils-${{steps.actions-latest.outputs.sha}} # should be: cmu-cmake-utils-${{github.job_workflow_sha}}
 
     - name: 'Actions: Load'
       if: steps.actions-restore.outputs.cache-hit != 'true'
       shell: bash
       env:
-        JOB_WORKFLOW_SHA: ${{github.job_workflow_sha}}
+        JOB_WORKFLOW_SHA: ${{steps.actions-latest.outputs.sha}} # should be: ${{github.job_workflow_sha}}
         GITHUB_TOKEN: ${{github.token}}
       run: |
         curl -L --no-progress-meter -o "cmake-utils-$JOB_WORKFLOW_SHA.tar.gz" \
@@ -119,7 +141,7 @@ jobs:
       shell: bash
       working-directory: source${{inputs.source-dir != '.' && inputs.source-dir && '/' || ''}}${{inputs.source-dir != '.' && inputs.source-dir || ''}}
       run: |
-        ((echo "image-os=$ImageOS") & (echo "image-version=$ImageVersion")) >> $GITHUB_OUTPUT
+        (echo "image-os=$ImageOS" && echo "image-version=$ImageVersion") >> $GITHUB_OUTPUT
         if [[ -f vcpkg.json ]]; then
           registries=$(jq --sort-keys $([[ -f vcpkg-configuration.json ]] && echo '--slurp') '.' \
                            vcpkg.json $([[ -f vcpkg-configuration.json ]] && echo 'vcpkg-configuration.json') \
@@ -131,10 +153,8 @@ jobs:
                   | { repository, reference, baseline }
                   | del(.. | nulls)
                 ] | sort')
-          [[ $RUNNER_DEBUG -eq 1 ]] && echo "$registries" || true
-          if [[ $registries != '[]' ]]; then
-            (echo -n 'registries-hash=' && (sha1sum - | cut -d ' ' -f 1)) >> $GITHUB_OUTPUT
-          fi
+          [[ $RUNNER_DEBUG != 1 ]] || echo "$registries"
+          [[ $registries == '[]' ]] || (echo -n 'registries-hash=' && (sha1sum - | cut -d ' ' -f 1)) >> $GITHUB_OUTPUT
         fi
 
     - name: 'Tools: Restore'
@@ -327,18 +347,37 @@ jobs:
 
     steps:
     # Actions: Load
+    - name: 'Actions: Get SHA'
+      # Workaround for https://github.com/actions/runner/issues/2417
+      id: actions-latest
+      shell: bash
+      env:
+        VERSION: ${{inputs.version}}
+        GITHUB_TOKEN: ${{github.token}}
+      run: |
+        if [[ -z $VERSION ]]; then
+          VERSION=$(curl --no-progress-meter \
+              -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
+              "$GITHUB_API_URL/repos/mbeckh/cmake-utils/releases/latest" \
+            | jq -r '.tag_name')
+          echo "Using latest release: $VERSION"
+        fi
+        (echo -n "sha=" && curl --no-progress-meter \
+              -H "Accept: application/vnd.github.sha" -H "Authorization: Bearer $GITHUB_TOKEN" \
+              "$GITHUB_API_URL/repos/mbeckh/cmake-utils/commits/$VERSION) >> $GITHUB_OUTPUT
+
     - name: 'Actions: Restore'
       id: actions-restore
       uses: actions/cache/restore@v3
       with:
         path: cmake-utils
-        key: cmu-cmake-utils-${{github.job_workflow_sha}}
+        key: cmu-cmake-utils-${{steps.actions-latest.outputs.sha}} # should be: cmu-cmake-utils-${{github.job_workflow_sha}}
 
     - name: 'Actions: Load'
       if: steps.actions-restore.outputs.cache-hit != 'true'
       shell: bash
       env:
-        JOB_WORKFLOW_SHA: ${{github.job_workflow_sha}}
+        JOB_WORKFLOW_SHA: ${{steps.actions-latest.outputs.sha}} # should be: ${{github.job_workflow_sha}}
         GITHUB_TOKEN: ${{github.token}}
       run: |
         curl -L --no-progress-meter -o "cmake-utils-$JOB_WORKFLOW_SHA.tar.gz" \
@@ -385,7 +424,7 @@ jobs:
       shell: bash
       working-directory: source${{inputs.source-dir != '.' && inputs.source-dir && '/' || ''}}${{inputs.source-dir != '.' && inputs.source-dir || ''}}
       run: |
-        ((echo "image-os=$ImageOS") & (echo "image-version=$ImageVersion")) >> $GITHUB_OUTPUT
+        (echo "image-os=$ImageOS" && echo "image-version=$ImageVersion") >> $GITHUB_OUTPUT
         if [[ -f vcpkg.json ]]; then
           registries=$(jq --sort-keys $([[ -f vcpkg-configuration.json ]] && echo '--slurp') '.' \
                            vcpkg.json $([[ -f vcpkg-configuration.json ]] && echo 'vcpkg-configuration.json') \
@@ -397,10 +436,8 @@ jobs:
                   | { repository, reference, baseline }
                   | del(.. | nulls)
                 ] | sort')
-          [[ $RUNNER_DEBUG -eq 1 ]] && echo "$registries" || true
-          if [[ $registries != '[]' ]]; then
-            (echo -n 'registries-hash=' && (sha1sum - | cut -d ' ' -f 1)) >> $GITHUB_OUTPUT
-          fi
+          [[ $RUNNER_DEBUG != 1 ]] || echo "$registries"
+          [[ $registries == '[]' ]] || (echo -n 'registries-hash=' && (sha1sum - | cut -d ' ' -f 1)) >> $GITHUB_OUTPUT
         fi
 
     - name: 'Tools: Restore'
@@ -594,11 +631,7 @@ jobs:
                  "$next" >> "$2"
             next=$(egrep -i '^link: ' "$2.headers" | grep -P -i -o '(?<=<)([\S]*)(?=>; rel="next")') || [[ $? == 1 ]]
           done
-          if [[ $RUNNER_DEBUG -eq 1 ]]; then
-            echo "::group::$1"
-            cat "$2"
-            echo "::endgroup::"
-          fi
+          [[ $RUNNER_DEBUG != 1 ]] || echo "::group::$1" && cat "$2" echo "::endgroup::"
         }
 
         stamp=$(jq -n -r 'now')
@@ -610,11 +643,7 @@ jobs:
         load_paged "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pulls?state=open" pulls.json
         jq -r '.[] | .number | "refs/pull/" + (. | tostring) + "/merge" | @json' pulls.json >> branch-names.json
 
-        if [[ $RUNNER_DEBUG -eq 1 ]]; then
-          echo "::group::Active Branches"
-          cat branch-names.json
-          echo "::endgroup::"
-        fi
+        [[ $RUNNER_DEBUG != 1 ]] || echo "::group::Active Branches" && cat branch-names.json && echo "::endgroup::"
 
         jq -r --slurpfile branches branch-names.json --argjson stamp "$stamp" '
             .actions_caches
@@ -632,7 +661,7 @@ jobs:
             ' caches.json \
           | while IFS=$'\t' read sequence cache_id cache_key cache_ref cache_created cache_last_accessed; do
               if [[ -n $sequence ]]; then
-                if [[ $sequence -eq 0 ]]; then
+                if [[ $sequence == 0 ]]; then
                   echo "## Clean Caches: Deleted Branches" >> $GITHUB_STEP_SUMMARY
                   echo "| Branch | Key | Created | Last Accessed |" >> $GITHUB_STEP_SUMMARY
                   echo "| --- | --- | --- | --- |" >> $GITHUB_STEP_SUMMARY
@@ -676,7 +705,7 @@ jobs:
           next=$(egrep -i '^link: ' caches.json.headers | grep -P -i -o '(?<=<)([\S]*)(?=>; rel="next")') || [[ $? == 1 ]]
         done
 
-        if [[ 1 == 1 || $RUNNER_DEBUG -eq 1 ]]; then
+        if [[ $RUNNER_DEBUG == 1 ]]; then
             echo "::debug::stamp=$(jq -n -r --argjson stamp "$stamp" '$stamp | gmtime | strftime("%Y-%m-%d %H:%M:%S")')"
             echo "::group::$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches?ref=$ref"
             cat caches.json
@@ -712,7 +741,7 @@ jobs:
             ' caches.json \
           | while IFS=$'\t' read sequence cache_id cache_key cache_ref cache_created cache_last_accessed; do
               if [[ -n $sequence ]]; then
-                if [[ $sequence -eq 0 ]]; then
+                if [[ $sequence == 0 ]]; then
                   echo "## Clean Caches: Stale Caches" >> $GITHUB_STEP_SUMMARY
                   echo "| Branch | Key | Created | Last Accessed |" >> $GITHUB_STEP_SUMMARY
                   echo "| --- | --- | --- | --- |" >> $GITHUB_STEP_SUMMARY

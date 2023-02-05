@@ -100,7 +100,7 @@ jobs:
       shell: bash
       working-directory: source/test
       run: |
-        ((echo "image-os=$ImageOS") & (echo "image-version=$ImageVersion")) >> $GITHUB_OUTPUT
+        (echo "image-os=$ImageOS" && echo "image-version=$ImageVersion") >> $GITHUB_OUTPUT
         if [[ -f vcpkg.json ]]; then
           registries=$(jq --sort-keys $([[ -f vcpkg-configuration.json ]] && echo '--slurp') '.' \
                            vcpkg.json $([[ -f vcpkg-configuration.json ]] && echo 'vcpkg-configuration.json') \
@@ -112,10 +112,8 @@ jobs:
                   | { repository, reference, baseline }
                   | del(.. | nulls)
                 ] | sort')
-          [[ $RUNNER_DEBUG -eq 1 ]] && echo "$registries" || true
-          if [[ $registries != '[]' ]]; then
-            (echo -n 'registries-hash=' && (sha1sum - | cut -d ' ' -f 1)) >> $GITHUB_OUTPUT
-          fi
+          [[ $RUNNER_DEBUG != 1 ]] || echo "$registries"
+          [[ $registries == '[]' ]] || (echo -n 'registries-hash=' && (sha1sum - | cut -d ' ' -f 1)) >> $GITHUB_OUTPUT
         fi
 
     - name: 'Tools: Restore'
@@ -205,6 +203,7 @@ jobs:
     name: Build Workflow
     uses: ./.github/workflows/run-build.yml
     with:
+      version: ${{github.sha}}
       source-dir: test
       pch: false
       test-args: --label-regex "^Run$"
@@ -218,6 +217,7 @@ jobs:
     name: CodeQL Workflow
     uses: ./.github/workflows/run-codeql.yml
     with:
+      version: ${{github.sha}}
       source-dir: test
     secrets: inherit
     permissions:
@@ -257,7 +257,7 @@ jobs:
           next=$(egrep -i '^link: ' caches.json.headers | grep -P -i -o '(?<=<)([\S]*)(?=>; rel="next")') || [[ $? == 1 ]]
         done
 
-        if [[ 1 == 1 || $RUNNER_DEBUG -eq 1 ]]; then
+        if [[ $RUNNER_DEBUG == 1 ]]; then
             echo "::debug::stamp=$(jq -n -r --argjson stamp "$stamp" '$stamp | gmtime | strftime("%Y-%m-%d %H:%M:%S")')"
             echo "::group::$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches?ref=$ref"
             cat caches.json
@@ -293,7 +293,7 @@ jobs:
             ' caches.json \
           | while IFS=$'\t' read sequence cache_id cache_key cache_ref cache_created cache_last_accessed; do
               if [[ -n $sequence ]]; then
-                if [[ $sequence -eq 0 ]]; then
+                if [[ $sequence == 0 ]]; then
                   echo "## Clean Caches: Stale Caches" >> $GITHUB_STEP_SUMMARY
                   echo "| Branch | Key | Created | Last Accessed |" >> $GITHUB_STEP_SUMMARY
                   echo "| --- | --- | --- | --- |" >> $GITHUB_STEP_SUMMARY
