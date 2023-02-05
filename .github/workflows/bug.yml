@@ -10,6 +10,15 @@ jobs:
       env:
         GITHUB_TOKEN: ${{github.token}}
       run: |
-        curl \
+        echo "Workflow"
+        curl --no-progress-meter \
           -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
           "$GITHUB_API_URL/repos/mbeckh/vcpkg-registry/actions/workflows/clean_packages.yml"
+        echo "vcpkg-registry@feature-dispatch-clean"
+        curl --no-progress-meter \
+          -H "Accept: application/vnd.github.sha" -H "Authorization: Bearer $GITHUB_TOKEN" \
+          "$GITHUB_API_URL/repos/mbeckh/vcpkg-registry/commits/feature-dispatch-clean"
+        echo "cmake-utils@v1"
+        curl --no-progress-meter \
+          -H "Accept: application/vnd.github.sha" -H "Authorization: Bearer $GITHUB_TOKEN" \
+          "$GITHUB_API_URL/repos/mbeckh/cmake-utils/commits/v1"
