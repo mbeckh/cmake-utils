@@ -420,18 +420,18 @@ jobs:
         fi
 
         jq -r -s --argjson stamp "$stamp" '
-            { "cmake-utils": 1, "source": 1, "tools": 2, "vcpkg-registries": 1, "vcpkg_installed": 2 } as $keep |
+            { "tools": 2, "vcpkg_installed": 2 } as $keep |
             [
               .[]
               | .actions_caches
               | .[]
               | (. + {"$cache": .key
-                                | match("^cmu-(cmake-utils|source|tools|vcpkg-registries|vcpkg_installed)-")
+                                | match("^((?<=cmu-)(?:cmake-utils|source|tools|vcpkg-registries|vcpkg_installed)|codacy-clang-tidy|opencppcoverage)-")
                                 | .captures[0].string })
             ]
             | group_by(."$cache")
             | map(. |= ( sort_by(.last_accessed_at)
-                         | .[:-$keep[.[0]."$cache"]]
+                         | .[:-$keep[.[0]."$cache" // 1]]
                          | map( (.created_at |= (sub("\\.\\d+Z$"; "Z") | fromdateiso8601))
                                 | select(.created_at <= $stamp)
                                 | (.last_accessed_at |= (sub("\\.\\d+Z$"; "Z") | fromdateiso8601))

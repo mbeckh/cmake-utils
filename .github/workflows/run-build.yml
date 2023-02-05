@@ -594,6 +594,11 @@ jobs:
                  "$next" >> "$2"
             next=$(egrep -i '^link: ' "$2.headers" | grep -P -i -o '(?<=<)([\S]*)(?=>; rel="next")') || [[ $? == 1 ]]
           done
+          if [[ $RUNNER_DEBUG -eq 1 ]]; then
+            echo "::group::$1"
+            cat "$2"
+            echo "::endgroup::"
+          fi
         }
 
         stamp=$(jq -n -r 'now')
@@ -606,18 +611,9 @@ jobs:
         jq -r '.[] | .number | "refs/pull/" + (. | tostring) + "/merge" | @json' pulls.json >> branch-names.json
 
         if [[ $RUNNER_DEBUG -eq 1 ]]; then
-            echo "::group::$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/matching-refs/heads"
-            cat branches.json
-            echo "::endgroup::"
-            echo "::group::$GITHUB_API_URL/repos/$GITHUB_REPOSITORY//pulls?state=open"
-            cat pulls.json
-            echo "::endgroup::"
-            echo "::group::$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches"
-            cat caches.json
-            echo "::endgroup::"
-            echo "::group::Active Branches"
-            cat branch-names.json
-            echo "::endgroup::"
+          echo "::group::Active Branches"
+          cat branch-names.json
+          echo "::endgroup::"
         fi
 
         jq -r --slurpfile branches branch-names.json --argjson stamp "$stamp" '
@@ -688,18 +684,18 @@ jobs:
         fi
 
         jq -r -s --argjson stamp "$stamp" '
-            { "cmake-utils": 1, "source": 1, "tools": 2, "vcpkg-registries": 1, "vcpkg_installed": 2 } as $keep |
+            { "tools": 2, "vcpkg_installed": 2 } as $keep |
             [
               .[]
               | .actions_caches
               | .[]
               | (. + {"$cache": .key
-                                | match("^cmu-(cmake-utils|source|tools|vcpkg-registries|vcpkg_installed)-")
+                                | match("^((?<=cmu-)(?:cmake-utils|source|tools|vcpkg-registries|vcpkg_installed)|codacy-clang-tidy|opencppcoverage)-")
                                 | .captures[0].string })
             ]
             | group_by(."$cache")
             | map(. |= ( sort_by(.last_accessed_at)
-                         | .[:-$keep[.[0]."$cache"]]
+                         | .[:-$keep[.[0]."$cache" // 1]]
                          | map( (.created_at |= (sub("\\.\\d+Z$"; "Z") | fromdateiso8601))
                                 | select(.created_at <= $stamp)
                                 | (.last_accessed_at |= (sub("\\.\\d+Z$"; "Z") | fromdateiso8601))
