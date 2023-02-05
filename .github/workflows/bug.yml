@@ -3,8 +3,13 @@ on:
   push:
 permissions: write-all
 jobs:
-  clean_packages:
-    name: Clean Packages Workflow
-    uses: mbeckh/vcpkg-registry/.github/workflows/run-clean_packages.yml@feature-dispatch-clean
-    secrets: inherit
-
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - shell: bash
+      env:
+        GITHUB_TOKEN: ${{github.token}}
+      run: |
+        curl \
+          -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
+          "$GITHUB_API_URL/repos/mbeckh/vcpkg-registry/actions/workflows/clean_packages.yml"
