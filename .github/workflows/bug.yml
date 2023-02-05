@@ -1,0 +1,10 @@
+name: Bug
+on:
+  push:
+permissions: write-all
+jobs:
+  clean_packages:
+    name: Clean Packages Workflow
+    uses: mbeckh/vcpkg-registry/.github/workflows/run-clean_packages.yml@feature-dispatch-clean
+    secrets: inherit
+
