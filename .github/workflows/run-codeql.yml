@@ -346,7 +346,7 @@ jobs:
                  "$next" >> "$2"
             next=$(egrep -i '^link: ' "$2.headers" | grep -P -i -o '(?<=<)([\S]*)(?=>; rel="next")') || [[ $? == 1 ]]
           done
-          [[ $RUNNER_DEBUG != 1 ]] || echo "::group::$1" && cat "$2" echo "::endgroup::"
+          [[ $RUNNER_DEBUG != 1 ]] || echo "::group::$1" && cat "$2" && echo "::endgroup::"
         }
 
         stamp=$(jq -n -r 'now')
