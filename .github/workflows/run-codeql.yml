@@ -215,8 +215,8 @@ jobs:
         GITHUB_TOKEN: ${{github.token}}
       run: |
         if [[ cmake-utils/.msvc.env -nt cmake-utils/.stamp \
-              || -d vcpkg-downloads/tools \
-                 && $(find vcpkg-downloads/tools -maxdepth 1 -type d -name 'powershell-core-*' -newer cmake-utils/.stamp -printf "1" -quit) == 1 ]]; then
+              || (-d vcpkg-downloads/tools \
+                  && $(find vcpkg-downloads/tools -maxdepth 1 -type d -name 'powershell-core-*' -newer cmake-utils/.stamp -printf "1" -quit) == 1) ]]; then
           curl --get -X DELETE --no-progress-meter \
                -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
                --data-urlencode "key=$CACHE_KEY" --data-urlencode "ref=$GITHUB_REF" \
@@ -358,7 +358,7 @@ jobs:
         load_paged "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pulls?state=open" pulls.json
         jq -r '.[] | .number | "refs/pull/" + (. | tostring) + "/merge" | @json' pulls.json >> branch-names.json
 
-        [[ $RUNNER_DEBUG != 1 ]] || echo "::group::Active Branches" && cat branch-names.json && echo "::endgroup::"
+        [[ $RUNNER_DEBUG != 1 ]] || (echo "::group::Active Branches" && cat branch-names.json && echo "::endgroup::")
 
         jq -r --slurpfile branches branch-names.json --argjson stamp "$stamp" '
             .actions_caches
