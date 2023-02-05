@@ -66,19 +66,20 @@ jobs:
       uses: actions/cache/restore@v3
       with:
         path: cmake-utils
-        key: cmu-cmake-utils-${{github.workflow_sha}}
+        key: cmu-cmake-utils-${{github.job_workflow_sha}}
 
     - name: 'Actions: Load'
       if: steps.actions-restore.outputs.cache-hit != 'true'
       shell: bash
       env:
+        JOB_WORKFLOW_SHA: ${{github.job_workflow_sha}}
         GITHUB_TOKEN: ${{github.token}}
       run: |
-        curl -L --no-progress-meter -o "cmake-utils-$GITHUB_WORKFLOW_SHA.tar.gz" \
+        curl -L --no-progress-meter -o "cmake-utils-$JOB_WORKFLOW_SHA.tar.gz" \
              -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
-             "$GITHUB_API_URL/repos/mbeckh/cmake-utils/tarball/$GITHUB_WORKFLOW_SHA"
+             "$GITHUB_API_URL/repos/mbeckh/cmake-utils/tarball/$JOB_WORKFLOW_SHA"
         mkdir cmake-utils
-        tar -x $([[ $RUNNER_DEBUG == 1 ]] && echo -- "-v") -f "cmake-utils-$GITHUB_WORKFLOW_SHA.tar.gz" -C cmake-utils \
+        tar -x $([[ $RUNNER_DEBUG == 1 ]] && echo -- "-v") -f "cmake-utils-$JOB_WORKFLOW_SHA.tar.gz" -C cmake-utils \
             --strip-components=1 --show-transformed-names --exclude='*.md' --wildcards \
             '*/configure' '*/modules' '*/msvc-dev-env' '*/Toolchain.cmake'
 
@@ -331,19 +332,20 @@ jobs:
       uses: actions/cache/restore@v3
       with:
         path: cmake-utils
-        key: cmu-cmake-utils-${{github.workflow_sha}}
+        key: cmu-cmake-utils-${{github.job_workflow_sha}}
 
     - name: 'Actions: Load'
       if: steps.actions-restore.outputs.cache-hit != 'true'
       shell: bash
       env:
+        JOB_WORKFLOW_SHA: ${{github.job_workflow_sha}}
         GITHUB_TOKEN: ${{github.token}}
       run: |
-        curl -L --no-progress-meter -o "cmake-utils-$GITHUB_WORKFLOW_SHA.tar.gz" \
+        curl -L --no-progress-meter -o "cmake-utils-$JOB_WORKFLOW_SHA.tar.gz" \
              -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $GITHUB_TOKEN" \
-             "$GITHUB_API_URL/repos/mbeckh/cmake-utils/tarball/$GITHUB_WORKFLOW_SHA"
+             "$GITHUB_API_URL/repos/mbeckh/cmake-utils/tarball/$JOB_WORKFLOW_SHA"
         mkdir cmake-utils
-        tar -x $([[ $RUNNER_DEBUG == 1 ]] && echo -- "-v") -f "cmake-utils-$GITHUB_WORKFLOW_SHA.tar.gz" -C cmake-utils \
+        tar -x $([[ $RUNNER_DEBUG == 1 ]] && echo -- "-v") -f "cmake-utils-$JOB_WORKFLOW_SHA.tar.gz" -C cmake-utils \
             --strip-components=1 --show-transformed-names --exclude='*.md' --wildcards \
             '*/configure' '*/modules' '*/msvc-dev-env' '*/Toolchain.cmake'
 
