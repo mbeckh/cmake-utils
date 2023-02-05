@@ -305,3 +305,9 @@ jobs:
                      "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/caches/${cache_id}"
               fi
             done
+
+  clean_packages:
+    name: 'Packages: Clean'
+    needs: [ test, build-workflow, codeql-workflow ]
+    uses: mbeckh/vcpkg-registry/.github/workflows/run-clean_packages.yml@feature-dispatch-clean
+    secrets: inherit
