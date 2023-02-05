@@ -81,7 +81,7 @@ jobs:
         fi
         (echo -n "sha=" && curl --no-progress-meter \
               -H "Accept: application/vnd.github.sha" -H "Authorization: Bearer $GITHUB_TOKEN" \
-              "$GITHUB_API_URL/repos/mbeckh/cmake-utils/commits/$VERSION) >> $GITHUB_OUTPUT
+              "$GITHUB_API_URL/repos/mbeckh/cmake-utils/commits/$VERSION") >> $GITHUB_OUTPUT
 
     - name: 'Actions: Restore'
       id: actions-restore
@@ -364,7 +364,7 @@ jobs:
         fi
         (echo -n "sha=" && curl --no-progress-meter \
               -H "Accept: application/vnd.github.sha" -H "Authorization: Bearer $GITHUB_TOKEN" \
-              "$GITHUB_API_URL/repos/mbeckh/cmake-utils/commits/$VERSION) >> $GITHUB_OUTPUT
+              "$GITHUB_API_URL/repos/mbeckh/cmake-utils/commits/$VERSION") >> $GITHUB_OUTPUT
 
     - name: 'Actions: Restore'
       id: actions-restore
