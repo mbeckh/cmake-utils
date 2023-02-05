@@ -310,4 +310,6 @@ jobs:
     name: 'Packages: Clean'
     needs: [ test, build-workflow, codeql-workflow ]
     uses: mbeckh/vcpkg-registry/.github/workflows/run-clean_packages.yml@master
+    with:
+      delete: true
     secrets: inherit
