@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include <fmt/core.h> // check that vcpkg works
+#include <fmt/core.h>  // check that vcpkg works
 #include "cmake-utils/ok_2.h"  // auxiliary include
 
 int ok_1() {
@@ -22,7 +22,12 @@ int ok_1() {
 }
 
 int main(int, char**) {
-	// FIXME: Deliberate error for CodeQL query cpp/fixme-comment
-	fmt::print("ok"); // use fmt
+	short x = 0;
+	short y = -1;
+
+	if (x + y < x) {  // Deliberate error: Triggers cpp/bad-addition-overflow-check
+		fmt::print("ok");  // use fmt
+	}
+
 	return 0;
 }
