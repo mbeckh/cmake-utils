@@ -15,7 +15,9 @@ limitations under the License.
 */
 #pragma once
 
+#include "tidy_error.h"
+
+#include <fmt/core.h>
+
 #include <cstddef>  // system include in all_ok.cpp
 #include <cstdint>  // system include in all_ok.h
-#include <fmt/core.h>
-#include "tidy_error.h"
