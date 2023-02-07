@@ -322,7 +322,7 @@ jobs:
 
         files: build/coverage-*.xml
         fail_ci_if_error: true
-        root_dir: source
+        working-directory: source
 
     # Logs
     - name: Save Logs
