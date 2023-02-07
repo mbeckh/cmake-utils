@@ -319,8 +319,10 @@ jobs:
       if: steps.coverage.outcome == 'success'
       uses: codecov/codecov-action@v3
       with:
+
         files: build/coverage-*.xml
         fail_ci_if_error: true
+        root_dir: source
 
     # Logs
     - name: Save Logs
