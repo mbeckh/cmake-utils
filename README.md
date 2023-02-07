@@ -63,6 +63,12 @@ Modules for building projects using [CMake](https://cmake.org/).
 
 -   Setup vcpkg toolchain automatically, if `vcpkg.json` if present in the project root folder.
 
+-   Switches off vcpkg compiler tracking and instead adds `VCToolsVersion` to `VCPKG_ENV_PASSTHROUGH` to speed-up
+    vcpkg installation step in CMake while still keeping the compiler part of the hash for binary caching. However. if
+    the feature is enabled explicitly, this setting will be retained.
+
+-   Set `VCPKG_APPLOCAL_DEPS` matching the static build configured in the triplet.
+
 -   Enables the features `test`, `tests` and `testing` for vcpkg if available in the top level target and 
     `BUILD_TESTING` is set. This allows providing dependencies for running tests in the top level target while not
     creating a transitive to those test-only dependencies for all users of a package.
@@ -82,7 +88,6 @@ Modules for building projects using [CMake](https://cmake.org/).
 Three actions perform common build tasks.
 -   [configure](configure) - Configure a CMake build using cmake-utils.
 -   [msvc-dev-env](msvc-dev-env) - Set-up MSVC development environment.
--   [env-restore](env-restore) - Re-use the MSVC environment in a different job.
 
 ## GitHub Workflows
 [Two workflows](workflows.md) can be used by consuming projects to get a full-featured build pipeline with

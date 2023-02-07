@@ -23,10 +23,7 @@ The following code saves the environment in a file `my.env` in the GitHub worksp
         env-file: my.env
 ~~~
 
-To re-use the environment in a different job, call the action [`env-restore`](../env-restore).
-~~~yml
-    - name: Restore Build Environment
-      uses: mbeckh/cmake-utils/env-restore@v1
-      with:
-        env-file: my.env
+To re-use the environment in a different job, run the shell command
+~~~bash
+cat my.env >> $GITHUB_ENV
 ~~~

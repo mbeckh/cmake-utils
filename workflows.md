@@ -1,6 +1,7 @@
 # Re-usable GitHub Workflows
 ## Build
-The workflow [`run-build.yml`](.github/workflows/run-build.yml) creates and runs a build in the binary directory `build/bin`  using the Ninja Multi-Config generator.
+The workflow [`run-build.yml`](.github/workflows/run-build.yml) creates and runs a build in the binary directory
+`build/bin` using the Ninja Multi-Config generator.
 
 ### Build Inputs
 -   `source-dir` - Path of the CMake source directory (optional, defaults to working directory).
@@ -40,12 +41,15 @@ To only run a particular test for both tests and coverage.
 ~~~
 
 ## CodeQL
-The workflow [`run-codeql.yml`](.github/workflows/run-codeql.yml) runs code analysis using CodeQL. This never uses unity builds because they do not work with CodeQL.
+The workflow [`run-codeql.yml`](.github/workflows/run-codeql.yml) runs code analysis using CodeQL. This never uses 
+unity builds because they do not work with CodeQL.
 
 ### CodeQL Inputs
 -   `source-dir` - Path of the CMake source directory (optional, defaults to working directory).
 -   `configure-args` - Extra arguments for CMake configure (optional).
 -   `build-args` - Extra arguments for CMake build (optional).
+-   `codeql-config-file` - Config file for CodeQL (optional).
+-   `codeql-queries` - CodeQL queries to run (optional, defaults to security-and-quality for non-pull-requests if no config file is provided).
 
 ### CodeQL Use Cases
 #### Analyze Code

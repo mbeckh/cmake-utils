@@ -1,4 +1,4 @@
-# Copyright 2021 Michael Beckh
+# Copyright 2021-2023 Michael Beckh
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,3 +21,5 @@ set(VCPKG_CRT_LINKAGE static)
 set(VCPKG_LIBRARY_LINKAGE static)
 set(VCPKG_CHAINLOAD_TOOLCHAIN_FILE "${CMAKE_CURRENT_LIST_DIR}/../../Toolchain.cmake")
 set(VCPKG_LOAD_VCVARS_ENV ON)
+# VCPKG_ENV_PASSTHROUGH is used together with VCPKG_FEATURE_FLAGS -compilertracking to speed up vcpkg install
+set(VCPKG_ENV_PASSTHROUGH "VCToolsVersion")

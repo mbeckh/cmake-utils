@@ -14,14 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include <fmt/core.h> // check that vcpkg works
 #include "cmake-utils/ok_2.h"  // auxiliary include
+
+#include <fmt/core.h>  // check that vcpkg works
 
 int ok_1() {
 	return ok_2();  // use cmake-utils/ok_2.h
 }
 
 int main(int, char**) {
-	fmt::print("ok"); // use fmt
+	// FIXME: Deliberate error: Triggers cpp/fixme-comment
+	fmt::print("ok");  // use fmt
+
 	return 0;
 }
