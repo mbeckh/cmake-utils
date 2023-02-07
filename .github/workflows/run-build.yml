@@ -320,7 +320,7 @@ jobs:
       uses: codecov/codecov-action@v3
       with:
 
-        files: ..\build\coverage-*.xml
+        files: build/coverage-*.xml
         fail_ci_if_error: true
         working-directory: source
         verbose: true
