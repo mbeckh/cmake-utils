@@ -270,9 +270,9 @@ jobs:
               .[]
               | .actions_caches
               | .[]
-              | (. + {"$cache": .key
-                                | match("^((?<=cmu-)(?:cmake-utils|source|tools|vcpkg-registries|vcpkg_installed)|codacy-clang-tidy|opencppcoverage)-")
-                                | .captures[0].string })
+              | (. + { "$cache": .key
+                                 | match("^(?:cmu-(cmake-utils|source|tools|vcpkg-registries|vcpkg_installed))|(codacy-clang-tidy|opencppcoverage)-")
+                                 | .captures[].string | strings })
             ]
             | group_by(."$cache")
             | map(. |= ( sort_by(.last_accessed_at)
