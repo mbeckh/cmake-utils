@@ -286,7 +286,7 @@ jobs:
         languages: cpp
         config-file: ${{inputs.codeql-config-file}}
         queries: ${{inputs.codeql-queries}}
-        source-root: source${{inputs.source-dir != '.' && inputs.source-dir && '/' || ''}}${{inputs.source-dir != '.' && inputs.source-dir || ''}}
+        source-root: source
 
     - name: 'CodeQL: Initialize for Pull Request'
       if: github.event_name == 'pull_request'
@@ -295,7 +295,7 @@ jobs:
         languages: cpp
         config-file: ${{inputs.codeql-config-file}}
         queries: ${{inputs.codeql-queries}}
-        source-root: source${{inputs.source-dir != '.' && inputs.source-dir && '/' || ''}}${{inputs.source-dir != '.' && inputs.source-dir || ''}}
+        source-root: source
 
     # Build
     - name: Build
@@ -434,7 +434,7 @@ jobs:
               | .actions_caches
               | .[]
               | (. + { "$cache": .key
-                                 | match("^(?:cmu-(cmake-utils|source|tools|vcpkg-registries|vcpkg_installed))|(codacy-clang-tidy|opencppcoverage)-")
+                                 | match("^(?:cmu-(cmake-utils|source|tools|vcpkg-registries|vcpkg_installed))|(codacy-clang-tidy|codacy-coverage|opencppcoverage)-")
                                  | .captures[].string | strings })
             ]
             | group_by(."$cache")
