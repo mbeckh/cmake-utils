@@ -310,7 +310,7 @@ jobs:
     - name: 'CodeQL: Analyze'
       uses: github/codeql-action/analyze@v2
       with:
-        checkout_path: ${{github.workspace}}/source
+        checkout_path: ${{github.workspace}}\source
 
     # Logs
     - name: Save Logs
