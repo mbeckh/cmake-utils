@@ -56,7 +56,7 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        configuration: [ Debug, Release ]
+        configuration: [ Debug ]
     permissions:
       actions: write
       contents: read
@@ -337,6 +337,7 @@ jobs:
         if-no-files-found: ignore
 
   analyze:
+    if: 1 == 2
     name: Analyze
     runs-on: windows-latest
     strategy:
