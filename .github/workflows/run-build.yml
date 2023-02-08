@@ -319,9 +319,10 @@ jobs:
       if: steps.coverage.outcome == 'success'
       uses: codecov/codecov-action@v3
       with:
-        files: ${{github.workspace}}\build\coverage-*.xml
+        root_dir: source
+        directory: build
+        file: coverage-*.xml
         fail_ci_if_error: true
-        working-directory: ${{github.workspace}}\source
         verbose: true
 
     # Logs
