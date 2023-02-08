@@ -337,7 +337,6 @@ jobs:
         if-no-files-found: ignore
 
   analyze:
-    if: 1 == 2
     name: Analyze
     runs-on: windows-latest
     strategy:

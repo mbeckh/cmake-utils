@@ -28,7 +28,6 @@ concurrency:
 
 jobs:
   test:
-    if: 1 == 2
     name: Test
     runs-on: windows-latest
     strategy:
@@ -215,7 +214,6 @@ jobs:
       packages: write
 
   codeql-workflow:
-    if: 1 == 2
     name: CodeQL Workflow
     uses: ./.github/workflows/run-codeql.yml
     with:
