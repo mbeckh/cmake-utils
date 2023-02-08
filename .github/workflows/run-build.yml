@@ -56,7 +56,7 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        configuration: [ Debug ]
+        configuration: [ Debug, Release ]
     permissions:
       actions: write
       contents: read
