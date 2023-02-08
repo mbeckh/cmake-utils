@@ -333,7 +333,6 @@ jobs:
           build/vcpkg-buildtrees/*/*.log
           !build/vcpkg-buildtrees/detect_compiler/**
           build/Testing/**/*.log
-          build/coverage-*.xml
         if-no-files-found: ignore
 
   analyze:
