@@ -321,9 +321,7 @@ jobs:
       with:
         root_dir: source
         directory: build
-        file: coverage-*.xml
         fail_ci_if_error: true
-        verbose: true
 
     # Logs
     - name: Save Logs
