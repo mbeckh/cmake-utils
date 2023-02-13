@@ -49,6 +49,8 @@ endif()
 
 include_guard(GLOBAL)
 
+include("${CMAKE_CURRENT_LIST_DIR}/Regex.cmake")
+
 function(z_clang_tidy_unity target #[[ OUTPUT <output> [ DEPENDS <dependencies> ] ]])
     cmake_parse_arguments(PARSE_ARGV 1 arg "" "OUTPUT" "DEPENDS")
     if(NOT arg_OUTPUT)
@@ -66,30 +68,90 @@ function(z_clang_tidy_unity target #[[ OUTPUT <output> [ DEPENDS <dependencies> 
     set_property(TARGET "${target}" APPEND_STRING PROPERTY UNITY_BUILD_CODE_BEFORE_INCLUDE "// NOLINTNEXTLINE(bugprone-suspicious-include)")
 
     get_target_property(target_source_dir "${target}" SOURCE_DIR)
+    cmake_path(IS_PREFIX PROJECT_SOURCE_DIR "${target_source_dir}" NORMALIZE is_prefix)
+    if(NOT is_prefix)
+        message(WARNING "Source directory of ${target} is not part of source tree ${PROJECT_SOURCE_DIR}")
+        return()
+    endif()
+
     get_target_property(target_binary_dir "${target}" BINARY_DIR)
 
     # Replace variables
     z_clang_tools_configure("${arg_DEPENDS}" arg_DEPENDS)
 
-    unset(depends)
-    cmake_path(RELATIVE_PATH target_source_dir BASE_DIRECTORY "${PROJECT_SOURCE_DIR}" OUTPUT_VARIABLE relative)
-    while(relative)
-        set(src "${PROJECT_SOURCE_DIR}/${relative}/.clang-tidy")
-        if(EXISTS "${src}")
-            if(depends)
-                message(STATUS "clang-tidy-${target}: Ignoring non-root and non-leaf config: ${relative}/.clang-tidy")
+    # Get all source files
+    get_target_property(target_sources "${target}" SOURCES)
+    list(TRANSFORM target_sources GENEX_STRIP)
+
+    set(extensions ${CMAKE_CXX_SOURCE_FILE_EXTENSIONS})
+    list(APPEND extensions ${CMAKE_C_SOURCE_FILE_EXTENSIONS})
+
+    regex_escape_pattern(extensions OUT extensions_pattern)
+    list(JOIN extensions_pattern "|" extensions_pattern)
+
+    list(FILTER target_sources INCLUDE REGEX "\.(${extensions_pattern})$")
+
+    unset(parent_paths)
+    foreach(source_path IN LISTS target_sources)
+        cmake_path(NORMAL_PATH source_path)
+        if(IS_ABSOLUTE "${source_path}")
+            cmake_path(IS_PREFIX PROJECT_SOURCE_DIR "${source_path}" NORMALIZE is_prefix)
+            if(is_prefix)
+                cmake_path(RELATIVE_PATH source_path BASE_DIRECTORY "${PROJECT_SOURCE_DIR}")
             else()
-                set(dst "${target_binary_dir}/CMakeFiles/${target}.dir/.clang-tidy")
-                add_custom_command(OUTPUT "${dst}"
-                                   COMMAND "${CMAKE_COMMAND}" -E copy "${src}" "${dst}"
-                                   DEPENDS "${src}")
-                list(APPEND depends "${dst}")
+                # skip files which are not part of the source tree
+                continue()
             endif()
+        elseif(NOT target_source_dir STREQUAL PROJECT_SOURCE_DIR)
+            # convert path relative to target_source_dir to path relative to PROJECT_SOURCE_DIR
+            cmake_path(ABSOLUTE_PATH source_path BASE_DIRECTORY "${target_source_dir}" NORMALIZE)
+            cmake_path(RELATIVE_PATH source_path BASE_DIRECTORY "${PROJECT_SOURCE_DIR}")
         endif()
-        cmake_path(GET relative PARENT_PATH relative)
+
+        cmake_path(GET source_path PARENT_PATH source_path)
+        if(source_path)
+            list(APPEND parent_paths "${source_path}")
+        endif()
+    endforeach()
+    set(target_sources "${parent_paths}")
+
+    # Get "deepest" directory of source file with .clang-tidy
+    unset(clang_tidy_dir)
+    while(target_sources)
+        unset(parent_paths)
+        foreach(source_path IN LISTS target_sources)
+            if(EXISTS "${PROJECT_SOURCE_DIR}/${source_path}/.clang-tidy")
+                if(NOT clang_tidy_dir)
+                    set(clang_tidy_dir "${source_path}")
+                elseif(NOT clang_tidy_dir STREQUAL source_path)
+                    message(WARNING "Ignoring .clang-tidy in folder ${source_path}, overridden by ${clang_tidy_dir}")
+                endif()
+            endif()
+            cmake_path(GET source_path PARENT_PATH source_path)
+            if(source_path)
+                list(APPEND parent_paths "${source_path}")
+            endif()
+        endforeach()
+        list(REMOVE_DUPLICATES parent_paths)
+        set(target_sources "${parent_paths}")
     endwhile()
 
-    # Make .clang-tidy config available to generated source files
+    # Make .clang-tidy config from nested source folder available to generated source files
+    unset(depends)
+    set(dst "${target_binary_dir}/CMakeFiles/${target}.dir/.clang-tidy")
+    if(clang_tidy_dir)
+        message("${target}: Using .clang-tidy from ${clang_tidy_dir} for unity build")
+
+        set(src "${PROJECT_SOURCE_DIR}/${clang_tidy_dir}/.clang-tidy")
+        add_custom_command(OUTPUT "${dst}"
+                           COMMAND "${CMAKE_COMMAND}" -E copy "${src}" "${dst}"
+                           DEPENDS "${src}")
+        list(APPEND depends "${dst}")
+    else()
+        file(REMOVE "${dst}")
+    endif()
+
+    # Make .clang-tidy config from root available to generated source files
     set(src "${PROJECT_SOURCE_DIR}/.clang-tidy")
     if(EXISTS "${src}")
         set(dst "${target_binary_dir}/CMakeFiles/.clang-tidy")
