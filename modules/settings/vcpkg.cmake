@@ -30,15 +30,13 @@ block()
     # Compiler options
     #
 
-    # Switch off precompiled headers, leads to LNK4206 or https://developercommunity.visualstudio.com/t/linkexe-stuck-on-github-when-using-compiler-option/1610957
-    set(CMAKE_DISABLE_PRECOMPILE_HEADERS YES CACHE BOOL "" FORCE)
-
     # Debug information
-    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<COMPILE_LANGUAGE:C,CXX>:Embedded>")
+    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "Embedded" CACHE STRING "")
     cmake_policy(GET CMP0141 msvc_debug_information_format)
     if(NOT msvc_debug_information_format STREQUAL NEW)
         add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:/Z7>")
     endif()
+
     add_compile_options(# cannot combine into one argument because CMake gets trailing backslash wrong
                         "$<$<COMPILE_LANGUAGE:C,CXX>:/d1trimfile:$<SHELL_PATH:$<TARGET_PROPERTY:SOURCE_DIR>/>>"
                         "$<$<COMPILE_LANGUAGE:C,CXX>:/d1trimfile:$<SHELL_PATH:$<TARGET_PROPERTY:BINARY_DIR>/>>")

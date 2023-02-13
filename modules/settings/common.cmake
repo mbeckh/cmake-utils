@@ -69,7 +69,7 @@ block()
     # Includes
     if(NOT CMU_DISABLE_DEBUG_INFORMATION)
         # Debug information
-        set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<AND:${debug},$<COMPILE_LANGUAGE:C,CXX>>:$<IF:$<CONFIG:Debug>,EditAndContinue,Embedded>>")
+        set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<${debug}:$<IF:$<CONFIG:Debug>,EditAndContinue,Embedded>>" CACHE STRING "")
         cmake_policy(GET CMP0141 msvc_debug_information_format)
         if(msvc_debug_information_format STREQUAL NEW)
             add_compile_options("$<$<AND:${debug},$<COMPILE_LANGUAGE:C,CXX>>:/FS>")
