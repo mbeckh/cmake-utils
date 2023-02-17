@@ -140,11 +140,11 @@ The specification of `-*,all` results in the following checks being enabled.
 | `concurrency-mt-unsafe` | |
 | `-concurrency-thread-canceltype-asynchronous` | POSIX |
 | `-cppcoreguidelines-avoid-c-arrays` | Alias of `modernize-avoid-c-arrays` |
-| `cppcoreguidelines-avoid-const-or-ref-data-members` | |
+| `-cppcoreguidelines-avoid-const-or-ref-data-members` | Apply on demand only. Usable in CI once a check is implemented to exclude findings in classes where copy and/or move operators are explicitly deleted. |
 | `-cppcoreguidelines-avoid-do-while` | do-while is perfectly valid |
 | `cppcoreguidelines-avoid-goto` | |
 | `-cppcoreguidelines-avoid-magic-numbers` | Alias of `readability-magic-numbers` |
-| `cppcoreguidelines-avoid-non-const-global-variables` | |
+| `-cppcoreguidelines-avoid-non-const-global-variables` | Unusable because of https://github.com/llvm/llvm-project/issues/47384 |
 | `cppcoreguidelines-avoid-reference-coroutine-parameters` | |
 | `-cppcoreguidelines-c-copy-assignment-signature` | Alias of `misc-unconventional-assign-operator` |
 | `-cppcoreguidelines-explicit-virtual-functions` | Alias of `modernize-use-override` |
@@ -237,7 +237,7 @@ The specification of `-*,all` results in the following checks being enabled.
 | `misc-non-private-member-variables-in-classes` | |
 | `misc-redundant-expression` | |
 | `misc-static-assert` | |
-| `-misc-throw-by-value-catch-by-reference` | Requirement is overly strict and pointless |
+| `misc-throw-by-value-catch-by-reference` | |
 | `misc-unconventional-assign-operator` | |
 | `misc-uniqueptr-reset-release` | |
 | `misc-unused-alias-decls` | |
@@ -264,7 +264,7 @@ The specification of `-*,all` results in the following checks being enabled.
 | `modernize-unary-static-assert` | |
 | `-modernize-use-auto` | Worsens readability |
 | `modernize-use-bool-literals` | |
-| `-modernize-use-default-member-init` | |
+| `modernize-use-default-member-init` | |
 | `modernize-use-emplace` | |
 | `modernize-use-equals-default` | |
 | `modernize-use-equals-delete` | |

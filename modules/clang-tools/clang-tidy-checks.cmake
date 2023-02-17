@@ -58,9 +58,7 @@ set(group-concurrency
     "concurrency-mt-unsafe"
 )
 set(group-cppcoreguidelines
-    "cppcoreguidelines-avoid-const-or-ref-data-members"
     "cppcoreguidelines-avoid-goto"
-    "cppcoreguidelines-avoid-non-const-global-variables"
     "cppcoreguidelines-avoid-reference-coroutine-parameters"
     "cppcoreguidelines-init-variables"
     "cppcoreguidelines-interfaces-global-init"
@@ -97,14 +95,12 @@ set(group-misc
     "misc-*"
     "-misc-misplaced-const" # Diagnosed code is perfectly valid
     "-misc-no-recursion" # Recursion is perfectly valid
-    "-misc-throw-by-value-catch-by-reference" # Requirement is overly strict and pointless
 )
 set(group-modernize
     "modernize-*"
     "-modernize-avoid-c-arrays" # Deliberate use of arrays is clearly visible and valid
     "-modernize-return-braced-init-list" # Worsens readability
     "-modernize-use-auto" # Worsens readability
-    "-modernize-use-default-member-init"
     "-modernize-use-trailing-return-type" # Worsens readability
     "-modernize-use-transparent-functors" # Worsens readability
 )
