@@ -77,7 +77,7 @@ else()
             unset(ninjafile)
             string(CONFIGURE [[
 rule tidy
-  command = cmd.exe /C "cd /D "@COMPILE_COMMANDS_PATH@" && "@clang-tidy_EXE@" "$file" "@@COMPILE_COMMANDS_PATH@clang-tidy-checks.arg" -p "@COMPILE_COMMANDS_PATH@" --extra-arg=/clang:-MD "--extra-arg=/clang:-MF$out.d" "--extra-arg=/clang:-MT$out" "--header-filter=.*" > "$out" && copy /y "$out.d" "$out.d2""
+  command = cmd.exe /C "cd /D "@COMPILE_COMMANDS_PATH@" && "@clang-tidy_EXE@" "$file" "@@COMPILE_COMMANDS_PATH@clang-tidy-checks.arg" -p "@COMPILE_COMMANDS_PATH@" --extra-arg=/clang:-MD "--extra-arg=/clang:-MF$out.d" "--extra-arg=/clang:-MT$out" "--header-filter=.*" > "$out" 2>&1 & copy /y "$out.d" "$out.d2""
   depfile = $out.d2
   deps = gcc
   restat = 1

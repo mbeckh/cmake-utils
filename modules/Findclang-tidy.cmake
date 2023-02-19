@@ -194,6 +194,20 @@ function(z_clang_tidy_checks target results)
                        # No dependencies required - runs on each build
                        COMMENT "Checking clang-tidy overrides"
                        VERBATIM)
+
+    # Custom setting might lead to invalid config
+    if(NOT TARGET clang-tidy-check-config)
+        # clang-tidy-checks.arg is the same for all targets; kept in separate files for IDE integration
+        add_custom_target(clang-tidy-check-config
+                          COMMAND "${clang-tidy_EXE}"
+                                  "@${target_compile_commands_path}clang-tidy-checks.arg"
+                                  --list-checks
+                          DEPENDS "${target_compile_commands_path}clang-tidy-checks.arg"
+                          WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+                          COMMENT "Checking clang-tidy config"
+                          VERBATIM)
+    endif()
+    add_dependencies("clang-tidy-${target}" clang-tidy-check-config)
 endfunction()
 
 function(clang_tidy #[[ <target> ... ]])
