@@ -18,6 +18,7 @@
 # Set environment variable clang-tidy_ROOT if clang-tidy is not found automatically.
 #
 
+cmake_policy(VERSION 3.25)
 include(CMakeFindDependencyMacro)
 include(FindPackageHandleStandardArgs)
 
@@ -102,7 +103,7 @@ function(z_clang_tidy_unity target #[[ OUTPUT <output> [ DEPENDS <dependencies> 
                 # skip files which are not part of the source tree
                 continue()
             endif()
-        elseif(NOT target_source_dir STREQUAL PROJECT_SOURCE_DIR)
+        elseif(NOT target_source_dir PATH_EQUAL PROJECT_SOURCE_DIR)
             # convert path relative to target_source_dir to path relative to PROJECT_SOURCE_DIR
             cmake_path(ABSOLUTE_PATH source_path BASE_DIRECTORY "${target_source_dir}" NORMALIZE)
             cmake_path(RELATIVE_PATH source_path BASE_DIRECTORY "${PROJECT_SOURCE_DIR}")

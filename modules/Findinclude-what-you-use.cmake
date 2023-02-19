@@ -18,6 +18,7 @@
 # Set variable include-what-you-use_ROOT if include-what-you-use is not found automatically.
 #
 
+cmake_policy(VERSION 3.25)
 include(CMakeFindDependencyMacro)
 include(FindPackageHandleStandardArgs)
 

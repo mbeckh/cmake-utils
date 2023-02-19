@@ -24,7 +24,7 @@
 #        -D OUTPUT=<file>
 #        -P scan-includes.cmake
 #
-cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.25 FATAL_ERROR)
 
 foreach(arg TARGET PROJECT_SOURCE_DIR PROJECT_BINARY_DIR BINARY_DIR OUTPUT)
     if(NOT ${arg})

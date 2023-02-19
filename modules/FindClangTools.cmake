@@ -18,6 +18,7 @@
 # Set variable IWYU_EXE if include-what-you-use is not found automatically.
 #
 
+cmake_policy(VERSION 3.25)
 include(FindPackageHandleStandardArgs)
 
 set(ClangTools_VERSION "1.1.0")
