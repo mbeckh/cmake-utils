@@ -51,8 +51,12 @@ set(group-cert
     "cert-oop57-cpp" # memset, memcpy, memcmp on non trivial types
     "cert-oop58-cpp" # Modification of source in copy operation
 )
-set(group-clang-analyzer
-    "clang-analyzer-*")
+set(group-clang
+    "clang-analyzer-*"
+    "clang-diagnostics-*"
+    "-clang-diagnostic-gnu-zero-variadic-macro-arguments"
+    "-clang-diagnostic-gnu-language-extension-token"
+)
 
 set(group-concurrency
     "concurrency-mt-unsafe"
@@ -120,7 +124,7 @@ set(group-readability
 set(group-all
     "${group-bugprone}"
     "${group-cert}"
-    "${group-clang-analyzer}"
+    "${group-clang}"
     "${group-concurrency}"
     "${group-cppcoreguidelines}"
     "${group-google}"
@@ -149,7 +153,7 @@ if(checks)
     list(TRANSFORM checks STRIP)
     # Replace groups
     foreach(check IN LISTS checks)
-        if(check MATCHES [[^(-?)(bugprone|cert|clang-analyzer|concurrency|cppcoreguidelines|google|hicpp|llvm|misc|modernize|performance|portability|readability|all)$]])
+        if(check MATCHES [[^(-?)(bugprone|cert|clang|concurrency|cppcoreguidelines|google|hicpp|llvm|misc|modernize|performance|portability|readability|all)$]])
             set(remove "${CMAKE_MATCH_1}")
             set(name "${CMAKE_MATCH_2}")
             set(group ${group-${name}})

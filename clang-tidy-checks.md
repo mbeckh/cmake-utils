@@ -6,7 +6,7 @@ This default set of rules can be customized using the syntax for the [`--checks`
 Enable or disable groups of check using the keywords `<name>` or `-<name>` according to the following list.
 -   `bugprone`
 -   `cert`
--   `clang-analyzer`
+-   `clang`
 -   `concurrency`
 -   `cppcoreguidelines`
 -   `google`
