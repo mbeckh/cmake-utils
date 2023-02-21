@@ -8,14 +8,19 @@ trim_trailing_whitespace=true
 insert_final_newline=true
 guidelines=80
 
-[*.{cpp,h}]
-guidelines=80,120
-
-[{*.cmake,CMakeLists.txt}]
+[{*.cmake,*.cmake.in,CMakeLists.txt}]
 indent_style=space
 guidelines=80,120
 
-[*.json]
+[*.{cpp,h}]
+guidelines=80,120
+
+[*.js]
+indent_style=space
+indent_size=2
+guidelines=80,120
+
+[*.{json,json.template}]
 indent_style=space
 indent_size=2
 

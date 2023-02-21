@@ -1,0 +1,24 @@
+{
+  "version": 4,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 25
+  },
+  "configurePresets": [
+    {
+      "name": "env",
+      "hidden": true,
+      "toolchainFile": "<Path of a local toolchain file>",
+      "cmakeExecutable": "C:/Program Files/CMake/bin/cmake.exe",
+      "cacheVariables": {
+        "CMAKE_MESSAGE_CONTEXT_SHOW": true
+      },
+      "environment": {
+        "BUILD_ROOT": "<Root folder of all build output>",
+        "clang_ROOT": "<Folder where clang.exe is located>",
+        "clang-tidy_ROOT": "<Folder where clang-tidy.exe is located, could also be $env{clang_ROOT}>",
+        "include-what-you-use_ROOT": "<Folder where include-what-you-use.exe is located, could also be $env{clang_ROOT}>"
+      }
+    }
+  ]
+}

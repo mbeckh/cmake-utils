@@ -4,9 +4,14 @@
     "major": 3,
     "minor": 25
   },
+  "include": [
+    "CMakeLocalPresets.json"
+  ],
   "configurePresets": [
     {
       "name": "x64",
+      "hidden": true,
+      "inherits": "env",
       "architecture": {
         "value": "x64",
         "strategy": "external"
@@ -21,8 +26,110 @@
       },
       "environment": {
         "BINARY_DIR": "$env{BUILD_ROOT}/cmake-utils/${presetName}",
-        "CAExcludePath": "$env{BINARY_DIR}/vcpkg_installed;$env{INCLUDE}"
+        "CAExcludePath": "$env{BINARY_DIR}/vcpkg_installed;$env{EXTERNAL_INCLUDE};$env{INCLUDE}"
       }
+    },
+    {
+      "name": "debug",
+      "hidden": true,
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "release",
+      "hidden": true,
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "multi",
+      "hidden": true,
+      "generator": "Ninja Multi-Config",
+      "cacheVariables": {
+        "CMAKE_CONFIGURATION_TYPES": "Debug;Release"
+      }
+    },
+    {
+      "name": "unity",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_UNITY_BUILD": true
+      }
+    },
+    {
+      "name": "x64-debug",
+      "inherits": [ "x64", "debug" ]
+
+    },
+    {
+      "name": "x64-release",
+      "inherits": [ "x64", "release" ]
+    },
+    {
+      "name": "x64-multi",
+      "inherits": [ "x64", "multi" ]
+    },
+    {
+      "name": "x64-debug-unity",
+      "inherits": [ "x64", "debug", "unity" ]
+    },
+    {
+      "name": "x64-release-unity",
+      "inherits": [ "x64", "release", "unity" ]
+    },
+    {
+      "name": "x64-multi-unity",
+      "inherits": [ "x64", "multi", "unity" ]
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "x64-debug",
+      "displayName": "Debug",
+      "configurePreset": "x64-debug"
+    },
+    {
+      "name": "x64-release",
+      "displayName": "Release",
+      "configurePreset": "x64-release"
+    },
+    {
+      "name": "x64-debug-unity",
+      "displayName": "Debug",
+      "configurePreset": "x64-debug-unity"
+    },
+    {
+      "name": "x64-release-unity",
+      "displayName": "Release",
+      "configurePreset": "x64-release-unity"
+    },
+    {
+      "name": "x64-multi-debug",
+      "displayName": "Debug",
+      "configurePreset": "x64-multi",
+      "configuration": "Debug"
+    },
+    {
+      "name": "x64-multi-release",
+      "displayName": "Release",
+      "configurePreset": "x64-multi",
+      "configuration": "Release"
+    },
+    {
+      "name": "x64-multi-unity-debug",
+      "displayName": "Debug",
+      "configurePreset": "x64-multi-unity",
+      "configuration": "Debug"
+    },
+    {
+      "name": "x64-multi-unity-release",
+      "displayName": "Release",
+      "configurePreset": "x64-multi-unity",
+      "configuration": "Release"
     }
   ]
 }

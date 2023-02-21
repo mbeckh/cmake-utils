@@ -1,8 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
   "name": "cmake-utils-test",
-  "version": "1.1.0",
-  "port-version": 0,
+  "version-semver": "1.1.0",
   "license": "Apache-2.0",
   "dependencies": [
     "fmt"
