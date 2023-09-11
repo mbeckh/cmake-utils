@@ -114,7 +114,7 @@ jobs:
 
     - name: 'Source: Checkout'
       if: steps.source-restore.outputs.cache-hit != 'true'
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: source
         persist-credentials: false
